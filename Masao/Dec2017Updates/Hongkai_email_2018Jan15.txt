@@ -1,0 +1,63 @@
+Hi Glenn,
+
+Belated happy new year. So after a long delay (sorry), I have finished
+documenting this bootstrap step, and the hope is that with this new
+documentation, Masao or any of your future RA can redo the bootstrap
+with no need to sorting through previous communications. The
+documentation also explains how files in this email thread were
+generated. I have put everything in Masao\Dec2017Updates, including
+updated versions of the files you have just attached.
+
+In particular,  I have tested the files on department servers and I
+think one could even rerun the time-consuming part of the bootstrap
+(optimizing the objective function and therefore completely correct
+the duplicate indexing issue we discussed) pretty much by just
+uploading those files to department servers. So you could ask Masao to
+start now if he has one or two hours to set things up and check status
+every day. If he won't be available soon, you can hire anyone now or
+later. My access to MIT's network will end on Jan 25 so I don't think
+I can see a full rerun finished, but before that I can help whoever
+working on this make sure things are set up correctly.
+
+Best,
+Hongkai
+
+
+Hongkai Zhang
+
+
+
+On Tue, Dec 12, 2017 at 5:51 AM, Glenn Ellison <gellison@mit.edu> wrote:
+> Hi Hongkai,
+>
+> Thanks. This is amazing.
+>
+> Could you also send me a copy of the program that was run so I can archive
+> it for future reference? And do you have files containing the parameter and
+> welfare estimates from each bootstrap iteration that I could also archive
+> similar to the ones Masao had sent in the two attached files?
+>
+> Glenn
+>
+>
+>
+> On 12/12/2017 9:31 AM, Hongkai Zhang wrote:
+>>
+>> Hi Glenn,
+>>
+>> Please find the spreadsheet attached with updated welfare numbers.
+>> Welfare related cells in green and yellow are updated. The yellow ones
+>> are just very slightly changed (<1%), so I would call these
+>> reproduced. The estimates for 2009 offline welfare are indeed quite
+>> different from previous numbers and are now between the reproduced
+>> quantiles, perhaps for the same unknown reason that E[gamma_i] 2009
+>> offline and betalocal could not be reproduced.
+>>
+>> It turns out the department has updated two servers and nobody is
+>> using them these days, so I was able to finish this computation in 24
+>> hours with 144 cores in total when I got a chance to put the files
+>> together.
+>>
+>> Best,
+>> Hongkai
+>> Hongkai Zhang

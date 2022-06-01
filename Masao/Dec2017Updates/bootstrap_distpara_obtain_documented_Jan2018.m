@@ -92,7 +92,7 @@ current_mode = 2;
 % dcluster.saveProfile;
 
 
-parpool(72); % this line is common for all servers or desktop. Choose the number accordingly.
+%parpool(72); % this line is common for all servers or desktop. Choose the number accordingly.
 
 %% Load data
 load('DataToRun_pop09_boot.mat') 
@@ -248,7 +248,7 @@ for i = beginning:ending
     
     if current_mode == 1
         x0 = true_estimates(7:20);
-        objectivefun = @(x) objective(x,x0,distpara0,gamma0vec,deltavec, bdata12,bdata09,bbp);
+        objectivefun = @(x) objective(x,x0,distpara0,gamma0vec,deltavec,bdata12,bdata09,bbp);
         x00 = x0;
         x0([3 7]) = [];
         [x,fval] = fminsearch(objectivefun,x0,optimset('MaxFunEvals',1e5,'MaxIter',1e5));

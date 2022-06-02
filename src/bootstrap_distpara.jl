@@ -157,18 +157,12 @@ for i = 1:N_bs
     bmktsize09[i,:] = data09.mktsize[bs_ind]
     bfirst09[i,:]   = data09.first[bs_ind]
     bcdindex09[i,:] = data09.cdindex[bs_ind]
-    mktsize_09 = sum(bmktsize09[i,:])
 
-    bdata09.p         = zeros(mktsize_09)
-    bdata09.cdid      = zeros(mktsize_09)
-    bdata09.obsweight = zeros(mktsize_09)
-    bdata09.numlist   = zeros(mktsize_09)
-    bdata09.condition = zeros(mktsize_09)
-    bdata09.localint  = zeros(mktsize_09)
-    bdata09.popular   = zeros(mktsize_09)
-    bdata09.pdif      = zeros(mktsize_09)
-    bdata09.conditiondif = zeros(mktsize_09)
-    bdata09.basecond     = zeros(mktsize_09)
+    mktsize_09 = sum(bmktsize09[i,:])
+    for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
+              :popular, :pdif, :conditiondif, :basecond]
+        bdata09[x] = zeros(mktsize_09)
+    end
 
     bend09 = cumsum(bmktsize09[i,:])
     bstart09 = vcat(1, bend09[1:end-1] .+ 1.0)
@@ -185,7 +179,7 @@ for i = 1:N_bs
         bdata09.conditiondif(bstart09[j]:bend09[j]) = data09.conditiondif(bfirst09[i,j]:bcdindex09[i,j])
         bdata09.basecond(bstart09[j]:bend09[j]) = data09.basecond(bfirst09[i,j]:bcdindex09[i,j])
     end
-    
+
     bdata09.first = bstart09'
     bdata09.cdindex = bend09'
     bdata09.mktsize = bmktsize09[i,:]'
@@ -198,18 +192,10 @@ for i = 1:N_bs
     bcdindex12[i,:] = data12.cdindex[bs_ind]
 
     mktsize_12 = sum(bmktsize12[i,:])
-
-    bdata12.p            = zeros(mktsize_12)
-    bdata12.cdid         = zeros(mktsize_12)
-    bdata12.obsweight    = zeros(mktsize_12)
-    bdata12.numlist      = zeros(mktsize_12)
-    bdata12.condition    = zeros(mktsize_12)
-    bdata12.localint     = zeros(mktsize_12)
-    bdata12.popular      = zeros(mktsize_12)
-    bdata12.pdif         = zeros(mktsize_12)
-    bdata12.conditiondif = zeros(mktsize_12)
-    bdata12.basecond     = zeros(mktsize_12)
-    bdata12.disappear    = zeros(mktsize_12)
+    for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
+              :popular, :pdif, :conditiondif, :basecond, :disappear]
+        bdata12[x] = zeros(mktsize_12)
+    end
 
     bend12       = cumsum(bmktsize12[i,:])
     bstart12     = vcat(1, bend12[1:end-1] .+ 1)
@@ -264,12 +250,12 @@ for i = 1:N_bs
     ## This part execute optimization/computation
     if mode == 1
         x0 = true_estimates[7:20]
-        objectivefun = @(x) objective(x,x0,distpara0,gamma0vec,deltavec,bdata12,bdata09,bbp)
+        objectivefun = @(x) objective(x, x0, distpara0, gamma0vec, deltavec, bdata12, bdata09, bbp)
         x00 = x0
         x0[[3, 7]] = []
-        [x,fval] = fminsearch(objectivefun,x0,optimset('MaxFunEvals',1e5,'MaxIter',1e5))
-        estimates = [i,x[1:2] x00[3] x[3:5] x00[7] x[6:(length(x00)-2)]]
-        dlmwrite('bootstrap_estimates.csv',estimates,'delimiter',',','-append')
+        [x,fval] = fminsearch(objectivefun, x0, optimset('MaxFunEvals', 1e5, 'MaxIter', 1e5))
+        estimates = [i, x[1:2] x00[3] x[3:5] x00[7] x[6:(length(x00)-2)]]
+        dlmwrite('bootstrap_estimates.csv', estimates, 'delimiter',',','-append')
 
         # The code below are just to show what bootstrap_betasigma.csv was. It appears not used.
         # xx = estimates
@@ -288,12 +274,12 @@ for i = 1:N_bs
         # result_w = [i,xinitial,newdistpara]
         # dlmwrite('bootstrap_distpara.csv',result_w,'delimiter',',','-append')
 
-        wel09 = mean(fWF.AveWF09)
-        wel12 = mean(fWF.AveWF12)
-        weloff = mean(fWF.WFbp)
-        result_w = [i,xinitial,newdistpara,wel09,wel12,weloff]
+        wel09    = mean(fWF.AveWF09)
+        wel12    = mean(fWF.AveWF12)
+        weloff   = mean(fWF.WFbp)
+        result_w = [i, xinitial, newdistpara, wel09, wel12, weloff]
 
-        dlmwrite('bootstrap_welfare.csv',result_w,'delimiter',',','-append')
+        dlmwrite('bootstrap_welfare.csv', result_w, 'delimiter', ',', '-append')
 
         # standard_errors.m will process bootstrap_distpara.csv and
         # bootstrap_welfare.csv to generate the numbers in Summary201609.xls.
@@ -316,7 +302,7 @@ boot = unique(boot,'rows')
 boot = boot(:,2:15)
 distpara = csvread('bootstrap_welfare.csv')
 distpara = unique(distpara,'rows')
-distpara = distpara(:,16:21)
+distpara = distpara[:,16:21]
 
 b_boot = zeros(size(boot,1),25)
 for i = 1:size(boot,1)

@@ -93,7 +93,8 @@ current_mode = 2 # Alternatives: (1, 2)
 # The following 3 lines are for reduced-form server.
 # Can change resource parameters (walltime and mem) if necessary
 # dcluster=parcluster
-# dcluster.ResourceTemplate='-l nodes=^N^,software=MATLAB_Distrib_Comp_Engine+^N^,walltime=80:00:00,mem=64gb'
+# dcluster.ResourceTemplate='-l nodes=^N^,software=MATLAB_Distrib_Comp_Engine+^N^,
+# walltime=80:00:00,mem=64gb'
 # dcluster.saveProfile
 
 # This line is common for all servers or desktop. Choose the number accordingly.
@@ -112,21 +113,21 @@ data09 = data09nopop
 bp = bpnopop
 
 bmktsize09 = bootindex
-bfirst09 = bootindex
+bfirst09   = bootindex
 bcdindex09 = bootindex
 
 bmktsize12 = bootindex
-bfirst12 = bootindex
+bfirst12   = bootindex
 bcdindex12 = bootindex
 
 bmktsizebp = bootindex
-bfirstbp = bootindex
+bfirstbp   = bootindex
 bcdindexbp = bootindex
 
 if current_mode == 2
     boot = csvread('bootstrap_estimates.csv')
     boot = unique(boot,'rows') # because mode 1 can be run on several servers simultaneously to save time, this line removes bootstrap runs that were duplicated on multiple servers.
-    boot = boot(:,2:end)
+    boot = boot[:,2:end]
 end
 
 ## A validation mode:
@@ -140,27 +141,25 @@ end
 # boot(1,:) = results2(end,8:21)
 
 ## Bootstrap runs
-beginning = 1
-ending = 200
+N_bs = 200
 
-for i = beginning:ending
+for i = 1:N_bs
     ##  This block generates the bootstrap data.
     # 09
     bmktsize09[i,:] = data09.mktsize(bootindex[i,:])
-    bfirst09[i,:] = data09.first(bootindex[i,:])
+    bfirst09[i,:]   = data09.first(bootindex[i,:])
     bcdindex09[i,:] = data09.cdindex(bootindex[i,:])
 
-    bdata09.p = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.cdid = zeros(sum(bmktsize09[i,:]),1)
+    bdata09.p         = zeros(sum(bmktsize09[i,:]),1)
+    bdata09.cdid      = zeros(sum(bmktsize09[i,:]),1)
     bdata09.obsweight = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.numlist = zeros(sum(bmktsize09[i,:]),1)
+    bdata09.numlist   = zeros(sum(bmktsize09[i,:]),1)
     bdata09.condition = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.localint = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.popular = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.pdif = zeros(sum(bmktsize09[i,:]),1)
+    bdata09.localint  = zeros(sum(bmktsize09[i,:]),1)
+    bdata09.popular   = zeros(sum(bmktsize09[i,:]),1)
+    bdata09.pdif      = zeros(sum(bmktsize09[i,:]),1)
     bdata09.conditiondif = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.basecond = zeros(sum(bmktsize09[i,:]),1)
-
+    bdata09.basecond     = zeros(sum(bmktsize09[i,:]),1)
 
     bend09 = cumsum(bmktsize09[i,:])
     bstart09temp = bend09+1
@@ -183,39 +182,44 @@ for i = beginning:ending
     bdata09.N = length(bdata09.p)
     bdata09.M = length(bdata09.first)
 
-
     # 12
     bmktsize12[i,:] = data12.mktsize(bootindex[i,:])
-    bfirst12[i,:] = data12.first(bootindex[i,:])
+    bfirst12[i,:]   = data12.first(bootindex[i,:])
     bcdindex12[i,:] = data12.cdindex(bootindex[i,:])
 
-    bdata12.p = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.cdid = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.obsweight = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.numlist = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.condition = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.localint = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.popular = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.pdif = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.conditiondif = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.basecond = zeros(sum(bmktsize12[i,:]),1)
-    bdata12.disappear = zeros(sum(bmktsize12[i,:]),1)
+    mktsize_12 = sum(bmktsize12[i,:])
 
-    bend12 = cumsum(bmktsize12[i,:])
-    bstart12temp = bend12+1
-    bstart12 = [1 bstart12temp(1:(length(bstart12temp)-1))]
+    bdata12.p            = zeros(mktsize_12)
+    bdata12.cdid         = zeros(mktsize_12)
+    bdata12.obsweight    = zeros(mktsize_12)
+    bdata12.numlist      = zeros(mktsize_12)
+    bdata12.condition    = zeros(mktsize_12)
+    bdata12.localint     = zeros(mktsize_12)
+    bdata12.popular      = zeros(mktsize_12)
+    bdata12.pdif         = zeros(mktsize_12)
+    bdata12.conditiondif = zeros(mktsize_12)
+    bdata12.basecond     = zeros(mktsize_12)
+    bdata12.disappear    = zeros(mktsize_12)
+
+    bend12       = cumsum(bmktsize12[i,:])
+    bstart12temp = bend12 .+ 1
+    bstart12     = vcat(1, bstart12temp[1:end-1])
+
     for j = 1:length(bfirst12[i,:])
-        bdata12.p(bstart12[j]:bend12[j]) = data12.p(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.cdid(bstart12[j]:bend12[j]) = repmat(j, bend12[j] - bstart12[j] + 1,1)
-        bdata12.obsweight(bstart12[j]:bend12[j]) = data12.obsweight(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.numlist(bstart12[j]:bend12[j]) = data12.numlist(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.condition(bstart12[j]:bend12[j]) = data12.condition(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.localint(bstart12[j]:bend12[j]) = data12.localint(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.popular(bstart12[j]:bend12[j]) = data12.popular(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.pdif(bstart12[j]:bend12[j]) = data12.pdif(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.conditiondif(bstart12[j]:bend12[j]) = data12.conditiondif(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.basecond(bstart12[j]:bend12[j]) = data12.basecond(bfirst12[i,j]:bcdindex12[i,j])
-        bdata12.disappear(bstart12[j]:bend12[j]) = data12.disappear(bfirst12[i,j]:bcdindex12[i,j])
+        j_rng  = bstart12[j]:bend12[j]
+        ij_rng = bfirst12[i,j]:bcdindex12[i,j]
+        bdata12.cdid[j_rng] = repmat(j, bend12[j] - bstart12[j] + 1,1)
+
+        bdata12.p[j_rng]            = data12.p[ij_rng]
+        bdata12.obsweight[j_rng]    = data12.obsweight[ij_rng]
+        bdata12.numlist[j_rng]      = data12.numlist[ij_rng]
+        bdata12.condition[j_rng]    = data12.condition[ij_rng]
+        bdata12.localint[j_rng]     = data12.localint[ij_rng]
+        bdata12.popular[j_rng]      = data12.popular[ij_rng]
+        bdata12.pdif[j_rng]         = data12.pdif[ij_rng]
+        bdata12.conditiondif[j_rng] = data12.conditiondif[ij_rng]
+        bdata12.basecond[j_rng]     = data12.basecond[ij_rng]
+        bdata12.disappear[j_rng]    = data12.disappear[ij_rng]
     end
     bdata12.first = bstart12'
     bdata12.cdindex = bend12'

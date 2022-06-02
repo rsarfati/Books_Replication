@@ -133,9 +133,9 @@ bfirstbp   = bootindex
 bcdindexbp = bootindex
 
 if mode == 2
-    boot = csvread('bootstrap_estimates.csv')
-    boot = unique(boot,'rows') # because mode 1 can be run on several servers simultaneously to save time, this line removes bootstrap runs that were duplicated on multiple servers.
-    boot = boot[:,2:end]
+    boot = CSV.read("bootstrap_estimates.csv", DataFrame, header=true)
+    boot = unique(boot; dims=1) # because mode 1 can be run on several servers simultaneously to save time, this line removes bootstrap runs that were duplicated on multiple servers.
+    #boot = boot[:, 2:end]
 end
 
 # A validation mode:
@@ -151,9 +151,9 @@ end
 ## Run Bootstrap
 for i = 1:N_bs
     ##  Generate bootstrap data
-    # 09
     bs_ind = bootindex[i,:]
 
+    # 09
     bmktsize09[i,:] = data09.mktsize[bs_ind]
     bfirst09[i,:]   = data09.first[bs_ind]
     bcdindex09[i,:] = data09.cdindex[bs_ind]
@@ -168,19 +168,21 @@ for i = 1:N_bs
     bstart09 = vcat(1, bend09[1:end-1] .+ 1.0)
 
     for j = 1:length(bfirst09[i,:])
-        bdata09.p(bstart09[j]:bend09[j]) = data09.p(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.cdid(bstart09[j]:bend09[j]) = repmat(j, bend09[j] - bstart09[j] + 1,1)
-        bdata09.obsweight(bstart09[j]:bend09[j]) = data09.obsweight(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.numlist(bstart09[j]:bend09[j]) = data09.numlist(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.condition(bstart09[j]:bend09[j]) = data09.condition(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.localint(bstart09[j]:bend09[j]) = data09.localint(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.popular(bstart09[j]:bend09[j]) = data09.popular(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.pdif(bstart09[j]:bend09[j]) = data09.pdif(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.conditiondif(bstart09[j]:bend09[j]) = data09.conditiondif(bfirst09[i,j]:bcdindex09[i,j])
-        bdata09.basecond(bstart09[j]:bend09[j]) = data09.basecond(bfirst09[i,j]:bcdindex09[i,j])
+        bdata09.cdid[bstart09[j]:bend09[j]] = repmat(j, bend09[j] - bstart09[j] + 1,1)
+
+        bdata09.p[bstart09[j]:bend09[j]] = data09.p[bfirst09[i,j]:bcdindex09[i,j]]
+
+        bdata09.obsweight[bstart09[j]:bend09[j]] = data09.obsweight[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.numlist[bstart09[j]:bend09[j]] = data09.numlist[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.condition[bstart09[j]:bend09[j]] = data09.condition[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.localint[bstart09[j]:bend09[j]] = data09.localint[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.popular[bstart09[j]:bend09[j]] = data09.popular[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.pdif[bstart09[j]:bend09[j]]    = data09.pdif[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.conditiondif[bstart09[j]:bend09[j]] = data09.conditiondif[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.basecond[bstart09[j]:bend09[j]] = data09.basecond[bfirst09[i,j]:bcdindex09[i,j]]
     end
 
-    bdata09.first = bstart09'
+    bdata09.first   = bstart09'
     bdata09.cdindex = bend09'
     bdata09.mktsize = bmktsize09[i,:]'
     bdata09.N = length(bdata09.p)
@@ -197,8 +199,8 @@ for i = 1:N_bs
         bdata12[x] = zeros(mktsize_12)
     end
 
-    bend12       = cumsum(bmktsize12[i,:])
-    bstart12     = vcat(1, bend12[1:end-1] .+ 1)
+    bend12   = cumsum(bmktsize12[i,:])
+    bstart12 = vcat(1, bend12[1:end-1] .+ 1)
 
     for j = 1:length(bfirst12[i,:])
         j_rng  = bstart12[j]:bend12[j]
@@ -247,13 +249,14 @@ for i = 1:N_bs
     bbp.N = length(bbp.p)
     bbp.M = length(bbp.first)
 
-    ## This part execute optimization/computation
+    # Optimization
     if mode == 1
         x0 = true_estimates[7:20]
         objectivefun = @(x) objective(x, x0, distpara0, gamma0vec, deltavec, bdata12, bdata09, bbp)
         x00 = x0
         x0[[3, 7]] = []
-        [x,fval] = fminsearch(objectivefun, x0, optimset('MaxFunEvals', 1e5, 'MaxIter', 1e5))
+
+        x, fval = fminsearch(objectivefun, x0, optimset('MaxFunEvals', 1e5, 'MaxIter', 1e5))
         estimates = [i, x[1:2] x00[3] x[3:5] x00[7] x[6:(length(x00)-2)]]
         dlmwrite('bootstrap_estimates.csv', estimates, 'delimiter',',','-append')
 
@@ -297,12 +300,13 @@ end
 
 ## Lines adapted from Masao's standard_errors.m, can be run after Mode 2.
 # betasigma std -- bootstrap
-boot = csvread('bootstrap_welfare.csv')
-boot = unique(boot,'rows')
-boot = boot(:,2:15)
-distpara = csvread('bootstrap_welfare.csv')
-distpara = unique(distpara,'rows')
-distpara = distpara[:,16:21]
+boot = CSV.read("bootstrap_welfare.csv", DataFrame, header=true)
+boot = unique(boot; dims=1)
+boot = boot[:, 2:15]
+
+distpara = CSV.read("bootstrap_welfare.csv", DataFrame, header=true)
+distpara = unique(distpara; dims=1)
+distpara = distpara[:, 16:21]
 
 b_boot = zeros(size(boot,1),25)
 for i = 1:size(boot,1)
@@ -352,9 +356,10 @@ for j = 1:25
 end
 
 #welfare std -- bootstrap
-boot_welfare     = csvread('bootstrap_welfare.csv')
-boot_welfare     = boot_welfare(unique(boot_welfare(:, 1),'rows'),:)
-boot_welfare     = unique(boot_welfare, 'rows')
+boot_welfare = CSV.read("bootstrap_welfare.csv", DataFrame, header=true)
+boot_welfare = unique(boot; dims=1)
+#boot_welfare     = boot_welfare(unique(boot_welfare(:, 1),'rows'),:)
+#boot_welfare     = unique(boot_welfare, 'rows')
 boot_welfare     = boot_welfare(:, (end-8):end)
 welfare_std_boot = zeros(9)
 
@@ -370,5 +375,5 @@ end
 
 # transformed bootstrap results are saved in two spreadsheets for analysis
 # outside of matlab. Column definitions are same as rows in Summary201609.xlsx.
-csvwrite('bootstrap_estimates2017_1105.csv',b_boot)
-csvwrite('bootstrap_welfare_estimates2017_1105.csv',boot_welfare)
+CSV.write("bootstrap_estimates2017_1105.csv", b_boot)
+CSV.write("bootstrap_welfare_estimates2017_1105.csv", boot_welfare)

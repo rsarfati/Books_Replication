@@ -1,5 +1,11 @@
 # Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
 
+# Important notes:
+# VARIABLE NAMES:
+# - fullmodelllhWFAug22newtest2015 -> full_model
+# - fullmodelllhWFAug22newtest2015_all -> full_model_all
+# - current_mode -> mode
+
 ## Input and output
 # This file takes true data and randomly generated title-level index as
 # inputs, contructs bootstrap dataset and runs the estimation, and output
@@ -12,22 +18,22 @@
 
 ## Estimates and welfare from true data
 
-true_estimates = [0.32135	5.6459	14.855	1.1614	0.6486	1.9196	14.771
-                  -2.4895	1	0.44004	0.32415	0.87235	0.5	0.25921	-9.1217
-                  80.267	-13.647 1.7296	8.8188	0.92622	4.283	4.9097	0
-                  7.8609	7.739	0.011111	6.8386	6.5027	0.028621]
+true_estimates = [0.32135,	5.6459,	14.855,	1.1614,	0.6486,	1.9196,	14.771,
+                  -2.4895,	1,	0.44004,	0.32415,	0.87235,	0.5,	0.25921,
+                  -9.1217,  80.267,	-13.647, 1.7296,	8.8188,	0.92622,	4.283,
+                  4.9097,	0,    7.8609,	7.739,	0.011111,	6.8386,	6.5027,	0.028621]
 
-# this is estimates and welfare from true data. It is copied from last row
+# These are the estimates and welfare from true data. It is copied from last row
 # of results2.csv created by Masao. Except for the 5th and 6th elements,
-# E[gamma_i] 2009 offline and betalocal, which according to my validation
+# E[gamma_i] 2009 offline and betalocal, which according to Hongkai's validation
 # mode, is different from Masao's number.
 
-## translating true_estimates to the "Estimates" column in Summary201609
+## Translating true_estimates to the "Estimates" column in Summary201609
 
 #   # true_estimates contains three parts:
-#     external_params = true_estimates(7:20) # parameters as first input to fullmodelllhWFAug22newtest2015_all, that is optimized with fullmodelllhWFAug22newtest2015_all being the objective function.
-#     internal_params = true_estimates(7:20) # parameters as second input to fullmodelllhWFAug22newtest2015_all, that is optimized within fullmodelllhWFAug22newtest2015_all.
-#     welfare_params = true_estimates(21:29) # welfare numbers computed by fullmodelllhWFAug22newtest2015_all.
+#     external_params = true_estimates(7:20) # parameters as first input to full_model_all, that is optimized with full_model_all being the objective function.
+#     internal_params = true_estimates(7:20) # parameters as second input to full_model_all, that is optimized within full_model_all.
+#     welfare_params = true_estimates(21:29) # welfare numbers computed by full_model_all.
 #   # translate external_params and internal_params to row 2-26 in
 #   # Summary201609. welfare_params' goes directly to row 28-36
 #     xx = external_params
@@ -68,7 +74,7 @@ true_estimates = [0.32135	5.6459	14.855	1.1614	0.6486	1.9196	14.771
 # this file has two modes. Mode 2 can be run after Mode 1.
 
 # In the first mode, it cold starts to estimates parameters in the first
-# input of the likelihood function fullmodelllhWFAug22newtest2015_all with
+# input of the likelihood function full_model_all with
 # bootstrap sample, and save the results in bootstrap_estimates.csv. These
 # parameters are/transform to alpha, beta, gammaishape, gammaimean09,
 # gammaimean12, eta, r, olp, c, lamda1, lamda2, betacond, betapop, olm,
@@ -77,40 +83,42 @@ true_estimates = [0.32135	5.6459	14.855	1.1614	0.6486	1.9196	14.771
 # weeks.
 
 # In the second mode, it figures out the six parameters and welfare numbers
-# that fullmodelllhWFAug22newtest2015_all can compute internally, reading
+# that full_model_all can compute internally, reading
 # the estimates from the first mode as input. This mode is quite fast
 # without the welfare part, and can be run on a desktop in a couple hours.
 # But it will take a day on servers if welfare output (WF) from
-# fullmodelllhWFAug22newtest2015_all is included.
+# full_model_all is included.
 
 # As of Dec 2017, Mode 1 is done with the issue of duplicated book
 # index in bootstrap sample, Mode 2 is done with the issue
 # corrected, albeit taking Mode's 1's results as input.
 
-current_mode = 2 # Alternatives: (1, 2)
+# TODO: Specify script parameters
+mode      = 2   # Choose between available modes: 1 or 2 (see description above)
+N_workers = 72  # No. workers to request from cluster
+N_bs      = 200 # No. bootstrap iterations
 
 ## Parallel computing setup
 # The following 3 lines are for reduced-form server.
 # Can change resource parameters (walltime and mem) if necessary
-# dcluster=parcluster
-# dcluster.ResourceTemplate='-l nodes=^N^,software=MATLAB_Distrib_Comp_Engine+^N^,
-# walltime=80:00:00,mem=64gb'
+# dcluster = parcluster
+# dcluster.ResourceTemplate = '-l nodes=^N^, software = MATLAB_Distrib_Comp_Engine+^N^,
+# walltime = 80:00:00, mem = 64gb'
 # dcluster.saveProfile
 
-# This line is common for all servers or desktop. Choose the number accordingly.
-#parpool(72)
+# This line is common for all servers or desktop. Choose number of workers! accordingly.
+#parpool(N_workers)
 
 ## Load data
 # Mat file created by Masao contains original data, random index for bootstrap.
 load('DataToRun_pop09_boot.mat')
 
-## Data Renaming and Setup pre-Bootstrap
-
+## Data Renaming and Setup Pre-Bootstrap
 gamma0vec = [gaminv(0.005:0.01:0.895,0.5,20) 28:2:60 64:4:100]
-deltavec = [exp(norminv(0.01:0.02:0.91,-2,2)) 3:2:20]
-data12 = data12nopop
-data09 = data09nopop
-bp = bpnopop
+deltavec  = [exp(norminv(0.01:0.02:0.91,-2,2)) 3:2:20]
+data12    = data12nopop
+data09    = data09nopop
+bp        = bpnopop
 
 bmktsize09 = bootindex
 bfirst09   = bootindex
@@ -124,13 +132,13 @@ bmktsizebp = bootindex
 bfirstbp   = bootindex
 bcdindexbp = bootindex
 
-if current_mode == 2
+if mode == 2
     boot = csvread('bootstrap_estimates.csv')
     boot = unique(boot,'rows') # because mode 1 can be run on several servers simultaneously to save time, this line removes bootstrap runs that were duplicated on multiple servers.
     boot = boot[:,2:end]
 end
 
-## A validation mode:
+# A validation mode:
 # if one wants to reproduce the true data estimates or validate the
 # estimation method is the same as we used for the true data estimates, the
 # following tricks can be used to reproduce the true data set.
@@ -140,30 +148,31 @@ end
 # in mode 2, in addition to the line above:
 # boot(1,:) = results2(end,8:21)
 
-## Bootstrap runs
-N_bs = 200
-
+## Run Bootstrap
 for i = 1:N_bs
-    ##  This block generates the bootstrap data.
+    ##  Generate bootstrap data
     # 09
-    bmktsize09[i,:] = data09.mktsize(bootindex[i,:])
-    bfirst09[i,:]   = data09.first(bootindex[i,:])
-    bcdindex09[i,:] = data09.cdindex(bootindex[i,:])
+    bs_ind = bootindex[i,:]
 
-    bdata09.p         = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.cdid      = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.obsweight = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.numlist   = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.condition = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.localint  = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.popular   = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.pdif      = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.conditiondif = zeros(sum(bmktsize09[i,:]),1)
-    bdata09.basecond     = zeros(sum(bmktsize09[i,:]),1)
+    bmktsize09[i,:] = data09.mktsize[bs_ind]
+    bfirst09[i,:]   = data09.first[bs_ind]
+    bcdindex09[i,:] = data09.cdindex[bs_ind]
+    mktsize_09 = sum(bmktsize09[i,:])
+
+    bdata09.p         = zeros(mktsize_09)
+    bdata09.cdid      = zeros(mktsize_09)
+    bdata09.obsweight = zeros(mktsize_09)
+    bdata09.numlist   = zeros(mktsize_09)
+    bdata09.condition = zeros(mktsize_09)
+    bdata09.localint  = zeros(mktsize_09)
+    bdata09.popular   = zeros(mktsize_09)
+    bdata09.pdif      = zeros(mktsize_09)
+    bdata09.conditiondif = zeros(mktsize_09)
+    bdata09.basecond     = zeros(mktsize_09)
 
     bend09 = cumsum(bmktsize09[i,:])
-    bstart09temp = bend09+1
-    bstart09 = [1 bstart09temp(1:(length(bstart09temp)-1))]
+    bstart09 = vcat(1, bend09[1:end-1] .+ 1.0)
+
     for j = 1:length(bfirst09[i,:])
         bdata09.p(bstart09[j]:bend09[j]) = data09.p(bfirst09[i,j]:bcdindex09[i,j])
         bdata09.cdid(bstart09[j]:bend09[j]) = repmat(j, bend09[j] - bstart09[j] + 1,1)
@@ -176,6 +185,7 @@ for i = 1:N_bs
         bdata09.conditiondif(bstart09[j]:bend09[j]) = data09.conditiondif(bfirst09[i,j]:bcdindex09[i,j])
         bdata09.basecond(bstart09[j]:bend09[j]) = data09.basecond(bfirst09[i,j]:bcdindex09[i,j])
     end
+    
     bdata09.first = bstart09'
     bdata09.cdindex = bend09'
     bdata09.mktsize = bmktsize09[i,:]'
@@ -183,9 +193,9 @@ for i = 1:N_bs
     bdata09.M = length(bdata09.first)
 
     # 12
-    bmktsize12[i,:] = data12.mktsize(bootindex[i,:])
-    bfirst12[i,:]   = data12.first(bootindex[i,:])
-    bcdindex12[i,:] = data12.cdindex(bootindex[i,:])
+    bmktsize12[i,:] = data12.mktsize[bs_ind]
+    bfirst12[i,:]   = data12.first[bs_ind]
+    bcdindex12[i,:] = data12.cdindex[bs_ind]
 
     mktsize_12 = sum(bmktsize12[i,:])
 
@@ -202,12 +212,12 @@ for i = 1:N_bs
     bdata12.disappear    = zeros(mktsize_12)
 
     bend12       = cumsum(bmktsize12[i,:])
-    bstart12temp = bend12 .+ 1
-    bstart12     = vcat(1, bstart12temp[1:end-1])
+    bstart12     = vcat(1, bend12[1:end-1] .+ 1)
 
     for j = 1:length(bfirst12[i,:])
         j_rng  = bstart12[j]:bend12[j]
         ij_rng = bfirst12[i,j]:bcdindex12[i,j]
+
         bdata12.cdid[j_rng] = repmat(j, bend12[j] - bstart12[j] + 1,1)
 
         bdata12.p[j_rng]            = data12.p[ij_rng]
@@ -221,6 +231,7 @@ for i = 1:N_bs
         bdata12.basecond[j_rng]     = data12.basecond[ij_rng]
         bdata12.disappear[j_rng]    = data12.disappear[ij_rng]
     end
+
     bdata12.first = bstart12'
     bdata12.cdindex = bend12'
     bdata12.mktsize = bmktsize12[i,:]'
@@ -228,21 +239,21 @@ for i = 1:N_bs
     bdata12.M = length(bdata12.first)
 
     # bp
-    bmktsizebp[i,:] = bp.mktsize(bootindex[i,:])
-    bfirstbp[i,:] = bp.first(bootindex[i,:])
-    bcdindexbp[i,:] = bp.cdindex(bootindex[i,:])
+    bmktsizebp[i,:] = bp.mktsize[bs_ind]
+    bfirstbp[i,:] = bp.first[bs_ind]
+    bcdindexbp[i,:] = bp.cdindex[bs_ind]
     bendbp = cumsum(bmktsizebp[i,:])
     bstartbptemp = bendbp+1
     bstartbp = [1 bstartbptemp(1:(length(bstartbptemp)-1))]
 
-    bbp.p = bp.p(bootindex[i,:])
-    bbp.cdid = (1:236)'  # bp.cdid(bootindex[i,:])
-    bbp.obsweight = bp.obsweight(bootindex[i,:])
-    bbp.numlist = bp.numlist(bootindex[i,:])
-    bbp.condition = bp.condition(bootindex[i,:])
-    bbp.localint = bp.localint(bootindex[i,:])
-    bbp.popular = bp.popular(bootindex[i,:])
-    bbp.conditiondif = bp.conditiondif(bootindex[i,:])
+    bbp.p = bp.p[bs_ind]
+    bbp.cdid = (1:236)'  # bp.cdid[bs_ind]
+    bbp.obsweight = bp.obsweight[bs_ind]
+    bbp.numlist = bp.numlist[bs_ind]
+    bbp.condition = bp.condition[bs_ind]
+    bbp.localint = bp.localint[bs_ind]
+    bbp.popular = bp.popular[bs_ind]
+    bbp.conditiondif = bp.conditiondif[bs_ind]
 
     bbp.first = bstartbp'
     bbp.cdindex = bendbp'
@@ -251,7 +262,7 @@ for i = 1:N_bs
     bbp.M = length(bbp.first)
 
     ## This part execute optimization/computation
-    if current_mode == 1
+    if mode == 1
         x0 = true_estimates[7:20]
         objectivefun = @(x) objective(x,x0,distpara0,gamma0vec,deltavec,bdata12,bdata09,bbp)
         x00 = x0
@@ -268,14 +279,13 @@ for i = 1:N_bs
         #     xx(6:11).*[1 0.1 1 0.1 0.01 0.1 ] 0 0] xx(12:13) xx(14)]
         # dlmwrite('bootstrap_betasigma.csv',betasigma5new,'delimiter',',','-append')
 
-    elseif current_mode == 2
+    elseif mode == 2
         xinitial = boot[i,:]
-        [llh, newdistpara,fother,fWF] = fullmodelllhWFAug22newtest2015(xinitial,distpara0,gamma0vec,deltavec, bdata12,bdata09,bbp) # ignore input fWF to avoid welfare computation.
+        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, gamma0vec, deltavec, bdata12,bdata09,bbp) # ignore input fWF to avoid welfare computation.
 
-        #     The code below are just to show what bootstrap_distpara.csv was.
-        #     It will not be used.
+        # The code below are just to show what bootstrap_distpara.csv was.
+        # It will not be used.
         # result_w = [i,xinitial,newdistpara]
-        #
         # dlmwrite('bootstrap_distpara.csv',result_w,'delimiter',',','-append')
 
         wel09 = mean(fWF.AveWF09)
@@ -283,21 +293,18 @@ for i = 1:N_bs
         weloff = mean(fWF.WFbp)
         result_w = [i,xinitial,newdistpara,wel09,wel12,weloff]
 
-
         dlmwrite('bootstrap_welfare.csv',result_w,'delimiter',',','-append')
 
         # standard_errors.m will process bootstrap_distpara.csv and
         # bootstrap_welfare.csv to generate the numbers in Summary201609.xls.
-        #
+
         # The code below are just to show what bootstrap_results.csv was. It appears not used.
-        # clocktime = clock
-        # clocktime = clocktime(1:5)
-        #
+
         # wel09 = mean(fWF.AveWF09)
         # wel12 = mean(fWF.AveWF12)
         # weloff = mean(fWF.WFbp)
         # output = [i,llh- 8223*log(20), newdistpara,estimates,clocktime]
-        #
+
         # dlmwrite('bootstrap_results.csv',output,'delimiter',',','-append')
     end
 end
@@ -347,31 +354,32 @@ for i = 1:size(boot,1)
     bh(25) = 1-est(22)
     b_boot[i,:] = bh
 end
-betasigma_std_boot = zeros(25,1)
+betasigma_std_boot = zeros(25)
 for j = 1:25
-    betasigma_std_boot[j] = std(b_boot(:,j))
-    betasigma_boot_25[j] = quantile(b_boot(:,j),0.025)
-    betasigma_boot_5[j] = quantile(b_boot(:,j),0.05)
-    betasigma_boot_10[j] = quantile(b_boot(:,j),0.1)
-    betasigma_boot_90[j] = quantile(b_boot(:,j),0.9)
-    betasigma_boot_95[j] = quantile(b_boot(:,j),0.95)
-    betasigma_boot_975[j] = quantile(b_boot(:,j),0.975)
+    betasigma_std_boot[j] = std(b_boot[:,j])
+    betasigma_boot_25[j]  = quantile(b_boot[:,j], 0.025)
+    betasigma_boot_5[j]   = quantile(b_boot[:,j], 0.05)
+    betasigma_boot_10[j]  = quantile(b_boot[:,j], 0.1)
+    betasigma_boot_90[j]  = quantile(b_boot[:,j], 0.9)
+    betasigma_boot_95[j]  = quantile(b_boot[:,j], 0.95)
+    betasigma_boot_975[j] = quantile(b_boot[:,j], 0.975)
 end
 
 #welfare std -- bootstrap
-boot_welfare = csvread('bootstrap_welfare.csv')
-boot_welfare = boot_welfare(unique(boot_welfare(:,1),'rows'),:)
-boot_welfare = unique(boot_welfare,'rows')
-boot_welfare = boot_welfare(:,(end-8):end)
-welfare_std_boot = zeros(9,1)
+boot_welfare     = csvread('bootstrap_welfare.csv')
+boot_welfare     = boot_welfare(unique(boot_welfare(:, 1),'rows'),:)
+boot_welfare     = unique(boot_welfare, 'rows')
+boot_welfare     = boot_welfare(:, (end-8):end)
+welfare_std_boot = zeros(9)
+
 for j = 1:9
-    welfare_std_boot[j] = std(boot_welfare(:,j))
-    welfare_boot_25[j] = quantile(boot_welfare(:,j),0.025)
-    welfare_boot_5[j] = quantile(boot_welfare(:,j),0.05)
-    welfare_boot_10[j] = quantile(boot_welfare(:,j),0.1)
-    welfare_boot_90[j] = quantile(boot_welfare(:,j),0.9)
-    welfare_boot_95[j] = quantile(boot_welfare(:,j),0.95)
-    welfare_boot_975[j] = quantile(boot_welfare(:,j),0.975)
+    welfare_std_boot[j] = std(boot_welfare[:,j])
+    welfare_boot_25[j]  = quantile(boot_welfare[:,j], 0.025)
+    welfare_boot_5[j]   = quantile(boot_welfare[:,j], 0.05)
+    welfare_boot_10[j]  = quantile(boot_welfare[:,j], 0.1)
+    welfare_boot_90[j]  = quantile(boot_welfare[:,j], 0.9)
+    welfare_boot_95[j]  = quantile(boot_welfare[:,j], 0.95)
+    welfare_boot_975[j] = quantile(boot_welfare[:,j], 0.975)
 end
 
 # transformed bootstrap results are saved in two spreadsheets for analysis

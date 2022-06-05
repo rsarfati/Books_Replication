@@ -30,14 +30,17 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     olm      = betasigma4[20]
     oltheta  = betasigma4[21]
 
+
+
+    #TODO: ngrid very seldom necessary, needlessly memory intensive
+    temp1, temp2   = ndgrid(gamma0vec, deltavec)
+    gamma0deltavec = vcat(vec(temp1), vec(temp2))
+
+    Y    = length(temp1)
     M_09 = data09["M"]
     N_09 = data09["N"]
     M_12 = data12["M"]
     N_12 = data12["N"]
-
-    temp1, temp2 = ndgrid(gamma0vec, deltavec)
-    gamma0deltavec = vcat(vec(temp1), vec(temp2))
-    Y = length(temp1)
 
     ## Calculation for 09 data
     ltot09    = zeros(M_09)
@@ -49,15 +52,10 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     D009      = lip09
     Dm09      = lip09
     basellh09 = pdf(Gamma(olm, oltheta), data09["p"]) * 2 * rounderr
-    # basellh09 = gampdf(data09["p"],olm,oltheta)
-    # p009 = data09["pdif"] - betacond.*data09.conditiondif
-    # p0 = data["p"] - data["pmin"] - betacond .* data.conditiondif
 
-    pi09   = zeros(N_09, Y)
-    CSns09 = zeros(N_09, Y)
-    CSs09  = zeros(N_09, Y)
+    pi09, CSns09, CSs09 = zeros(N_09, Y), zeros(N_09, Y), zeros(N_09, Y)
 
-    # iterate for gamma0
+    # Iterate for gamma0
     @parallel for i = 1:Y
         lip09[:,i], gamma209[:,i], gamma109[:,i], gamma009[:,i], D009[:,i], Dm09[:,i], pi09[:,i], CSns09[:,i], CSs09[:,i] = obscalnewtest2015(
                 vcat(gamma0deltavec[i,1], betasigma4[[6 7 8 9 11 12]], lamda1, lamda2, betacond, betapop, 0, betasigma4[13], gamma0deltavec[i,2], betasigma4[14], 1),
@@ -71,8 +69,7 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     maxtemp09 = max(llhbeta09,[],2)
     llhadj09  = exp(llhbeta09 - repmat(maxtemp09,1,Y))
 
-    ## Calculation for 12 data
-
+    ## Calculation for 2012 data
     lip12     = zeros(N_12, Y)
     gamma112  = lip12
     gamma212  = lip12
@@ -82,9 +79,7 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     ltot12    = zeros(M_12)
     llhbeta12 = zeros(M_12, Y)  # record the log likelihood at a fixed beta for a title
     basellh12 = pdf(Gamma(olm, oltheta), data12["p"]) * 2 * rounderr
-    pi12      = zeros(N_12, Y)
-    CSns12    = zeros(N_12, Y)
-    CSs12     = zeros(N_12, Y)
+    pi12, CSns12, CSs12 = zeros(N_12, Y), zeros(N_12, Y), zeros(N_12, Y)
 
     # iterate for betas
     @parallel for i = 1:Y
@@ -125,11 +120,9 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
         importance09 = importance1' * importance3
         importance12 = importance2' * importance3
 
-        ltot09 = maxtemp09 + log(llhadj09 * importance09(:))
-        ltot09total = -sum(ltot09)
-        ltot12 = maxtemp12 + log(llhadj12 * importance12(:))
-        ltot12total = -sum(ltot12)
-        return ltot09total  + ltot12total
+        ltot09 = maxtemp09 + log.(llhadj09 .* vec(importance09))
+        ltot12 = maxtemp12 + log.(llhadj12 .* vec(importance12))
+        return -(sum(ltot09) + sum(ltot12))
     end
 
     [distpara1,f1,~,fmindisplay] = fminunc(@integgamma0, betasigma4[1:4], optimset('MaxFunEvals',1e4,'Display','off','LargeScale','off'))
@@ -141,7 +134,6 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     distpara = [distpara1 distpara2]
 
     if WFcal
-
         WF09       = zeros(N_09, 3)
         WF12       = zeros(N_12, 3)
         AveWF09    = zeros(M_09, 3)

@@ -1,4 +1,5 @@
 # Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
+using Dates
 
 ## Input: True data, randomly generated title-level index
 # ~ Contructs bootstrap dataset, runs the estimation ~
@@ -51,6 +52,7 @@ true_estimates = [0.32135,	5.6459,	14.855,	 1.1614,  0.6486,   1.9196,	 14.771,
 # mode, is different from Masao's number.)
 
 # TODO: Specify script parameters
+vint      = "2022-06-04"
 mode      = 2   # Choose between available modes: 1 or 2 (see description above)
 N_workers = 72  # No. workers to request from cluster
 N_bs      = 200 # No. bootstrap iterations
@@ -105,7 +107,7 @@ end
 # in mode 1:
 # bootindex(1,:) = 1:236
 # in mode 2, in addition to the line above:
-# boot(1,:) = results2(end,8:21)
+# boot(1,:) = results2(end, 8:21)
 
 ## Run Bootstrap
 for i = 1:N_bs
@@ -116,8 +118,7 @@ for i = 1:N_bs
     bmktsize09[i,:] = data09.mktsize[bs_ind]
     bfirst09[i,:]   = data09.first[bs_ind]
     bcdindex09[i,:] = data09.cdindex[bs_ind]
-
-    mktsize_09 = sum(bmktsize09[i,:])
+    mktsize_09      = sum(bmktsize09[i,:])
 
     for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
               :popular, :pdif, :conditiondif, :basecond]
@@ -205,7 +206,7 @@ for i = 1:N_bs
         x0[[3, 7]] = []
 
         x, fval = fminsearch(objectivefun, x0, optimset('MaxFunEvals', 1e5, 'MaxIter', 1e5))
-        estimates = [i, x[1:2] x00[3] x[3:5] x00[7] x[6:(length(x00)-2)]]
+        estimates = [i, x[1:2], x00[3], x[3:5], x00[7], x[6:(length(x00)-2)]]
         dlmwrite('bootstrap_estimates.csv', estimates, 'delimiter',',','-append')
 
         # The code below are just to show what bootstrap_betasigma.csv was. It appears not used.
@@ -218,7 +219,7 @@ for i = 1:N_bs
 
     elseif mode == 2
         xinitial = boot[i,:]
-        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, gamma0vec, deltavec, bdata12,bdata09,bbp) # ignore input fWF to avoid welfare computation.
+        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, gamma0vec, deltavec, bdata12, bdata09, bbp) # ignore input fWF to avoid welfare computation.
 
         # The code below are just to show what bootstrap_distpara.csv was.
         # It will not be used.
@@ -262,34 +263,34 @@ for i = 1:size(boot,1)
     xx = boot[i,:]
     xtemp[i,:] = xx
     est = [distpara0...
-        [xx(1) xx(2)/(1+xx(1)) xx(3) ...
-        xx(4)*10*xx(7)/10/9.5^(-xx(6)-1) xx(5)*10*xx(7)/10/8^(-xx(6)-1) ...
-        xx(6:11).*[1 0.1 1 0.1 0.01 0.1 ] 0 0] xx(12:13) xx(14)]
-    bh(1) = est(1)
-    bh(2) = est(2)
-    bh(3) = est(3)
-    bh(4) = est(7)
-    bh(5) = est(8)
-    bh(6) = est(13)
-    bh(7) = est(15)
-    bh(8) = est(4)
-    bh(9) = est(12)
-    bh(10) = est(9)
-    bh(11) = est(10).*est(9)
-    bh(12) = (est(10).*est(9)./10).^(est(12)+1)
-    bh(13) = est(11).*est(9)
-    bh(14) = (est(11).*est(9)./10).^(est(12)+1)
-    bh(15) = est(5)
-    bh(16) = (est(5)./10).^(est(12)+1)
-    bh(17) = est(6)
-    bh(18) = est(16)
-    bh(19) = est(17)
-    bh(20) = est(18)
-    bh(21) = est(19)
-    bh(22) = est(14)
-    bh(23) = est(20)
-    bh(24) = est(20).*est(21)
-    bh(25) = 1-est(22)
+        [xx[1] xx[2]/(1+xx[1]) xx[3] ...
+         xx[4]*10*xx[7]/10/9.5^(-xx[6]-1) xx[5]*10*xx[7]/10/8^(-xx[6]-1) ...
+         xx[6:11].*[1 0.1 1 0.1 0.01 0.1 ] 0 0] xx[12:13] xx[14]]
+    bh[1] = est[1]
+    bh[2] = est[2]
+    bh[3] = est[3]
+    bh[4] = est[7]
+    bh[5] = est[8]
+    bh[6] = est[13]
+    bh[7] = est[15]
+    bh[8] = est[4]
+    bh[9] = est[12]
+    bh[10] = est[9]
+    bh[11] = est[10].*est[9]
+    bh[12] = (est[10].*est[9]./10).^(est[12]+1)
+    bh[13] = est[11].*est[9]
+    bh[14] = (est[11].*est[9]./10).^(est[12]+1)
+    bh[15] = est[5]
+    bh[16] = (est[5]./10).^(est[12]+1)
+    bh[17] = est[6]
+    bh[18] = est[16]
+    bh[19] = est[17]
+    bh[20] = est[18]
+    bh[21] = est[19]
+    bh[22] = est[14]
+    bh[23] = est[20]
+    bh[24] = est[20].*est[21]
+    bh[25] = 1-est[22]
     b_boot[i,:] = bh
 end
 betasigma_std_boot = zeros(25)
@@ -308,7 +309,7 @@ boot_welfare = CSV.read("bootstrap_welfare.csv", DataFrame, header=true)
 boot_welfare = unique(boot; dims=1)
 #boot_welfare     = boot_welfare(unique(boot_welfare(:, 1),'rows'),:)
 #boot_welfare     = unique(boot_welfare, 'rows')
-boot_welfare     = boot_welfare(:, (end-8):end)
+boot_welfare     = boot_welfare[:, (end-8):end]
 welfare_std_boot = zeros(9)
 
 for j = 1:9
@@ -323,5 +324,5 @@ end
 
 # transformed bootstrap results are saved in two spreadsheets for analysis
 # outside of matlab. Column definitions are same as rows in Summary201609.xlsx.
-CSV.write("bootstrap_estimates2017_1105.csv", b_boot)
-CSV.write("bootstrap_welfare_estimates2017_1105.csv", boot_welfare)
+CSV.write("bootstrap_estimates_$(vint).csv",         b_boot)
+CSV.write("bootstrap_welfare_estimates_$(vint).csv", boot_welfare)

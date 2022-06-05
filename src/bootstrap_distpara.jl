@@ -1,5 +1,5 @@
 # Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
-using Dates
+using CSV, DataFrames, Dates, Distributions, MAT, Statistics
 
 ## Input: True data, randomly generated title-level index
 # ~ Contructs bootstrap dataset, runs the estimation ~
@@ -70,33 +70,38 @@ N_bs      = 200 # No. bootstrap iterations
 
 ## Load data
 # Mat file created by Masao contains original data, random index for bootstrap.
-load('DataToRun_pop09_boot.mat')
+vars = matread("data/DataToRun_pop09_boot.mat")
 
 ## Data Renaming and Setup Pre-Bootstrap
-gamma0vec = [gaminv(0.005:0.01:0.895, 0.5, 20) collect(28:2:60), collect(64:4:100)]
-deltavec  = [exp(norminv(0.01:0.02:0.91,-2,2)) 3:2:20]
-data12    = data12nopop
-data09    = data09nopop
-bp        = bpnopop
+gamma0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
+deltavec  = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
+data12    = vars["data12nopop"]
+data09    = vars["data09nopop"]
+bp        = vars["bpnopop"]
 
-bmktsize09 = bootindex
-bfirst09   = bootindex
-bcdindex09 = bootindex
+bmktsize09 = vars["bootindex"]
+bfirst09   = vars["bootindex"]
+bcdindex09 = vars["bootindex"]
 
-bmktsize12 = bootindex
-bfirst12   = bootindex
-bcdindex12 = bootindex
+bmktsize12 = vars["bootindex"]
+bfirst12   = vars["bootindex"]
+bcdindex12 = vars["bootindex"]
 
-bmktsizebp = bootindex
-bfirstbp   = bootindex
-bcdindexbp = bootindex
+bmktsizebp = vars["bootindex"]
+bfirstbp   = vars["bootindex"]
+bcdindexbp = vars["bootindex"]
+
+# Meta Programming
+# f1 = eval(Meta.parse("@formula(xt_lag0 ~ " *
+#                      (*).(["$(s_p(p))xt1_lag$(p)" for p=0:lags-1]...) *
+#                      (lags>1 ? (*).([" + Dzt_lag$(p)" for p=1:lags-1]...) : "") *
+#                      " + (Dzt_lag0  ~ " *
+#                      (*).(["$(s_p(p))zt1_lag$(p)" for p=0:lags-1]...) * "))"))
 
 if mode == 2
-    boot = CSV.read("bootstrap_estimates.csv", DataFrame, header=true)
     # Mode 1 can be run on several servers simultaneously to save time;
-    # line below removes bootstrap runs duplicated on multiple servers.
-    boot = unique(boot; dims=1)
-    #boot = boot[:, 2:end]
+    # use  `unique` to remove bootstrap runs duplicated on multiple servers.
+    boot = unique(CSV.read("data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
 end
 
 # A validation mode:
@@ -207,7 +212,7 @@ for i = 1:N_bs
 
         x, fval = fminsearch(objectivefun, x0, optimset('MaxFunEvals', 1e5, 'MaxIter', 1e5))
         estimates = [i, x[1:2], x00[3], x[3:5], x00[7], x[6:(length(x00)-2)]]
-        dlmwrite('bootstrap_estimates.csv', estimates, 'delimiter',',','-append')
+        CSV.write("bootstrap_estimates.csv", estimates)
 
         # The code below are just to show what bootstrap_betasigma.csv was. It appears not used.
         # xx = estimates
@@ -221,7 +226,7 @@ for i = 1:N_bs
         xinitial = boot[i,:]
         llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, gamma0vec, deltavec, bdata12, bdata09, bbp) # ignore input fWF to avoid welfare computation.
 
-        # The code below are just to show what bootstrap_distpara.csv was.
+        # The code below just to show what bootstrap_distpara.csv was.
         # It will not be used.
         # result_w = [i,xinitial,newdistpara]
         # dlmwrite('bootstrap_distpara.csv',result_w,'delimiter',',','-append')
@@ -231,12 +236,12 @@ for i = 1:N_bs
         weloff   = mean(fWF.WFbp)
         result_w = [i, xinitial, newdistpara, wel09, wel12, weloff]
 
-        dlmwrite('bootstrap_welfare.csv', result_w, 'delimiter', ',', '-append')
+        CSV.write("bootstrap_welfare.csv", result_w)
 
         # standard_errors.m will process bootstrap_distpara.csv and
         # bootstrap_welfare.csv to generate the numbers in Summary201609.xls.
 
-        # The code below are just to show what bootstrap_results.csv was. It appears not used.
+        # The code below shows what bootstrap_results.csv was. It appears unused.
 
         # wel09 = mean(fWF.AveWF09)
         # wel12 = mean(fWF.AveWF12)
@@ -276,10 +281,10 @@ for i = 1:size(boot,1)
     bh[8] = est[4]
     bh[9] = est[12]
     bh[10] = est[9]
-    bh[11] = est[10].*est[9]
-    bh[12] = (est[10].*est[9]./10).^(est[12]+1)
-    bh[13] = est[11].*est[9]
-    bh[14] = (est[11].*est[9]./10).^(est[12]+1)
+    bh[11] = est[10] .* est[9]
+    bh[12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1)
+    bh[13] = est[11] .* est[9]
+    bh[14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1)
     bh[15] = est[5]
     bh[16] = (est[5]./10).^(est[12]+1)
     bh[17] = est[6]
@@ -289,11 +294,12 @@ for i = 1:size(boot,1)
     bh[21] = est[19]
     bh[22] = est[14]
     bh[23] = est[20]
-    bh[24] = est[20].*est[21]
-    bh[25] = 1-est[22]
+    bh[24] = est[20] .* est[21]
+    bh[25] = 1.0 - est[22]
     b_boot[i,:] = bh
 end
 betasigma_std_boot = zeros(25)
+
 for j = 1:25
     betasigma_std_boot[j] = std(b_boot[:,j])
     betasigma_boot_25[j]  = quantile(b_boot[:,j], 0.025)

@@ -91,8 +91,9 @@ bcdindexbp = bootindex
 
 if mode == 2
     boot = CSV.read("bootstrap_estimates.csv", DataFrame, header=true)
-    boot = unique(boot; dims=1) # Mode 1 can be run on several servers simultaneously to save time;
-                                # line removes bootstrap runs duplicated on multiple servers.
+    # Mode 1 can be run on several servers simultaneously to save time;
+    # line below removes bootstrap runs duplicated on multiple servers.
+    boot = unique(boot; dims=1)
     #boot = boot[:, 2:end]
 end
 
@@ -111,12 +112,13 @@ for i = 1:N_bs
     ##  Generate bootstrap data
     bs_ind = bootindex[i,:]
 
-    # 09
+    #################### 2009 ####################
     bmktsize09[i,:] = data09.mktsize[bs_ind]
     bfirst09[i,:]   = data09.first[bs_ind]
     bcdindex09[i,:] = data09.cdindex[bs_ind]
 
     mktsize_09 = sum(bmktsize09[i,:])
+
     for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
               :popular, :pdif, :conditiondif, :basecond]
         bdata09[x] = zeros(mktsize_09)
@@ -140,10 +142,11 @@ for i = 1:N_bs
     bdata09.first   = bstart09'
     bdata09.cdindex = bend09'
     bdata09.mktsize = bmktsize09[i,:]'
+
     bdata09.N = length(bdata09.p)
     bdata09.M = length(bdata09.first)
 
-    # 12
+    #################### 2012 ####################
     bmktsize12[i,:] = data12.mktsize[bs_ind]
     bfirst12[i,:]   = data12.first[bs_ind]
     bcdindex12[i,:] = data12.cdindex[bs_ind]
@@ -158,24 +161,18 @@ for i = 1:N_bs
     bstart12 = vcat(1, bend12[1:end-1] .+ 1)
 
     for j = 1:length(bfirst12[i,:])
-        j_rng  = bstart12[j]:bend12[j]
-        ij_rng = bfirst12[i,j]:bcdindex12[i,j]
+        j_rng_12  = bstart12[j]:bend12[j]
+        ij_rng_12 = bfirst12[i,j]:bcdindex12[i,j]
 
-        bdata12.cdid[j_rng] = repmat(j, bend12[j] - bstart12[j] + 1,1)
+        bdata12.cdid[j_rng_12] = repmat(j, bend12[j] - bstart12[j] + 1, 1)
 
-        bdata12.p[j_rng]            = data12.p[ij_rng]
-        bdata12.obsweight[j_rng]    = data12.obsweight[ij_rng]
-        bdata12.numlist[j_rng]      = data12.numlist[ij_rng]
-        bdata12.condition[j_rng]    = data12.condition[ij_rng]
-        bdata12.localint[j_rng]     = data12.localint[ij_rng]
-        bdata12.popular[j_rng]      = data12.popular[ij_rng]
-        bdata12.pdif[j_rng]         = data12.pdif[ij_rng]
-        bdata12.conditiondif[j_rng] = data12.conditiondif[ij_rng]
-        bdata12.basecond[j_rng]     = data12.basecond[ij_rng]
-        bdata12.disappear[j_rng]    = data12.disappear[ij_rng]
+        for x in [:p, :obsweight, :numlist, :condition, :localint,
+                  :popular, :pdif, :conditiondif, :basecond, :disappear]
+            bdata12[x][j_rng_12] = data12[x][ij_rng_12]
+        end
     end
 
-    bdata12.first = bstart12'
+    bdata12.first   = bstart12'
     bdata12.cdindex = bend12'
     bdata12.mktsize = bmktsize12[i,:]'
     bdata12.N = length(bdata12.p)
@@ -183,22 +180,18 @@ for i = 1:N_bs
 
     # bp
     bmktsizebp[i,:] = bp.mktsize[bs_ind]
-    bfirstbp[i,:] = bp.first[bs_ind]
+    bfirstbp[i,:]   = bp.first[bs_ind]
     bcdindexbp[i,:] = bp.cdindex[bs_ind]
-    bendbp = cumsum(bmktsizebp[i,:])
-    bstartbptemp = bendbp+1
-    bstartbp = [1 bstartbptemp(1:(length(bstartbptemp)-1))]
+    bendbp          = cumsum(bmktsizebp[i,:])
+    bstartbp = vcat(1, bendbp[1:end-1] .+ 1)
 
-    bbp.p = bp.p[bs_ind]
-    bbp.cdid = (1:236)'  # bp.cdid[bs_ind]
-    bbp.obsweight = bp.obsweight[bs_ind]
-    bbp.numlist = bp.numlist[bs_ind]
-    bbp.condition = bp.condition[bs_ind]
-    bbp.localint = bp.localint[bs_ind]
-    bbp.popular = bp.popular[bs_ind]
-    bbp.conditiondif = bp.conditiondif[bs_ind]
+    bbp.cdid = collect(1:236)'  # bp.cdid[bs_ind]
 
-    bbp.first = bstartbp'
+    for x in [:p, :obsweight, :numlist, :condition, :localint, :popular, :conditiondif]
+        bbp[x] = bp[x][bs_ind]
+    end
+
+    bbp.first  = bstartbp'
     bbp.cdindex = bendbp'
     bbp.mktsize = bmktsizebp[i,:]'
     bbp.N = length(bbp.p)

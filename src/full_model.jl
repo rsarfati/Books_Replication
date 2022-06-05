@@ -30,11 +30,11 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     oltheta  = betasigma4[21]
 
     temp1, temp2 = ndgrid(gamma0vec, deltavec)
-    gamma0deltavec = [temp1(:) temp2(:)]
+    gamma0deltavec = [vec(temp1) vec(temp2)]
     Y = numel(temp1)
 
     ## Calculation for 09 data
-    ltot09    = zeros(data09["M"], 1)
+    ltot09    = zeros(data09["M"])
     llhbeta09 = zeros(data09["M"], Y)  # record the log likelihood at a fixed beta for a title
     lip09     = zeros(data09["N"], Y)  # likelihood of each observation at each beta
     gamma109 = lip09
@@ -62,13 +62,11 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     #{
     betasigmatemp = betasigma4
     vectemp = gamma0deltavec[i,:]
-    [lip09, gamma209,gamma109,gamma009,D009,Dm09,pi09,CSns09,CSs09] = obscalnewtest2015([gamma0deltavec(:,1) betasigmatemp([6 7 8 9 11 12]) lamda1 lamda2 betacond betapop 0 betasigmatemp[13] gamma0deltavec(:,2) betasigmatemp[14] 1],data09,basellh09,0,data09.pdif,rounderr,WFcal)
+    [lip09, gamma209,gamma109,gamma009,D009,Dm09,pi09,CSns09,CSs09] = obscalnewtest2015([gamma0deltavec[:,1] betasigmatemp([6 7 8 9 11 12]) lamda1 lamda2 betacond betapop 0 betasigmatemp[13] gamma0deltavec[:,2] betasigmatemp[14] 1],data09,basellh09,0,data09.pdif,rounderr,WFcal)
     # [mugamma0 alpha-1 beta gammaishape gammaimean eta-1 r lamda1 lamda2 betacond betapop betalocal olp]
     #}
-
-
     for k=1:data09.M
-        llhbeta09(k,:) = sum(lip09(data09.first(k):data09.cdindex(k),:))
+        llhbeta09[k,:] = sum(lip09(data09.first(k):data09.cdindex(k),:))
     end
     maxtemp09 = max(llhbeta09,[],2)
     llhadj09 = exp(llhbeta09 - repmat(maxtemp09,1,Y))
@@ -76,23 +74,23 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     ## Calculation for 12 data
 
     lip12 = zeros(data12.N,Y)
-    gamma112 = lip12
-    gamma212 = lip12
-    gamma012 = lip12
-    D012 = lip12
-    Dm12 = lip12
-    ltot12=zeros(data12.M,1)
+    gamma112  = lip12
+    gamma212  = lip12
+    gamma012  = lip12
+    D012      = lip12
+    Dm12      = lip12
+    ltot12    = zeros(data12.M,1)
     llhbeta12 = zeros(data12.M,Y)  # record the log likelihood at a fixed beta for a title
-    basellh12 =  gampdf(data12.p, olm, oltheta) * 2 * rounderr
+    basellh12 = gampdf(data12.p, olm, oltheta) * 2 * rounderr
     # basellh12 = gampdf(data12.p,olm,oltheta)
     # p012 = data12.pdif  - betacond.*data12.conditiondif
 
-    pi12   = zeros(data12.N,Y)
-    CSns12 = zeros(data12.N,Y)
-    CSs12  = zeros(data12.N,Y)
+    pi12   = zeros(data12.N, Y)
+    CSns12 = zeros(data12.N, Y)
+    CSs12  = zeros(data12.N, Y)
 
     # iterate for betas
-    parfor i = 1:Y
+    @parallel for i = 1:Y
         betasigmatemp = betasigma4
         vectemp = gamma0deltavec[i,:]
         [lip12[:,i],gamma212[:,i],gamma112[:,i],gamma012[:,i],D012[:,i],Dm12[:,i],pi12[:,i],CSns12[:,i],CSs12[:,i]] = obscalnewtest2015([vectemp[1] betasigmatemp([6 7 8 10 11 12]) lamda1 lamda2 betacond betapop 0 betasigmatemp[13] vectemp[2] betasigmatemp[14] naturaldisappear],data12,basellh12,1,data12.pdif,rounderr,WFcal)
@@ -106,30 +104,29 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     llhadj12  = exp(llhbeta12 - repmat(maxtemp12,1,Y))
 
     ## Calculation for 09 offline data
-
     basellhb = gampdf(bp.p,olm,oltheta)*2*rounderr
     function [ltotb] = getbmean(gammaimeanbpbetalocal)
         #         basellhb= gampdf(bp.p,olm,oltheta)
-        lipb = obscalnewtest2015([0 betasigma4([6 7 8]) abs(gammaimeanbpbetalocal[1]) betasigma4([ 11 12 ]) lamda1 lamda2 betacond betapop gammaimeanbpbetalocal[2] betasigma4[13] 1 1 1],bp,basellhb,0,bp.p,rounderr,0)
+        lipb  = obscalnewtest2015([0 betasigma4([6 7 8]) abs(gammaimeanbpbetalocal[1]) betasigma4([ 11 12 ]) lamda1 lamda2 betacond betapop gammaimeanbpbetalocal[2] betasigma4[13] 1 1 1],bp,basellhb,0,bp.p,rounderr,0)
         ltotb = -sum(lipb)
     end
 
     function [ltot] = integgamma0(gammainput)
 
-        gamma0shape = gammainput[1]
+        gamma0shape   = gammainput[1]
         gamma0theta09 = gammainput[2]/gammainput[1]
         gamma0theta12 = gammainput[3]/gammainput[1]
-        deltamean = -0.5*gammainput[4]^2
-        deltasigma = gammainput[4]
+        deltamean     = -0.5*gammainput[4]^2
+        deltasigma    = gammainput[4]
 
 
         # Calculate the importance of the grid points
-        gamma0cdfvec = [-gamcdf(gamma0vec[1],gamma0shape,gamma0theta09) gamcdf(gamma0vec,gamma0shape,gamma0theta09) (2- gamcdf(gamma0vec(end),gamma0shape,gamma0theta09))]
-        importance1 = (gamma0cdfvec(3:end)-gamma0cdfvec(1:end-2))/2
-        gamma0cdfvec = [-gamcdf(gamma0vec[1],gamma0shape,gamma0theta12) gamcdf(gamma0vec,gamma0shape,gamma0theta12) (2- gamcdf(gamma0vec(end),gamma0shape,gamma0theta12))]
-        importance2 = (gamma0cdfvec(3:end)-gamma0cdfvec(1:end-2))/2
-        deltacdfvec = [-normcdf(log(deltavec[1]),deltamean,deltasigma) normcdf(log(deltavec),deltamean,deltasigma) (2- normcdf(log(deltavec(end)),deltamean,deltasigma))]
-        importance3 = (deltacdfvec(3:end)-deltacdfvec(1:end-2))/2
+        gamma0cdfvec = [-gamcdf(gamma0vec[1],gamma0shape,gamma0theta09) gamcdf(gamma0vec,gamma0shape,gamma0theta09) (2 - gamcdf(gamma0vec[end],gamma0shape,gamma0theta09))]
+        importance1 = (gamma0cdfvec[3:end]-gamma0cdfvec[1:end-2])/2
+        gamma0cdfvec = [-gamcdf(gamma0vec[1],gamma0shape,gamma0theta12) gamcdf(gamma0vec,gamma0shape,gamma0theta12) (2 - gamcdf(gamma0vec[end],gamma0shape,gamma0theta12))]
+        importance2 = (gamma0cdfvec[3:end]-gamma0cdfvec[1:end-2])/2
+        deltacdfvec = [-normcdf(log(deltavec[1]),deltamean,deltasigma) normcdf(log(deltavec),deltamean,deltasigma) (2 - normcdf(log(deltavec[end]),deltamean,deltasigma))]
+        importance3 = (deltacdfvec[3:end]-deltacdfvec[1:end-2])/2
         importance09 = importance1'*importance3
         importance12 = importance2'*importance3
 
@@ -145,7 +142,7 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     disp(fmindisplay.funcCount)
     # [distpara1,f1] = fmincon(@integgamma0,betasigma4[1:4],[],[],[],[],[0 0 0 0],[10 10 10 10],[],optimset('MaxFunEvals',1e4,'Display','off'))
     [distpara2,f2] = fminunc(@getbmean,betasigma5[5:6],optimset('MaxFunEvals',1e4,'Display','off','LargeScale','off'))
-    [lipb,gamma2bp,gamma1bp,gamma0bp,D0bp,Dmbp,WFbp(:,1),WFbp(:,2),WFbp(:,3)] = obscalnewtest2015([0 betasigma4([6 7 8]) abs(distpara2[1]) betasigma4([ 11 12 ]) lamda1 lamda2 betacond betapop distpara2[2] betasigma4[13] 1 1 1],bp,basellhb,0,bp.p,rounderr,WFcal)
+    [lipb,gamma2bp,gamma1bp,gamma0bp,D0bp,Dmbp,WFbp[:,1],WFbp[:,2],WFbp[:,3]] = obscalnewtest2015([0 betasigma4([6 7 8]) abs(distpara2[1]) betasigma4([ 11 12 ]) lamda1 lamda2 betacond betapop distpara2[2] betasigma4[13] 1 1 1],bp,basellhb,0,bp.p,rounderr,WFcal)
 
 
 

@@ -1,19 +1,30 @@
 # Based on file <fullmodelllhWFAug22newtest2015.m>
-function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFcal = false)
+#function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFcal = false)
     # betasigma5 = [gamma0shape gamma0mean09 gamma0mean12 deltasigma
     # gammaimeanbp betalocal alpha-1 beta gammaishape  gammaimean09 gammaimean12  eta-1 r
     # olp c lamda1 lamda2 betacond betapop olm oltheta naturaldisappear]
     # betasigma4 = [gamma0shape gamma0mean09 gamma0mean12 deltasigma
     # gammaimeanbp  alpha-1 beta gammaishape  gammaimean09 gammaimean12  eta-1 r
     # olp c lamda1 lamda2 betacond betapop betalocal olm oltheta]
-    betasigma5 = vcat(distpara0, [x0[1], x0[2]/(1+x0[1]), x0[3],
+    function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
+      m, n = length(v1), length(v2)
+      v1 = reshape(v1, m, 1)
+      v2 = reshape(v2, 1, n)
+      (repeat(v1, 1, n), repeat(v2, m, 1))
+    end
+    import Base.zeros
+    zeros(x::Float64) = zeros(Int(round(x)))
+    zeros(x::Float64,y::Int64) = zeros(Int(round(x)), y)
+    zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
+
+    betasigma5 = vcat(distpara0, x0[1], x0[2]/(1+x0[1]), x0[3],
         x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1), x0[5]*10*x0[7]/10/8^(-x0[6]-1),
-        x0[6:11].*[1 0.1 1 0.1 0.01 0.1 ], 0, 0], x0[12:13], x0[14])
+        x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1], 0, 0, x0[12:13], x0[14])
 
     rounderr = 0.025
     naturaldisappear = betasigma5[22]
 
-    betasigma4 = betasigma5[[1:5, 7:19, 6, 20, 21]]
+    betasigma4 = betasigma5[vcat(1:5, 7:19, 6, 20, 21)]
 
     lamda1   = 0
     lamda2   = 0
@@ -31,7 +42,7 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
 
     temp1, temp2 = ndgrid(gamma0vec, deltavec)
     gamma0deltavec = [vec(temp1) vec(temp2)]
-    Y = numel(temp1)
+    Y = length(temp1)
 
     ## Calculation for 09 data
     ltot09    = zeros(data09["M"])
@@ -47,16 +58,18 @@ function full_model(x0, distpara0, gamma0vec, deltavec, data12, data09, bp; WFca
     # p009 = data09.pdif - betacond.*data09.conditiondif
     # p0 = data.p - data.pmin - betacond .* data.conditiondif
 
-    pi09   = zeros(data09.N,Y)
-    CSns09 = zeros(data09.N,Y)
-    CSs09  = zeros(data09.N,Y)
+    pi09   = zeros(data09["N"], Y)
+    CSns09 = zeros(data09["N"], Y)
+    CSs09  = zeros(data09["N"], Y)
 
     # iterate for gamma0
 
     @parallel for i = 1:Y
         betasigmatemp = betasigma4
         vectemp = gamma0deltavec[i,:]
-        [lip09[:,i], gamma209[:,i],gamma109[:,i],gamma009[:,i],D009[:,i],Dm09[:,i],pi09[:,i],CSns09[:,i],CSs09[:,i]] = obscalnewtest2015([vectemp[1] betasigmatemp([6 7 8 9 11 12]) lamda1 lamda2 betacond betapop 0 betasigmatemp[13] vectemp[2] betasigmatemp[14] 1],data09,basellh09,0,data09.pdif,rounderr,WFcal)
+        [lip09[:,i], gamma209[:,i], gamma109[:,i], gamma009[:,i], D009[:,i], Dm09[:,i], pi09[:,i], CSns09[:,i], CSs09[:,i]] = obscalnewtest2015(
+                [vectemp[1], betasigmatemp[[6 7 8 9 11 12]], lamda1, lamda2, betacond, betapop, 0, betasigmatemp[13], vectemp[2], betasigmatemp[14], 1],
+                 data09, basellh09, 0, data09["pdif"], rounderr, WFcal)
         # [mugamma0 alpha-1 beta gammaishape gammaimean eta-1 r lamda1 lamda2 betacond betapop betalocal olp]
     end
     #{

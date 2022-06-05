@@ -19,4 +19,7 @@ using Roots, Statistics
 
 
 
-### 
+### Run the code.
+include("helpers.jl")
+include("full_model.jl")
+include("bootstrap_distpara.jl")

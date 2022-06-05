@@ -1,16 +1,16 @@
-function solvegammaPar(Dm, D0, dDm, dD0, gamma0, p, r)
+function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
 
     A = Dm.*(Dm)
-    B = (dDm).*(r).*(p) + r .* Dm + 2*Dm .* gamma0 .* D0
-    C = r .* p .* gamma0 .* dD0 + r .* gamma0 .* D0 + gamma0 .* gamma0 .* D0 .* D0
+    B = (dDm).*(r).*(p) + r .* Dm + 2*Dm .* γ0 .* D0
+    C = r .* p .* γ0 .* dD0 + r .* γ0 .* D0 + γ0 .* γ0 .* D0 .* D0
 
-    gamma1 = ((-B + (B .^ 2 .- 4 .* A .* C) .^ (0.5)) ./ (2 .* A))
-    l1     = (gamma1.re > 0) & (gamma1.im == 0)
+    γ1 = ((-B + (B .^ 2 .- 4 .* A .* C) .^ (0.5)) ./ (2 .* A))
+    l1 = (γ1.re > 0) & (γ1.im == 0)
 
-    return gamma1, l1
+    return γ1, l1
 end
 
-function objective(x, x0, distpara0, gamma0vec, deltavec, data12, data09, bp)
+function objective(x, x0, distpara0, γ0vec, deltavec, data12, data09, bp)
     if x[3]<0 || x[4]<0 || x[12]>1 || x[12]< 0
         return Inf
     end
@@ -18,227 +18,181 @@ function objective(x, x0, distpara0, gamma0vec, deltavec, data12, data09, bp)
     # if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
     #     return Inf
     # end
-    return full_model(xx, distpara0, gamma0vec, deltavec, data12, data09, bp)
+    return full_model(xx, distpara0, γ0vec, deltavec, data12, data09, bp)
 end
 
-function demandshopper( alpha, beta, p, cdid, obsweight)
-    expU = exp.(p .* (-alpha))
+function demandshopper(α, β, p, cdid, obsweight)
+    expU = exp.(p .* -α)
 
     #sum utility for each book
     # sum1=zeros(M)
-    # sum1[1]=sum(expU(1:cdindex[1]))+exp(beta)
+    # sum1[1]=sum(expU(1:cdindex[1]))+exp(β)
     # for j=2:M
-    #     sum1(j)=sum(expU(cdindex(j-1)+1:cdindex(j)))+exp(beta)
+    #     sum1(j)=sum(expU(cdindex(j-1)+1:cdindex(j)))+exp(β)
     # end
 
-    sum1 = sum(sparse(1:length(cdid), cdid, obsweight .* expU))' + exp(beta.*alpha[1])
-    sum2 = sum1(cdid)
-
-    #denominator for searchers
-    # denom = 1./(sum1(cdid))
-    # f=expU.*denom
+    sum1 = sum(sparse(1:length(cdid), cdid, obsweight .* expU))' + exp(β.*α[1])
+    sum2 = sum1[cdid]
 
     f1 = expU ./ sum2
-    f2 = -alpha.*expU.*(sum2-expU)./(sum2.^2)
-    f3 = alpha.^2.*expU.*(sum2-expU).*(sum2-2*expU)./(sum2.^3)
+    f2 = -α .* expU .* (sum2 - expU) ./ (sum2 .^ 2)
+    f3 = α .^ 2 .* expU .* (sum2-expU) .* (sum2 - 2 * expU) ./ (sum2 .^ 3)
 
-    f1[isnan(f1)] .= 0
-    f2[isnan(f2)] .= 0
-    f3[isnan(f3)] .= 0
+    replace!.([f1, f2, f3], NaN => 0)
 
-    return f1, f2, f3, sum2,expU
+    return f1, f2, f3, sum2, expU
 end
 
-function obscalnewtest2015(betasigma3, data , basellh, demandcal, p0, rounderr, WFcal)
+"""
+```
+function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
+```
+Corresponds to Masao/obscalnewtest2015.m
+"""
+function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
 
-    # [mugamma0 alpha-1 beta gammaishape gammaimean eta-1 r lamda1 lamda2 betacond betapop betalocal olp delta c]
+    # [muγ0 α-1 β γishape γimean η-1 r lamda1 lamda2 βcond βpop βlocal olp delta c]
+    numlist      = data.numlist
+    localint     = data.localint
+    N            = data.N
+    conditiondif = data.conditiondif
+    cdid         = data["cdid"]
+    obsweight    = data["obsweight"]
+    p            = data["p"]
 
-    gamma0 = betasigma3(ones(data.N,1))'.*(data.numlist.^betasigma3[8]./mean(data.numlist.^betasigma3[8])) #(data.cdindex,1)
-    alpha = repmat((betasigma3[2]+1)*betasigma3[14]^betasigma3[15],data.N,1)
-    beta = betasigma3[3]./betasigma3[14]^betasigma3[15]
-    m = betasigma3[4]
-    gammascale =  betasigma3[5]./m.*(data.numlist.^ betasigma3[9]./mean(data.numlist.^ betasigma3[9])).*exp(betasigma3[12].*data.localint)
-    eta = betasigma3[6]+1 # betasigma3(6*ones(data.N,1))'+1+betasigma3[11].*data.popular
-    r = betasigma3[7]
-    betacond = betasigma3[10]
-    olp = betasigma3[13]
-    delta = betasigma3[14]
-    naturaldisappear = betasigma3[16]
+    γ0 = βsigma3(ones(N,1))'.*(numlist.^βsigma3[8] ./ mean(numlist.^βsigma3[8])) #(cdindex,1)
+    α = fill((βsigma3[2]+1) * βsigma3[14] ^ βsigma3[15], N, 1)
+    β = βsigma3[3] ./ βsigma3[14] ^ βsigma3[15]
+    m = βsigma3[4]
+    γscale = βsigma3[5] ./ m .* (numlist.^ βsigma3[9]./mean(numlist.^ βsigma3[9])).*exp(βsigma3[12].*localint)
+    η = βsigma3[6]+1 # βsigma3(6*ones(N,1))'+1+βsigma3[11].*popular
+    r = βsigma3[7]
+    βcond = βsigma3[10]
+    olp = βsigma3[13]
+    delta = βsigma3[14]
+    naturaldisappear = βsigma3[16]
 
     ##########
     #Solve for demand and its first and second order derivatives
     ##########
 
-    [D0,dD0,d2D0,sumpind,expU]=demandshopper(alpha,beta,p0- betacond.*data.conditiondif./alpha,data["cdid"],data["obsweight"]) #
+    [D0,dD0,d2D0,sumpind,expU] = demandshopper(α, β, p0 - βcond .* conditiondif ./ α, cdid, obsweight) #
+
+    ## calculate γ1
+    p = data["p"] - rounderr
+    Dm=delta .* (p.^(-η))
+    dDm=delta.*(-η).*(p.^(-η-1))
+    d2Dm=delta.*(η).*(η+1).*(p.^(-η-2))
+
+    #Solve for the γ that rationalize the price choice
+    γ1, l1 =solveγPar(Dm,D0-rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0-rounderr.*d2D0,γ0,p,r)
 
 
-    ## calculate gamma1
-    p = data.p - rounderr
-    Dm=delta.*(p.^(-eta))
-    dDm=delta.*(-eta).*(p.^(-eta-1))
-    d2Dm=delta.*(eta).*(eta+1).*(p.^(-eta-2))
+    ## calculate γ2
 
-    #Solve for the gamma that rationalize the price choice
-    [gamma1,l1]=solvegammaPar(Dm,D0-rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0-rounderr.*d2D0,gamma0,p,r)
+    p = data["p"] + rounderr
+    Dm=delta.*(p.^(-η))
+    dDm=delta.*(-η).*(p.^(-η-1))
+    d2Dm=delta.*(η).*(η+1).*(p.^(-η-2))
 
+    #Solve for the γ that rationalize the price choice
+    [γ2,l2]=solveγPar(Dm,D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0+rounderr.*d2D0,γ0,p,r)
 
-    ## calculate gamma2
-
-    p = data.p + rounderr
-    Dm=delta.*(p.^(-eta))
-    dDm=delta.*(-eta).*(p.^(-eta-1))
-    d2Dm=delta.*(eta).*(eta+1).*(p.^(-eta-2))
-
-    #Solve for the gamma that rationalize the price choice
-    [gamma2,l2]=solvegammaPar(Dm,D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0+rounderr.*d2D0,gamma0,p,r)
-
-    SOC = r.*p.*(gamma2.*d2Dm + gamma0.*d2D0) + 2*(r+gamma2.*Dm + gamma0.*(D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2)).*(gamma2.*dDm + gamma0.*(dD0+rounderr.*d2D0))
+    SOC = r.*p.*(γ2.*d2Dm + γ0.*d2D0) + 2*(r+γ2.*Dm + γ0.*(D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2)).*(γ2.*dDm + γ0.*(dD0+rounderr.*d2D0))
 
 
+    γ1[(imag(γ1)~=0),1] = real(γ1((imag(γ1)~=0),1))
+    γ2[(imag(γ2)~=0),1] = 0
+    γ2[SOC .> 0, 1] .= 0
+    γ2 = maximum.(γ2, 0)
 
+    profit2 = p./(r./(γ2.*Dm+γ0.*D0)+1)
+    profitH = ((r*(η-1)/delta)^(-1/η)/(1/(η-1)+1)).*γ2.^(1/η)
+    γ3=solveγPar(Dm,0,dDm,0,0,p,r)
+    γ2(profitH>profit2,1) = γ3(profitH>profit2,1)
 
+    γ1 = min(max(γ1,0),γ2)
 
-
-
-
-    # pHyp = (data.p - p0).*2
-    # DmHyp=delta.*(pHyp.^(-eta))
-    # dDmHyp=delta.*(-eta).*(pHyp.^(-eta-1))
-    #
-    # gamma4=solvegammaPar(DmHyp,0,dDmHyp,0,0,pHyp,r)
-
-
-
-
-    ## check for validity
-
-
-    #     palt = [0.7:0.1:1.5 1.7:0.2:5 6:15]
-    #     lp = length(palt)
-    #     expUalt = repmat(expU,1,lp) .* min(exp((repmat(data.p,1,lp)+repmat(-palt,data.N,1)).*alpha[1]),1e5)
-    # #   expUalt = repmat(expU.*exp(data.p.*alpha[1]),1,lp).*repmat(exp(palt.*-alpha[1]),data.N,1)
-    # #   changepexp = [zeros(data.N,1) repmat(exp(palt.*-alpha[1]),data.N,1) - repmat(exp(data.p.*-alpha),1,lp)]
-    #     S = repmat(gamma1,1,lp+1).*[Dm delta.*exp(-eta*log(palt))] + repmat(gamma0,1,lp+1).* [expU expUalt] ./ [sumpind repmat(sumpind - expU,1,lp) + expUalt]
-    #     profittest = [data.p repmat(palt,data.N,1)].*(S./(r + S))
-    #     check = profittest[:,1] >= (max(profittest,[],2)-1e-12)
-    #     gamma1(~check,1) = -2
-
-
-    # gammadisplayindex = ((real(gamma1)<0 & real(gamma2)>=0) | (imag(gamma1)~=0) | real(gamma2)<real(gamma1) | SOC>0)
-    # # disp([data.p(gammadisplayindex,1) gamma1(gammadisplayindex,1) gamma2(gammadisplayindex,1)-gamma1(gammadisplayindex,1) SOC(gammadisplayindex,1)])
-    # #     gamma1(dgammaidg<0,1) = -3
-    # #     gamma1(SOC>0,1) = -2
-    # #     gamma1(~l1,1) = -1
-    #
-    # save diagnewtest.mat
-    #
-    #
-    # dsfds
-
-    gamma1((imag(gamma1)~=0),1) = real(gamma1((imag(gamma1)~=0),1))
-    gamma2((imag(gamma2)~=0),1) = 0
-    gamma2(SOC>0,1) =0
-    gamma2 = max(gamma2,0)
-
-    profit2 = p./(r./(gamma2.*Dm+gamma0.*D0)+1)
-    profitH = ((r*(eta-1)/delta)^(-1/eta)/(1/(eta-1)+1)).*gamma2.^(1/eta)
-    gamma3=solvegammaPar(Dm,0,dDm,0,0,p,r)
-    gamma2(profitH>profit2,1) = gamma3(profitH>profit2,1)
-
-    gamma1 = min(max(gamma1,0),gamma2)
-
-
-    ## demands functions for true price
-
-    # p = data.p
-    # Dm=delta.*(p.^(-eta))
-    # dDm=(-eta).*(p.^(-eta-1))
-    # d2Dm=(eta).*(eta+1).*(p.^(-eta-2))
-    #
-    # [D0,dD0,d2D0,sumpind,expU]=demandshopper(alpha,beta,p0- betacond.*data.conditiondif./alpha,data["cdid"],data["obsweight"]) #
-    #
-
-    # dDm = delta.*dDm
-    # d2Dm = delta.*d2Dm
-
-
-     # SD = gamma0.*D0
-    # NSD = gamma2.*Dm
-    # NSD(gamma2<0,:) = gammascale(gamma2<0,:).*m.*Dm(gamma2<0,:)
-    # NSDr = gammascale.*m.*Dm
-
-    # #calculate dg/dgammai
-    # dgdgammai = caldgdgammai(Dm,D0,dDm,dD0,gamma0,gamma1,l1,d2Dm,d2D0,data.p,r)
-    # dgammaidg= ones(data.N,1)./dgdgammai
-
-
-
-
-
-
-    # if length(gamma2)~=length(gammascale) || length(gamma1)~=length(gammascale) || length(m)~=1
-
-    # end
-    Dm=delta.*(data.p.^(-eta))
+    Dm=delta.*(data.p.^(-η))
 
     ##
     if demandcal == 1
 
-    # D0 =demandshopper(alpha,beta,p0- betacond.*data.conditiondif./alpha,data["cdid"],data["obsweight"]) #
-
-
-        demandlh = (data.disappear>0)-(2.*data.disappear -1).*exp(-0.166666667.*(gamma0.*D0 + (gamma2+gamma1)./2.*Dm)).*naturaldisappear
+        # D0 =demandshopper(α,β,p0- βcond.*data.conditiondif./α,data["cdid"],data["obsweight"]) #
+        demandlh = (data.disappear>0)-(2.*data.disappear -1).*exp(-0.166666667.*(γ0.*D0 + (γ2+γ1)./2.*Dm)).*naturaldisappear
         demandlhol = (data.disappear>0)-(2.*data.disappear - 1 ) ... Next line starts probability of nondisappear
-            .*exp(-0.166666667.*(gamma0.*D0)) ...due to shopper demand. Next line is due to nonshopper demand (taken expectation wrt to gammai)
-            .*(1 + gammascale * 0.166666667.* Dm).^-m.*naturaldisappear
+            .*exp(-0.166666667.*(γ0.*D0)) ...due to shopper demand. Next line is due to nonshopper demand (taken expectation wrt to γi)
+            .*(1 + γscale * 0.166666667.* Dm).^-m.*naturaldisappear
 
-    #     lip_o = interp1(pdfdata1,pdfdata2,gamma1./gammascale)./gammascale.*dgammaidg.*demandlh.^3 #
-    #     lip_o = exp(-gamma1./gammascale)./gammascale.*dgammaidg.*demandlh.^3 #
-     lip_o = min((gamcdf(gamma2,m,gammascale) - gamcdf(gamma1,m,gammascale)),1).*demandlh.^3 #
+    # lip_o = interp1(pdfdata1,pdfdata2,γ1./γscale)./γscale.*dγidg.*demandlh.^3 #
+    # lip_o = exp(-γ1./γscale)./γscale.*dγidg.*demandlh.^3 #
+     lip_o = min((gamcdf(γ2,m,γscale) - gamcdf(γ1,m,γscale)),1).*demandlh.^3 #
         lip_ol = basellh.*  demandlhol.^3 #  # price likelihood. Next line starts disappear likelihood
     else
-    #    lip_o = interp1(pdfdata1,pdfdata2,gamma1./gammascale)./gammascale.*dgammaidg #
-    #     lip_o = exp(-gamma1./gammascale)./gammascale.*dgammaidg #
-    lip_o = min(gamcdf(gamma2,m,gammascale) - gamcdf(gamma1,m,gammascale),1)
+    # lip_o = interp1(pdfdata1,pdfdata2,γ1./γscale)./γscale.*dγidg #
+    # lip_o = exp(-γ1./γscale)./γscale.*dγidg #
+    lip_o = min(gamcdf(γ2,m,γscale) - gamcdf(γ1,m,γscale),1)
         lip_ol = basellh #  # price likelihood. Next line starts disappear likelihood
     end
 
-    # lip_o(gamma1<0,1) = 0
+    # lip_o(γ1<0,1) = 0
     # lip_o(lip_o<0,1) = 0
     liptemp = (1-olp).*lip_o + olp.*lip_ol
     olppost = olp.*lip_ol./liptemp
     lip = log(liptemp)
 
-    pi_v = zeros(data.N,1)
-    CSns = zeros(data.N,1)
-    CSs = zeros(data.N,1)
+    pi_v = zeros(N)
+    CSns = zeros(N)
+    CSs  = zeros(N)
+
     if WFcal==1
-        [pi_v,CSns,CSs] = welfaresimple(gamma1,gamma2,gammascale.*m,gamma0,olppost,Dm,D0,p0,data,[alpha[1] beta eta r])
+        pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale.*m, γ0, olppost, Dm, D0, p0, data, [α[1] β η r])
+    end
+    return lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs
+end
+
+
+"""
+```
+function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scalarparas)
+```
+Corresponds to /Masao/welfaresimple.m.
+"""
+function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scalarparas)
+
+    α = scalarparas[1]
+    β = scalarparas[2]
+    η = scalarparas[3]
+    r = scalarparas[4]
+
+    γ1ave = 0.5 * (γ1 + γ2)
+
+    pi_o  = data.p .* (γ1ave  .* Dm + γ0 .* D0) ./ (r + γ1ave  .* Dm + γ0 .* D0)
+    pi_ol = data.p .* (γscale .* Dm + γ0 .* D0) ./ (r + γscale .* Dm + γ0 .* D0)
+    pi_v  = olppost .* pi_ol + (1-olppost) .* pi_o
+
+    CSns_o = (1/(η-1)) .* γ1ave .* Dm .* data.p ./ (r + γ1ave .* Dm + γ0 .* D0)
+    CSns_ol = (1/(η-1)) .* γscale .* Dm .* data.p./(r + γscale .* Dm + γ0 .* D0)
+    CSns = olppost .* CSns_ol + (1-olppost) .* CSns_o
+
+    CSgain = zeros(data.N,1)
+    N = 10000
+
+    cdindex = data["cdindex"]
+
+    for k = 1:data.M
+
+        mktsize = cdindex[k]-data["first"][k]+1
+        randomprice = repeat(-[pdif(data["first"][k]:cdindex[k],1) ; -β],1,N) -
+             evrnd(0,1,mktsize+1,N) ./ α[1]
+        [best, bestindex] = max(randomprice)
+        temp = sparse([bestindex mktsize+1],1:N+1,[best - randomprice(end,:) 1])
+        CSgain[data["first"][k]:data["cdindex"][k],1] = sum(temp[1:mktsize,1:N],dims=2) ./ (sum(temp[1:mktsize,1:N] .> 0, dims=2) + 1e-5)
+
     end
 
-    # if isreal(lip)==0
-    #     save diagwrong.mat
-    #     dsfds
-    # end
-
-    # if lip(262)>-2
-    #     save diag.mat
-    # end
-
-    #  save diagnew1.mat
-
-    # if length(data.p) == length(data.cdindex)
-    #     save('July25check')
-    # end
-    # if demandcal == 1
-    #     save('July23check2')
-    # end
-
-    # save('Aug19check')
-
-    #
-    # if length(data.p)>10000 && betasigma3[1]<4 && betasigma3[14]<3
-    #     save('Sep8diag')
-    # end
-    return lip,gamma2,gamma1,gamma0,D0,Dm,pi_v,CSns,CSs
+    CSs_o  = γ0 .* D0 ./ (r + γ1ave  .* Dm + γ0 .* D0) .* CSgain
+    CSs_ol = γ0 .* D0 ./ (r + γscale .* Dm + γ0 .* D0) .* CSgain
+    CSs    = olppost .* CSs_ol + (1 - olppost) .* CSs_o
+    return pi_v, CSns, CSs
 end

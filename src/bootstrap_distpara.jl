@@ -1,77 +1,23 @@
 # Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
 
-# Important notes:
-# VARIABLE NAMES:
+## Input: True data, randomly generated title-level index
+# ~ Contructs bootstrap dataset, runs the estimation ~
+# Output: bootstrap_welfare.csv
+
+## Important notes
+
+# VARIABLE NAMES
 # - fullmodelllhWFAug22newtest2015 -> full_model
 # - fullmodelllhWFAug22newtest2015_all -> full_model_all
 # - current_mode -> mode
 
-## Input and output
-# This file takes true data and randomly generated title-level index as
-# inputs, contructs bootstrap dataset and runs the estimation, and output
-# bootstrap_welfare.csv
-
-# standard_errors.m (by Masao) will process this file to generate the
-# bootstrap numbers in Summary201609.xls. I adapt the lines from that file
-# at the end of this file so there is no need to look up that file.
-
-
-## Estimates and welfare from true data
-
-true_estimates = [0.32135,	5.6459,	14.855,	1.1614,	0.6486,	1.9196,	14.771,
-                  -2.4895,	1,	0.44004,	0.32415,	0.87235,	0.5,	0.25921,
-                  -9.1217,  80.267,	-13.647, 1.7296,	8.8188,	0.92622,	4.283,
-                  4.9097,	0,    7.8609,	7.739,	0.011111,	6.8386,	6.5027,	0.028621]
-
-# These are the estimates and welfare from true data. It is copied from last row
-# of results2.csv created by Masao. Except for the 5th and 6th elements,
-# E[gamma_i] 2009 offline and betalocal, which according to Hongkai's validation
-# mode, is different from Masao's number.
-
-## Translating true_estimates to the "Estimates" column in Summary201609
-
-#   # true_estimates contains three parts:
-#     external_params = true_estimates(7:20) # parameters as first input to full_model_all, that is optimized with full_model_all being the objective function.
-#     internal_params = true_estimates(7:20) # parameters as second input to full_model_all, that is optimized within full_model_all.
-#     welfare_params = true_estimates(21:29) # welfare numbers computed by full_model_all.
-#   # translate external_params and internal_params to row 2-26 in
-#   # Summary201609. welfare_params' goes directly to row 28-36
-#     xx = external_params
-#     distpara0 = internal_params
-#     est = [distpara0...
-#         [xx(1) xx(2)/(1+xx(1)) xx(3) ...
-#         xx(4)*10*xx(7)/10/9.5^(-xx(6)-1) xx(5)*10*xx(7)/10/8^(-xx(6)-1) ...
-#         xx(6:11).*[1 0.1 1 0.1 0.01 0.1 ] 0 0] xx(12:13) xx(14)]
-#     bh(1) = est(1)
-#     bh(2) = est(2)
-#     bh(3) = est(3)
-#     bh(4) = est(7)
-#     bh(5) = est(8)
-#     bh(6) = est(13)
-#     bh(7) = est(15)
-#     bh(8) = est(4)
-#     bh(9) = est(12)
-#     bh(10) = est(9)
-#     bh(11) = est(10).*est(9)
-#     bh(12) = (est(10).*est(9)./10).^(est(12)+1)
-#     bh(13) = est(11).*est(9)
-#     bh(14) = (est(11).*est(9)./10).^(est(12)+1)
-#     bh(15) = est(5)
-#     bh(16) = (est(5)./10).^(est(12)+1)
-#     bh(17) = est(6)
-#     bh(18) = est(16)
-#     bh(19) = est(17)
-#     bh(20) = est(18)
-#     bh(21) = est(19)
-#     bh(22) = est(14)
-#     bh(23) = est(20)
-#     bh(24) = est(20).*est(21)
-#     bh(25) = 1-est(22)
-#     # row 2-26 in Summary201609 is bh'
-
+# RELATED FILES
+# standard_errors.m (by Masao) processed <bootstrap_welfare.csv> to generate
+# bootstrap numbers in Summary201609.xls. Said code is now appended to the end
+# of this file, so there is no longer a need to run standard_errors.m
 
 ## Two modes
-# this file has two modes. Mode 2 can be run after Mode 1.
+# This file has two modes. Mode 2 can be run after Mode 1.
 
 # In the first mode, it cold starts to estimates parameters in the first
 # input of the likelihood function full_model_all with
@@ -92,6 +38,17 @@ true_estimates = [0.32135,	5.6459,	14.855,	1.1614,	0.6486,	1.9196,	14.771,
 # As of Dec 2017, Mode 1 is done with the issue of duplicated book
 # index in bootstrap sample, Mode 2 is done with the issue
 # corrected, albeit taking Mode's 1's results as input.
+
+## Estimates and welfare from true data
+true_estimates = [0.32135,	5.6459,	14.855,	 1.1614,  0.6486,   1.9196,	 14.771,
+                  -2.4895,	1,	    0.44004, 0.32415, 0.87235,  0.5,	 0.25921,
+                  -9.1217,  80.267,	-13.647, 1.7296,  8.8188,   0.92622, 4.283,
+                  4.9097,	0,      7.8609,	 7.739,	  0.011111, 6.8386,  6.5027,
+                  0.028621]
+# (These are the estimates and welfare from true data. It is copied from last row
+# of results2.csv created by Masao. Except for the 5th and 6th elements,
+# E[gamma_i] 2009 offline and betalocal, which according to Hongkai's validation
+# mode, is different from Masao's number.)
 
 # TODO: Specify script parameters
 mode      = 2   # Choose between available modes: 1 or 2 (see description above)
@@ -114,7 +71,7 @@ N_bs      = 200 # No. bootstrap iterations
 load('DataToRun_pop09_boot.mat')
 
 ## Data Renaming and Setup Pre-Bootstrap
-gamma0vec = [gaminv(0.005:0.01:0.895,0.5,20) 28:2:60 64:4:100]
+gamma0vec = [gaminv(0.005:0.01:0.895, 0.5, 20) collect(28:2:60), collect(64:4:100)]
 deltavec  = [exp(norminv(0.01:0.02:0.91,-2,2)) 3:2:20]
 data12    = data12nopop
 data09    = data09nopop
@@ -134,7 +91,8 @@ bcdindexbp = bootindex
 
 if mode == 2
     boot = CSV.read("bootstrap_estimates.csv", DataFrame, header=true)
-    boot = unique(boot; dims=1) # because mode 1 can be run on several servers simultaneously to save time, this line removes bootstrap runs that were duplicated on multiple servers.
+    boot = unique(boot; dims=1) # Mode 1 can be run on several servers simultaneously to save time;
+                                # line removes bootstrap runs duplicated on multiple servers.
     #boot = boot[:, 2:end]
 end
 
@@ -168,18 +126,15 @@ for i = 1:N_bs
     bstart09 = vcat(1, bend09[1:end-1] .+ 1.0)
 
     for j = 1:length(bfirst09[i,:])
-        bdata09.cdid[bstart09[j]:bend09[j]] = repmat(j, bend09[j] - bstart09[j] + 1,1)
+        rng_j_09  = bstart09[j]:bend09[j]
+        rng_ij_09 = bfirst09[i,j]:bcdindex09[i,j]
 
-        bdata09.p[bstart09[j]:bend09[j]] = data09.p[bfirst09[i,j]:bcdindex09[i,j]]
+        bdata09.cdid[rng_j_09] = repmat(j, bend09[j] - bstart09[j] + 1, 1)
 
-        bdata09.obsweight[bstart09[j]:bend09[j]] = data09.obsweight[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.numlist[bstart09[j]:bend09[j]] = data09.numlist[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.condition[bstart09[j]:bend09[j]] = data09.condition[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.localint[bstart09[j]:bend09[j]] = data09.localint[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.popular[bstart09[j]:bend09[j]] = data09.popular[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.pdif[bstart09[j]:bend09[j]]    = data09.pdif[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.conditiondif[bstart09[j]:bend09[j]] = data09.conditiondif[bfirst09[i,j]:bcdindex09[i,j]]
-        bdata09.basecond[bstart09[j]:bend09[j]] = data09.basecond[bfirst09[i,j]:bcdindex09[i,j]]
+        for x in [:p, :obsweight, :numlist, :condition, :localint,
+                  :popular, :pdif, :conditiondif, :basecond]
+            bdata09[x][rng_j_09] = data09[x][rng_ij_09]
+        end
     end
 
     bdata09.first   = bstart09'

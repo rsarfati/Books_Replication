@@ -207,7 +207,7 @@ for i = 1#:N_bs
     # Optimization
     if mode == 1
         x0 = true_estimates[7:20]
-        objectivefun = @(x) objective(x, x0, distpara0, gamma0vec, deltavec, bdata12, bdata09, bbp)
+        objectivefun = @(x) objective(x, x0, vars["distpara0"], gamma0vec, deltavec, bdata12, bdata09, bbp)
         x00 = x0
         x0[[3, 7]] = []
 

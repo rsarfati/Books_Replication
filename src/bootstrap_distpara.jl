@@ -78,18 +78,19 @@ deltavec  = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
 data12    = vars["data12nopop"]
 data09    = vars["data09nopop"]
 bp        = vars["bpnopop"]
+bootindex = Int.(vars["bootindex"])
 
-bmktsize09 = vars["bootindex"]
-bfirst09   = vars["bootindex"]
-bcdindex09 = vars["bootindex"]
+bmktsize09 = bootindex
+bfirst09   = bootindex
+bcdindex09 = bootindex
 
-bmktsize12 = vars["bootindex"]
-bfirst12   = vars["bootindex"]
-bcdindex12 = vars["bootindex"]
+bmktsize12 = bootindex
+bfirst12   = bootindex
+bcdindex12 = bootindex
 
-bmktsizebp = vars["bootindex"]
-bfirstbp   = vars["bootindex"]
-bcdindexbp = vars["bootindex"]
+bmktsizebp = bootindex
+bfirstbp   = bootindex
+bcdindexbp = bootindex
 
 # Meta Programming
 # f1 = eval(Meta.parse("@formula(xt_lag0 ~ " *
@@ -101,7 +102,8 @@ bcdindexbp = vars["bootindex"]
 if mode == 2
     # Mode 1 can be run on several servers simultaneously to save time;
     # use  `unique` to remove bootstrap runs duplicated on multiple servers.
-    boot = unique(CSV.read("data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
+    boot = unique(CSV.read("data/bootstrap_estimates.csv",
+                           DataFrame, header=false))[:,2:end]
 end
 
 # A validation mode:
@@ -115,93 +117,92 @@ end
 # boot(1,:) = results2(end, 8:21)
 
 ## Run Bootstrap
-for i = 1:N_bs
+for i = 1#:N_bs
     ##  Generate bootstrap data
     bs_ind = bootindex[i,:]
 
     #################### 2009 ####################
-    bmktsize09[i,:] = data09.mktsize[bs_ind]
-    bfirst09[i,:]   = data09.first[bs_ind]
-    bcdindex09[i,:] = data09.cdindex[bs_ind]
-    mktsize_09      = sum(bmktsize09[i,:])
+    bmktsize09[i,:] = Int.(data09["mktsize"][bs_ind])
+    bfirst09[i,:]   = Int.(data09["first"][bs_ind])
+    bcdindex09[i,:] = Int.(data09["cdindex"][bs_ind])
+    mktsize_09      = Int(sum(bmktsize09[i,:]))
 
+    bdata09 = Dict{String, Any}()
     for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
               :popular, :pdif, :conditiondif, :basecond]
-        bdata09[x] = zeros(mktsize_09)
+        bdata09[String(x)] = zeros(mktsize_09)
     end
 
-    bend09 = cumsum(bmktsize09[i,:])
-    bstart09 = vcat(1, bend09[1:end-1] .+ 1.0)
+    bend09 = Int.(cumsum(bmktsize09[i,:]))
+    bstart09 = vcat(1, bend09[1:end-1] .+ 1)
 
     for j = 1:length(bfirst09[i,:])
         rng_j_09  = bstart09[j]:bend09[j]
-        rng_ij_09 = bfirst09[i,j]:bcdindex09[i,j]
+        rng_ij_09 = Int.(bfirst09[i,j]:bcdindex09[i,j])
 
-        bdata09.cdid[rng_j_09] = repmat(j, bend09[j] - bstart09[j] + 1, 1)
-
+        bdata09["cdid"][rng_j_09] = fill(j, length(rng_j_09), 1)
         for x in [:p, :obsweight, :numlist, :condition, :localint,
                   :popular, :pdif, :conditiondif, :basecond]
-            bdata09[x][rng_j_09] = data09[x][rng_ij_09]
+            bdata09[String(x)][rng_j_09] .= data09[String(x)][rng_ij_09]#
         end
     end
-
-    bdata09.first   = bstart09'
-    bdata09.cdindex = bend09'
-    bdata09.mktsize = bmktsize09[i,:]'
-
-    bdata09.N = length(bdata09.p)
-    bdata09.M = length(bdata09.first)
+    bdata09["first"]   = bstart09'
+    bdata09["cdindex"] = bend09'
+    bdata09["mktsize"] = bmktsize09[i,:]'
+    bdata09["N"] = length(bdata09["p"])
+    bdata09["M"] = length(bdata09["first"])
 
     #################### 2012 ####################
-    bmktsize12[i,:] = data12.mktsize[bs_ind]
-    bfirst12[i,:]   = data12.first[bs_ind]
-    bcdindex12[i,:] = data12.cdindex[bs_ind]
+    bmktsize12[i,:] = data12["mktsize"][bs_ind]
+    bfirst12[i,:]   = data12["first"][bs_ind]
+    bcdindex12[i,:] = data12["cdindex"][bs_ind]
 
-    mktsize_12 = sum(bmktsize12[i,:])
+    mktsize_12 = Int(sum(bmktsize12[i,:]))
+    bdata12 = Dict{String, Any}()
     for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
               :popular, :pdif, :conditiondif, :basecond, :disappear]
-        bdata12[x] = zeros(mktsize_12)
+        bdata12[String(x)] = zeros(mktsize_12)
     end
 
     bend12   = cumsum(bmktsize12[i,:])
     bstart12 = vcat(1, bend12[1:end-1] .+ 1)
 
     for j = 1:length(bfirst12[i,:])
-        j_rng_12  = bstart12[j]:bend12[j]
-        ij_rng_12 = bfirst12[i,j]:bcdindex12[i,j]
+        j_rng_12  = Int.(bstart12[j]:bend12[j])
+        ij_rng_12 = Int.(bfirst12[i,j]:bcdindex12[i,j])
 
-        bdata12.cdid[j_rng_12] = repmat(j, bend12[j] - bstart12[j] + 1, 1)
+        bdata12["cdid"][j_rng_12] = fill(j, length(j_rng_12), 1)
 
         for x in [:p, :obsweight, :numlist, :condition, :localint,
                   :popular, :pdif, :conditiondif, :basecond, :disappear]
-            bdata12[x][j_rng_12] = data12[x][ij_rng_12]
+            bdata12[String(x)][j_rng_12] .= data12[String(x)][ij_rng_12]
         end
     end
 
-    bdata12.first   = bstart12'
-    bdata12.cdindex = bend12'
-    bdata12.mktsize = bmktsize12[i,:]'
-    bdata12.N = length(bdata12.p)
-    bdata12.M = length(bdata12.first)
+    bdata12["first"]   = bstart12'
+    bdata12["cdindex"] = bend12'
+    bdata12["mktsize"] = bmktsize12[i,:]'
+    bdata12["N"] = length(bdata12["p"])
+    bdata12["M"] = length(bdata12["first"])
 
     # bp
-    bmktsizebp[i,:] = bp.mktsize[bs_ind]
-    bfirstbp[i,:]   = bp.first[bs_ind]
-    bcdindexbp[i,:] = bp.cdindex[bs_ind]
+    bmktsizebp[i,:] = bp["mktsize"][bs_ind]
+    bfirstbp[i,:]   = bp["first"][bs_ind]
+    bcdindexbp[i,:] = bp["cdindex"][bs_ind]
     bendbp          = cumsum(bmktsizebp[i,:])
     bstartbp = vcat(1, bendbp[1:end-1] .+ 1)
 
-    bbp.cdid = collect(1:236)'  # bp.cdid[bs_ind]
-
+    bbp = Dict{String,Any}()
+    bbp["cdid"] = collect(1:236)  # bp.cdid[bs_ind]
     for x in [:p, :obsweight, :numlist, :condition, :localint, :popular, :conditiondif]
-        bbp[x] = bp[x][bs_ind]
+        bbp[String(x)] = bp[String(x)][bs_ind]
     end
 
-    bbp.first  = bstartbp'
-    bbp.cdindex = bendbp'
-    bbp.mktsize = bmktsizebp[i,:]'
-    bbp.N = length(bbp.p)
-    bbp.M = length(bbp.first)
+    bbp["first"]  = bstartbp'
+    bbp["cdindex"] = bendbp'
+    bbp["mktsize"] = bmktsizebp[i,:]'
+    bbp["N"] = length(bbp["p"])
+    bbp["M"] = length(bbp["first"])
 
     # Optimization
     if mode == 1

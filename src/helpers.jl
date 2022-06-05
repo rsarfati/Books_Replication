@@ -1,7 +1,19 @@
+import Base.zeros
+zeros(x::Float64) = zeros(Int(round(x)))
+zeros(x::Float64,y::Int64) = zeros(Int(round(x)), y)
+zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
+
+function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
+  m, n = length(v1), length(v2)
+  v1 = reshape(v1, m, 1)
+  v2 = reshape(v2, 1, n)
+  (repeat(v1, 1, n), repeat(v2, m, 1))
+end
+
 function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
 
     A = Dm.*(Dm)
-    B = (dDm).*(r).*(p) + r .* Dm + 2*Dm .* γ0 .* D0
+    B = (dDm) .* (r) .* (p) + r .* Dm + 2*Dm .* γ0 .* D0
     C = r .* p .* γ0 .* dD0 + r .* γ0 .* D0 + γ0 .* γ0 .* D0 .* D0
 
     γ1 = ((-B + (B .^ 2 .- 4 .* A .* C) .^ (0.5)) ./ (2 .* A))

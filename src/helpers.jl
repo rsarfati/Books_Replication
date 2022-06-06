@@ -10,6 +10,12 @@ function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
   return repeat(v1, 1, n), repeat(v2, m, 1)
 end
 
+"""
+```
+function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
+```
+Works.
+"""
 function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
     A  = Dm .^ 2.0
     B  = (dDm .* r .* p) .+ (r .* Dm) .+ (2.0 .* Dm .* γ0 .* D0)
@@ -53,7 +59,7 @@ end
 ```
 function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
 ```
-Corresponds to Masao/obscalnewtest2015.m
+Corresponds to Masao/obscalnewtest2015.m. Works!
 """
 function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
 
@@ -113,11 +119,16 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
 
     profit2 = p2 ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
     profitH = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
+
     γ3, _ = solveγPar(Dm, 0, dDm, 0, 0, p2, r)
     γ2[real.(profitH) .> real.(profit2)] .= γ3[real.(profitH) .> real.(profit2)]
 
     γ1[real.(γ1) .< 0] .= .0
     γ1[real.(γ1) .> real.(γ2)] .= γ2[real.(γ1) .> real.(γ2)]
+
+    #TODO: Reca added this in
+    γ1 = real.(γ1)
+    γ2 = real.(γ2)
 
     Dm = δ .* (p .^ (-η))
 
@@ -132,7 +143,8 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
         lip_o  = min((gamcdf(γ2, m, γscale) - gamcdf(γ1, m, γscale)), 1) .* demandlh .^ 3
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood. Next line starts disappear likelihood
     else
-        lip_o = min(quantile.(Gamma.(m, γscale), γ2) - quantile.(Gamma.(m, γscale), γ1), 1) # TODO
+        γ_dist = Gamma.(m, γscale)
+        lip_o = min.([quantile(γ_dist[i], γ2[i]) - quantile(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
         lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
     end
 
@@ -152,7 +164,7 @@ end
 ```
 function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scalarparas)
 ```
-Corresponds to /Masao/welfaresimple.m.
+Corresponds to /Masao/welfaresimple.m. Works!
 """
 function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scalarparas)
 
@@ -162,29 +174,29 @@ function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scal
     r = scalarparas[4]
 
     p    = data["p"]
-    N, M = Int.(data["N"], data["M"])
+    N, M = Int.(data["N"]), Int.(data["M"])
     cdindex = Int.(data["cdindex"])
     d_first = Int.(data["first"])
 
     γ1ave = 0.5 * (γ1 + γ2)
 
-    pi_o  = p .* (γ1ave  .* Dm + γ0 .* D0) ./ (r + γ1ave  .* Dm + γ0 .* D0)
-    pi_ol = p .* (γscale .* Dm + γ0 .* D0) ./ (r + γscale .* Dm + γ0 .* D0)
-    pi_v  = olppost .* pi_ol + (1-olppost) .* pi_o
+    pi_o  = p .* (γ1ave  .* Dm + γ0 .* D0) ./ (r .+ γ1ave  .* Dm + γ0 .* D0)
+    pi_ol = p .* (γscale .* Dm + γ0 .* D0) ./ (r .+ γscale .* Dm + γ0 .* D0)
+    pi_v  = olppost .* pi_ol .+ (1 .- olppost) .* pi_o
 
-    CSns_o = (1/(η-1)) .* γ1ave .* Dm .* p ./ (r + γ1ave .* Dm + γ0 .* D0)
-    CSns_ol = (1/(η-1)) .* γscale .* Dm .* p./(r + γscale .* Dm + γ0 .* D0)
-    CSns = olppost .* CSns_ol + (1-olppost) .* CSns_o
+    CSns_o = (1/(η-1)) .* γ1ave .* Dm .* p ./ (r .+ γ1ave .* Dm + γ0 .* D0)
+    CSns_ol = (1/(η-1)) .* γscale .* Dm .* p./(r .+ γscale .* Dm + γ0 .* D0)
+    CSns = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
 
     CSgain = zeros(N, 1)
     N = 10000 #TODO: this looks like trouble
 
     for k = 1:M
         mktsize = cdindex[k] - d_first[k] + 1
-        rand_price = repeat(-[pdif(d_first[k]:cdindex[k],1) ; -β], 1, N) -
-             evrnd(0,1,mktsize+1, N) ./ α[1]
-        best, bestindex = findmax(randomprice)
-        temp = sparse(vcat(bestindex, mktsize + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
+        rand_price = repeat(-[pdif[d_first[k]:cdindex[k],1] ; -β], 1, N) -
+             rand(Gumbel(0,1), mktsize + 1, N) ./ α[1]
+        best, bestindex = vec.(findmax(rand_price, dims = 1))
+        temp = sparse(vcat((x->x[2]).(bestindex), mktsize + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
         CSgain[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize,1:N], dims=2) ./
                                           (sum(temp[1:mktsize,1:N] .> 0, dims=2) .+ 1e-5)
     end

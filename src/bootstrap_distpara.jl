@@ -208,22 +208,23 @@ for i = 1:N_bs
         x0 = true_estimates[7:20]
         objectivefun(x) = objective(x, x0, vec(vars["distpara0"]), γ0vec, δ_vec, bdata12, bdata09, bbp)
         x00 = x0
-        deleteat!(x0, [3, 7])
+        # TODO: investigate why these columns are being deleted
+        #deleteat!(x0, [3, 7])
 
         res = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5)))
-        x, fval = minimizer(res), minimum(res)
+        x, fval = res.minimizer, res.minimum
 
         estimates = [i, x[1:2], x00[3], x[3:5], x00[7], x[6:(length(x00)-2)]]
-        CSV.write("bootstrap_estimates.csv", estimates)
+        CSV.write("bootstrap_estimates_$(vint).csv", Tables.table(estimates))
 
     elseif run_mode == 2
 
         xinitial = boot[i,:]
         llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp; WFcal = true)
 
-        wel09    = mean(fWF.AveWF09)
-        wel12    = mean(fWF.AveWF12)
-        weloff   = mean(fWF.WFbp)
+        wel09    = mean(fWF["AveWF09"])
+        wel12    = mean(fWF["AveWF12"])
+        weloff   = mean(fWF["WFbp"])
         result_w = [i, xinitial, newdistpara, wel09, wel12, weloff]
 
         CSV.write("bootstrap_welfare.csv", result_w)

@@ -189,7 +189,7 @@ function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scal
     CSns = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
 
     CSgain = zeros(N, 1)
-    N = 10000 #TODO: this looks like trouble
+    N = 10000 # TODO: this looks like trouble
 
     for k = 1:M
         mktsize = cdindex[k] - d_first[k] + 1

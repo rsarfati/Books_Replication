@@ -73,8 +73,8 @@ N_bs      = 200 # No. bootstrap iterations
 vars = matread("data/DataToRun_pop09_boot.mat")
 
 ## Data Renaming and Setup Pre-Bootstrap
-gamma0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
-deltavec  = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
+γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
+δ_vec  = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
 data12    = vars["data12nopop"]
 data09    = vars["data09nopop"]
 bp        = vars["bpnopop"]
@@ -206,7 +206,7 @@ for i = 1:N_bs
     if run_mode == 1
 
         x0 = true_estimates[7:20]
-        objectivefun(x) = objective(x, x0, vec(vars["distpara0"]), gamma0vec, deltavec, bdata12, bdata09, bbp)
+        objectivefun(x) = objective(x, x0, vec(vars["distpara0"]), γ0vec, δ_vec, bdata12, bdata09, bbp)
         x00 = x0
         deleteat!(x0, [3, 7])
 
@@ -219,7 +219,7 @@ for i = 1:N_bs
     elseif run_mode == 2
 
         xinitial = boot[i,:]
-        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, gamma0vec, deltavec, bdata12, bdata09, bbp; WFcal = true)
+        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp; WFcal = true)
 
         wel09    = mean(fWF.AveWF09)
         wel12    = mean(fWF.AveWF12)

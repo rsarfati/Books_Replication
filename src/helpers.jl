@@ -88,7 +88,7 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     ##########
     # Solve for demand and its 1st & 2nd order derivatives
     ##########
-    D0, dD0, d2D0, sumpind, expU = demandshopper(α, β, p0 - βcond .* cond_dif ./ α, cdid, obs_w)
+    D0, dD0, d2D0, sumpind, expU = demandshopper(α, β, p0 .- βcond .* cond_dif ./ α, cdid, obs_w)
 
     ## calculate γ1
     p1   = p .- rounderr

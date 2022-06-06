@@ -33,9 +33,20 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     M_12 = Int.(data12["M"])
     N_12 = Int.(data12["N"])
     first_09 = Int.(data09["first"])
+    p_09 = data09["p"]
+    pdif_09 = data09["pdif"]
+    numlist_09 = Int.(data09["numlist"])
     cdindex_09 = Int.(data09["cdindex"])
+    cdid_09 = Int.(data09["cdid"])
+
+    cdid_12 = Int.(data12["cdid"])
     first_12 = Int.(data12["first"])
+    p_12 = data12["p"]
+    pdif_12 = data12["pdif"]
+    numlist_12 = Int.(data12["numlist"])
     cdindex_12 = Int.(data12["cdindex"])
+    obsweight_09 = data09["obsweight"]
+    obsweight_12 = data12["obsweight"]
 
     ## Calculation for 09 data
     ltot_09 = zeros(M_09)
@@ -98,7 +109,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
                                                 βpop, γ_l[2], βσ4[13], 1, 1, 1),
                                                 bp, basellhb, 0, vec(bp["p"]), rounderr, false)[1])
 
-    function integγ0(γinput)
+    function integγ0(γinput; return_all = false)
         γ0shape = γinput[1]
         γ0_θ_09 = γinput[2] / γinput[1]
         γ0_θ_12 = γinput[3] / γinput[1]
@@ -128,6 +139,10 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
         ltot_09 = maxtemp_09 + log.(llhadj_09 * vec(imp_09))
         ltot_12 = maxtemp_12 + log.(llhadj_12 * vec(imp_12))
+
+        if return_all
+            return imp_09, imp_12, ltot_09, ltot_12
+        end
         return -(sum(ltot_09) + sum(ltot_12))
     end
 
@@ -146,16 +161,16 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     distpara = vcat(distpara1, distpara2)
 
     if WFcal
-        
+        imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all= true)
         WF_09       = zeros(N_09, 3)
         WF12        = zeros(N_12, 3)
         AveWF_09    = zeros(M_09, 3)
         AveWF12     = zeros(M_12, 3)
         BestVals_09 = zeros(N_09,13)
-        BestVals12  = zeros(N_12,13)
+        BestVals_12 = zeros(N_12,13)
 
         for k = 1:M_09
-            RPpost = llhadj_09[k,:]' .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
+            RPpost = llhadj_09[k,:] .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
             ind_k  = first_09[k]:cdindex_09[k]
 
             WF_09[ind_k, 1]  = pi_09[ind_k,:]   * RPpost
@@ -165,11 +180,11 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
             AveWF_09[k, 1:3] = obsweight' * WF_09[ind_k, 1:3]
             y_max = argmax(llhadj_09[k,:])
 
-            BestVals_09[ind_k,:] = vcat(repmat([γ0_δ_vec[y_max,:], llhβ_09[k,y_max]./ length(ind_k)], length(ind_k), 1),
+            BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:], llhβ_09[k,y_max] ./ length(ind_k)), 1, length(ind_k))',
                 exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max], γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
                 Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max], CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
 
-            RPpost = llhadj12[k,:]' .* vec(imp12)/exp(ltot12[k]-maxtemp12[k])
+            RPpost = llhadj12[k,:] .* vec(imp_12) ./ exp(ltot_12[k]-maxtemp12[k])
 
             ind_k          = first_12[k]:cdindex_12[k]
             WF12[ind_k,1]  = pi12[ind_k,:]  * RPpost
@@ -179,37 +194,39 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
             AveWF12[k,1:3] = obsweight' * WF12[ind_k, 1:3]
 
             y_max = argmax(llhadj12[k,:])
-            BestVals12[ind_k,:] = [repmat([γ0_δ_vec[y_max,:] llhβ12[k,y_max]./length(ind_k)],length(ind_k),1) ...
-                exp(lip12[ind_k,y_max]) basellh12[ind_k,1]...
-                γ012[ind_k,y_max] γ112[ind_k,y_max] γ212[ind_k,y_max] ...
-                Dm12[ind_k,y_max] D012[ind_k,y_max] pi12[ind_k,y_max] CSns12[ind_k,y_max] CSs12[ind_k,y_max] ]
+            BestVals_12[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:], llhβ12[k,y_max] ./ length(ind_k))', length(ind_k), 1),
+                exp.(lip12[ind_k, y_max]), basellh12[ind_k,1],
+                γ012[ind_k,y_max], γ112[ind_k,y_max], γ212[ind_k,y_max],
+                Dm12[ind_k,y_max], D012[ind_k,y_max], pi12[ind_k,y_max], CSns12[ind_k,y_max], CSs12[ind_k,y_max])
         end
-        fWF.BestVals_09 = vcat(cdid_09, numlist_09, p_09, pdif_09, BestVals09)
-        fWF.BestVals12 = vcat(cdid_12 numlist_12 p_12 pdif_12 BestVals12]
-        fWF.BestValsbp = [bp["cdid"] bp["numlist"] bp["p"] repmat([0 0 1 1], bp["N"], 1) lipb basellhb γ0bp γ1bp γ2bp Dmbp D0bp WFbp]
-        fWF.AveWF_09 = AveWF_09
-        fWF.AveWF12 = AveWF12
-        fWF.WF_09 = WF_09
-        fWF.WF12 = WF12
-        fWF.WFbp = WFbp
+        fWF = Dict{String,Any}()
+        fWF["BestVals_09"] = hcat(cdid_09, numlist_09, p_09, pdif_09, BestVals_09)
+        fWF["BestVals_12"] = hcat(cdid_12, numlist_12, p_12, pdif_12, BestVals_12)
+        fWF["BestValsbp"] = hcat(bp["cdid"], bp["numlist"], bp["p"], repeat([0.0, 0.0, 1.0, 1.0]', Int.(bp["N"]), 1), lipb, basellhb, γ0bp, γ1bp, γ2bp, Dmbp, D0bp, WFbp)
+        fWF["AveWF_09"] = AveWF_09
+        fWF["AveWF12"] = AveWF12
+        fWF["WF_09"] = WF_09
+        fWF["WF12"] = WF12
+        fWF["WFbp"] = WFbp
     end
 
-    fother.lip12    = lip12
-    fother.llhβ12   = llhβ12
-    fother.lip_09   = lip_09
-    fother.llhβ_09  = llhβ_09
-    fother.γ0_δ_vec = γ0_δ_vec
-    fother.imp_09   = imp_09
-    fother.imp12    = imp12
-    fother.ltot_09  = ltot_09
-    fother.ltot12   = ltot12
-    fother.imp_09   = imp_09
+    fother = Dict{String,Any}()
+    fother["lip12"]    = lip12
+    fother["llhβ12"]   = llhβ12
+    fother["lip_09"]   = lip_09
+    fother["llhβ_09"]  = llhβ_09
+    fother["γ0_δ_vec"] = γ0_δ_vec
+    fother["imp_09"]   = imp_09
+    fother["imp_12"]    = imp_12
+    fother["ltot_09"]  = ltot_09
+    fother["ltot12"]   = ltot12
+    fother["imp_09"]   = imp_09
 
-    fother.γ1_09 = γ1_09
-    fother.γ112  = γ112
+    fother["γ1_09"] = γ1_09
+    fother["γ112"]  = γ112
 
-    fother.lipb = lipb
-    fother.γ1bp = γ1bp
+    fother["lipb"] = lipb
+    fother["γ1bp"] = γ1bp
 
     return f, distpara, fother, fWF
 end

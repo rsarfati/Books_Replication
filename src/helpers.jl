@@ -12,12 +12,11 @@ end
 
 function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
 
-    A = Dm.*(Dm)
-    B = (dDm) .* (r) .* (p) + r .* Dm + 2*Dm .* γ0 .* D0
-    C = r .* p .* γ0 .* dD0 + r .* γ0 .* D0 + γ0 .* γ0 .* D0 .* D0
-
-    γ1 = ((-B + (B .^ 2 .- 4 .* A .* C) .^ (0.5)) ./ (2 .* A))
-    l1 = (γ1.re > 0) & (γ1.im == 0)
+    A = Dm .^ 2.0
+    B = (dDm .* r .* p) .+ (r .* Dm) .+ (2.0 .* Dm .* γ0 .* D0)
+    C = r .* p .* γ0 .* dD0 .+ r .* γ0 .* D0 .+ γ0 .* γ0 .* D0 .* D0
+    γ1 = ((-B .+ ((B .^ 2 .- 4 .* A .* C) .+ 0im) .^ (0.5)) ./ (2 .* A))
+    l1 = (real.(γ1) .> 0) .& (imag.(γ1) .≈ 0)
 
     return γ1, l1
 end
@@ -37,11 +36,9 @@ end
 ```
 function demandshopper(α, β, p, cdid, obsweight)
 ```
-Runs!
 """
 function demandshopper(α, β, p, cdid, obsweight)
     expU = vec(exp.(p .* -α))
-
     # sum utility for each book
     # sum1 = zeros(M)
     # sum1[1] = sum(expU(1:cdindex[1]))+exp(β)
@@ -49,7 +46,6 @@ function demandshopper(α, β, p, cdid, obsweight)
     #     sum1(j)=sum(expU(cdindex(j-1)+1:cdindex(j)))+exp(β)
     # end
     sum1 = sum(sparse(collect(1:length(cdid)), vec(cdid), vec(obsweight) .* expU))' + exp(β .* α[1])
-
     f1 = expU ./ sum1
     f2 = -α .* expU .* (sum1 .- expU) ./ (sum1 .^ 2)
     f3 = α .^ 2 .* expU .* (sum1 .- expU) .* (sum1 .- 2 .* expU) ./ (sum1 .^ 3)
@@ -76,10 +72,10 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     obsweight    = vec(data["obsweight"])
     p            = data["p"]
 
-    γ0 = fill(βsigma3[1], N, 1)' .* (numlist .^ βsigma3[8] ./ mean(numlist.^βsigma3[8]))
-    α = fill((βsigma3[2]+1) * βsigma3[14] ^ βsigma3[15], N, 1)
-    β = βsigma3[3] ./ βsigma3[14] ^ βsigma3[15]
-    m = βsigma3[4]
+    γ0 = βsigma3[1] .* (numlist .^ βsigma3[8] ./ mean(numlist.^βsigma3[8]))
+    α  = fill((βsigma3[2]+1) * βsigma3[14] ^ βsigma3[15], N)
+    β  = βsigma3[3] ./ βsigma3[14] ^ βsigma3[15]
+    m  = βsigma3[4]
     γscale = βsigma3[5] ./ m .* (numlist .^ βsigma3[9] ./ mean(numlist .^ βsigma3[9])) .* exp.(βsigma3[12].*localint)
     η = βsigma3[6]+1 # βsigma3(6*ones(N,1))'+1+βsigma3[11].*popular
     r = βsigma3[7]
@@ -94,39 +90,40 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     D0, dD0, d2D0, sumpind, expU = demandshopper(α, β, p0 - βcond .* conditiondif ./ α, cdid, obsweight)
 
     ## calculate γ1
-    p = data["p"] - rounderr
-    Dm=delta .* (p.^(-η))
-    dDm=delta.*(-η).*(p.^(-η-1))
-    d2Dm=delta.*(η).*(η+1).*(p.^(-η-2))
+    p    = data["p"] .- rounderr
+    Dm   = delta .* (p .^ (-η))
+    dDm  = delta .* (-η) .* (p .^ (-η-1))
+    d2Dm = delta .* (η) .* (η+1) .* (p .^ (-η-2))
 
-    #Solve for the γ that rationalize the price choice
-    γ1, l1 = solveγPar(Dm,D0-rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0-rounderr.*d2D0,γ0,p,r)
-
-
+    # Solve for the γ that rationalize the price choice
+    γ1, l1 = solveγPar(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
+                       dD0 .- rounderr .* d2D0, γ0, p, r)
     ## calculate γ2
-
-    p = data["p"] + rounderr
-    Dm=delta.*(p.^(-η))
-    dDm=delta.*(-η).*(p.^(-η-1))
-    d2Dm=delta.*(η).*(η+1).*(p.^(-η-2))
+    p    = data["p"] .+ rounderr
+    Dm   = delta.*(p.^(-η))
+    dDm  = delta.*(-η).*(p.^(-η-1))
+    d2Dm = delta.*(η).*(η+1).*(p.^(-η-2))
 
     #Solve for the γ that rationalize the price choice
-    γ2, l2 = solveγPar(Dm,D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0+rounderr.*d2D0,γ0,p,r)
+    γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
+                       dD0 .+ rounderr .* d2D0, γ0, p, r)
+    SOC = r .* p .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ γ2 .* Dm .+ γ0 .*
+            (D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2)) .*
+            (γ2 .* dDm .+ γ0 .* (dD0 .+ rounderr .* d2D0))
 
-    SOC = r.*p.*(γ2.*d2Dm + γ0.*d2D0) + 2*(r+γ2.*Dm + γ0.*(D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2)).*(γ2.*dDm + γ0.*(dD0+rounderr.*d2D0))
+    γ1[imag.(γ1) .≈ 0]  .= real(γ1[imag.(γ1) .≈ 0])
+    γ2[imag.(γ2) .≈ 0]  .= 0
+    γ2[real.(SOC) .> 0] .= 0
+    γ2[real.(γ2) .< 0]  .= .0
 
+    ##### WHERE DO NOT MATCH
 
-    γ1[(im(γ1)~=0),1] = re(γ1((im(γ1)~=0),1))
-    γ2[(im(γ2)~=0),1] = 0
-    γ2[SOC .> 0, 1]  .= 0
-    γ2 = maximum.(γ2, 0)
+    profit2 = p ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
+    profitH = ((r .* (η-1) ./ delta) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
+    γ3, _ = solveγPar(Dm, 0, dDm, 0, 0, p,r)
+    γ2[profitH .> profit2, 1] = γ3[profitH .> profit2, 1]
 
-    profit2 = p./(r./(γ2.*Dm+γ0.*D0)+1)
-    profitH = ((r * (η-1) / delta) ^ (-1/η) / (1/(η-1)+1)) .* γ2 .^ (1/η)
-    γ3 = solveγPar(Dm,0,dDm,0,0,p,r)
-    γ2[profitH .> profit2, 1] = γ3[profitH .> profit2,1]
-
-    γ1 = min(max(γ1,0),γ2)
+    γ1 = min(max(γ1, 0), γ2)
 
     Dm=delta.*(data.p.^(-η))
 

@@ -96,7 +96,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     getbmean(γ_l) = -sum(obscalnewtest2015(vcat(0, βσ4[[6, 7, 8]], abs(γ_l[1]),
                                                 βσ4[[11, 12]], λ1, λ2, βcond,
                                                 βpop, γ_l[2], βσ4[13], 1, 1, 1),
-                                                bp, basellhb, 0, bp["p"], rounderr, false))
+                                                bp, basellhb, 0, vec(bp["p"]), rounderr, false)[1])
 
     function integγ0(γinput)
         γ0shape = γinput[1]
@@ -133,18 +133,20 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
     res = optimize(integγ0, βσ4[1:4])
     distpara1, f1 = res.minimizer, res.minimum
-    @show res
 
     res = optimize(getbmean, βσ5[5:6])
     distpara2, f2 = res.minimizer, res.minimum
-    @show res
 
-    lipb, γ2bp, γ1bp, γ0bp, D0bp, Dmbp, WFbp[:,1], WFbp[:,2], WFbp[:,3] = obscalnewtest2015([0 βσ4([6 7 8]) abs(distpara2[1]) βσ4([ 11 12 ]) λ1 λ2 βcond βpop distpara2[2] βσ4[13] 1 1 1],bp,basellhb,0,bp["p"],rounderr,WFcal)
+    WFbp = zeros(length(lipb), 3)
+    lipb, γ2bp, γ1bp, γ0bp, D0bp, Dmbp, WFbp[:,1], WFbp[:,2], WFbp[:,3] = obscalnewtest2015(
+        vcat(0, βσ4[[6, 7, 8,]], abs(distpara2[1]), βσ4[[11, 12]], λ1, λ2, βcond,
+        βpop, distpara2[2], βσ4[13], 1, 1, 1), bp, basellhb, 0, bp["p"], rounderr, WFcal)
 
     f = f1 + f2
-    distpara = [distpara1, distpara2]
+    distpara = vcat(distpara1, distpara2)
 
     if WFcal
+        
         WF_09       = zeros(N_09, 3)
         WF12        = zeros(N_12, 3)
         AveWF_09    = zeros(M_09, 3)
@@ -153,13 +155,13 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         BestVals12  = zeros(N_12,13)
 
         for k = 1:M_09
-            RPpost = llhadj_09[k,:]' .* imp_09[:]/exp(ltot_09[k] - maxtemp_09[k])
+            RPpost = llhadj_09[k,:]' .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
             ind_k  = first_09[k]:cdindex_09[k]
 
-            WF_09[ind_k, 1]  = pi_09[ind_k,:]*RPpost
-            WF_09[ind_k, 2]  = CSns_09[ind_k,:]*RPpost
-            WF_09[ind_k, 3]  = CSs_09[ind_k,:]*RPpost
-            obsweight       = obsweight_09[ind_k, 1] ./ sum(obsweight_09[ind_k, 1])
+            WF_09[ind_k, 1]  = pi_09[ind_k,:]   * RPpost
+            WF_09[ind_k, 2]  = CSns_09[ind_k,:] * RPpost
+            WF_09[ind_k, 3]  = CSs_09[ind_k,:]  * RPpost
+            obsweight        = obsweight_09[ind_k, 1] ./ sum(obsweight_09[ind_k, 1])
             AveWF_09[k, 1:3] = obsweight' * WF_09[ind_k, 1:3]
             y_max = argmax(llhadj_09[k,:])
 
@@ -181,7 +183,6 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
                 exp(lip12[ind_k,y_max]) basellh12[ind_k,1]...
                 γ012[ind_k,y_max] γ112[ind_k,y_max] γ212[ind_k,y_max] ...
                 Dm12[ind_k,y_max] D012[ind_k,y_max] pi12[ind_k,y_max] CSns12[ind_k,y_max] CSs12[ind_k,y_max] ]
-
         end
         fWF.BestVals_09 = vcat(cdid_09, numlist_09, p_09, pdif_09, BestVals09)
         fWF.BestVals12 = vcat(cdid_12 numlist_12 p_12 pdif_12 BestVals12]
@@ -193,19 +194,19 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         fWF.WFbp = WFbp
     end
 
-    fother.lip12 = lip12
-    fother.llhβ12 = llhβ12
-    fother.lip_09 = lip_09
-    fother.llhβ_09 = llhβ_09
+    fother.lip12    = lip12
+    fother.llhβ12   = llhβ12
+    fother.lip_09   = lip_09
+    fother.llhβ_09  = llhβ_09
     fother.γ0_δ_vec = γ0_δ_vec
-    fother.imp_09 = imp_09
-    fother.imp12 = imp12
-    fother.ltot_09 = ltot_09
-    fother.ltot12 = ltot12
-    fother.imp_09 = imp_09
+    fother.imp_09   = imp_09
+    fother.imp12    = imp12
+    fother.ltot_09  = ltot_09
+    fother.ltot12   = ltot12
+    fother.imp_09   = imp_09
 
     fother.γ1_09 = γ1_09
-    fother.γ112 = γ112
+    fother.γ112  = γ112
 
     fother.lipb = lipb
     fother.γ1bp = γ1bp

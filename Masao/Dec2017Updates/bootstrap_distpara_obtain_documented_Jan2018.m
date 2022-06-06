@@ -95,7 +95,7 @@ current_mode = 2;
 %parpool(72); % this line is common for all servers or desktop. Choose the number accordingly.
 
 %% Load data
-load('DataToRun_pop09_boot.mat') 
+load('Bootstrapp_data/DataToRun_pop09_boot.mat') 
 % this mat file created by Masao contains original data, random index for bootstrap. 
 
 

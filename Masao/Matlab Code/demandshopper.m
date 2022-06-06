@@ -1,4 +1,4 @@
-function [f1,f2,f3,sum2,expU] = demandshopper( alpha, beta ,p,data)
+function [f1,f2,f3,sum2,expU] = demandshopper(alpha, beta ,p,data)
 
 
 expU=exp(p.*(-alpha));

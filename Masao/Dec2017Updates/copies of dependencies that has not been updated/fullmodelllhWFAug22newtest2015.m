@@ -180,6 +180,8 @@ basellhb =  gampdf(bp.p,olm,oltheta)*2*rounderr;
         gamma0cdfvec = [-gamcdf(gamma0vec(1),gamma0shape,gamma0theta12) gamcdf(gamma0vec,gamma0shape,gamma0theta12) (2- gamcdf(gamma0vec(end),gamma0shape,gamma0theta12))];
         importance2 = (gamma0cdfvec(3:end)-gamma0cdfvec(1:end-2))/2;
         deltacdfvec = [-normcdf(log(deltavec(1)),deltamean,deltasigma) normcdf(log(deltavec),deltamean,deltasigma) (2- normcdf(log(deltavec(end)),deltamean,deltasigma))];
+        
+        
         importance3 = (deltacdfvec(3:end)-deltacdfvec(1:end-2))/2;
         importance09 = importance1'*importance3;
         importance12 = importance2'*importance3;

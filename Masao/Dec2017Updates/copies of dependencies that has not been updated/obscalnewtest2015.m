@@ -3,7 +3,7 @@ function [lip,gamma2,gamma1,gamma0,D0,Dm,pi,CSns,CSs] = obscalnewtest2015( betas
 % [mugamma0 alpha-1 beta gammaishape gammaimean eta-1 r lamda1 lamda2 betacond betapop betalocal olp delta c]
 
 
-gamma0 = betasigma3(ones(data.N,1))'.*(data.numlist.^betasigma3(8)./mean(data.numlist.^betasigma3(8))); %(data.cdindex,1)
+gamma0 = betasigma3(ones(data.N,1))' .* (data.numlist.^betasigma3(8)./mean(data.numlist.^betasigma3(8))); %(data.cdindex,1)
 alpha = repmat((betasigma3(2)+1)*betasigma3(14)^betasigma3(15),data.N,1);
 beta = betasigma3(3)./betasigma3(14)^betasigma3(15);
 m = betasigma3(4);
@@ -144,7 +144,7 @@ if demandcal == 1
     
 %     lip_o = interp1(pdfdata1,pdfdata2,gamma1./gammascale)./gammascale.*dgammaidg.*demandlh.^3; % ;
 %     lip_o = exp(-gamma1./gammascale)./gammascale.*dgammaidg.*demandlh.^3; % ;
- lip_o = min((gamcdf(gamma2,m,gammascale) - gamcdf(gamma1,m,gammascale)),1).*demandlh.^3; % ;
+    lip_o = min((gamcdf(gamma2,m,gammascale) - gamcdf(gamma1,m,gammascale)),1).*demandlh.^3; % ;
     lip_ol = basellh.*  demandlhol.^3; %;  % price likelihood. Next line starts disappear likelihood
 else
 %    lip_o = interp1(pdfdata1,pdfdata2,gamma1./gammascale)./gammascale.*dgammaidg; % ;

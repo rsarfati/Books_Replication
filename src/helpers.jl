@@ -21,7 +21,7 @@ function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
     return γ1, l1
 end
 
-function objective(x, x0, distpara0, γ0vec, deltavec, data12, data09, bp)
+function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
     if x[3]<0 || x[4]<0 || x[12]>1 || x[12]< 0
         return Inf
     end
@@ -29,7 +29,7 @@ function objective(x, x0, distpara0, γ0vec, deltavec, data12, data09, bp)
     # if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
     #     return Inf
     # end
-    return full_model(xx, distpara0, γ0vec, deltavec, data12, data09, bp)
+    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
 end
 
 """
@@ -63,7 +63,7 @@ Corresponds to Masao/obscalnewtest2015.m
 """
 function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
 
-    # [muγ0 α-1 β γishape γimean η-1 r lamda1 lamda2 βcond βpop βlocal olp delta c]
+    # [muγ0 α-1 β γishape γimean η-1 r lamda1 lamda2 βcond βpop βlocal olp δ c]
     numlist      = data["numlist"]
     localint     = data["localint"]
     N            = Int(data["N"])
@@ -81,7 +81,7 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     r = βsigma3[7]
     βcond = βsigma3[10]
     olp = βsigma3[13]
-    delta = βsigma3[14]
+    δ = βsigma3[14]
     naturaldisappear = βsigma3[16]
 
     ##########
@@ -91,18 +91,18 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
 
     ## calculate γ1
     p    = data["p"] .- rounderr
-    Dm   = delta .* (p .^ (-η))
-    dDm  = delta .* (-η) .* (p .^ (-η-1))
-    d2Dm = delta .* (η) .* (η+1) .* (p .^ (-η-2))
+    Dm   = δ .* (p .^ (-η))
+    dDm  = δ .* (-η) .* (p .^ (-η-1))
+    d2Dm = δ .* (η) .* (η+1) .* (p .^ (-η-2))
 
     # Solve for the γ that rationalize the price choice
     γ1, l1 = solveγPar(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
                        dD0 .- rounderr .* d2D0, γ0, p, r)
     ## calculate γ2
     p    = data["p"] .+ rounderr
-    Dm   = delta.*(p.^(-η))
-    dDm  = delta.*(-η).*(p.^(-η-1))
-    d2Dm = delta.*(η).*(η+1).*(p.^(-η-2))
+    Dm   = δ .* (p .^ (-η))
+    dDm  = δ .* (-η) .* (p .^ (-η-1))
+    d2Dm = δ .* (η) .* (η+1) .* (p .^ (-η-2))
 
     #Solve for the γ that rationalize the price choice
     γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
@@ -116,42 +116,37 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     γ2[real.(SOC) .> 0] .= 0
     γ2[real.(γ2) .< 0]  .= .0
 
-    ##### WHERE DO NOT MATCH
+    ##### WHERE DO NOT MATCH: SOC, γ1, γ2
 
     profit2 = p ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
-    profitH = ((r .* (η-1) ./ delta) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
+    profitH = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
     γ3, _ = solveγPar(Dm, 0, dDm, 0, 0, p,r)
-    γ2[profitH .> profit2, 1] = γ3[profitH .> profit2, 1]
+    γ2[real.(profitH) .> real.(profit2)] .= γ3[real.(profitH) .> real.(profit2)]
 
-    γ1 = min(max(γ1, 0), γ2)
+    γ1[real.(γ1) .< 0] .= .0
+    γ1[real.(γ1) .> real.(γ2)] .= γ2[real.(γ1) .> real.(γ2)]
 
-    Dm=delta.*(data.p.^(-η))
+    Dm = δ.*(data["p"].^(-η))
 
     ##
     if demandcal == 1
-
+        disap = data["disappear"]
         # D0 =demandshopper(α,β,p0- βcond.*data.conditiondif./α,data["cdid"],data["obsweight"]) #
-        demandlh = (data.disappear>0)-(2.*data.disappear -1).*exp(-0.166666667.*(γ0.*D0 + (γ2+γ1)./2.*Dm)).*naturaldisappear
-        demandlhol = (data.disappear>0)-(2.*data.disappear - 1 ) ... Next line starts probability of nondisappear
-            .*exp(-0.166666667.*(γ0.*D0)) ...due to shopper demand. Next line is due to nonshopper demand (taken expectation wrt to γi)
-            .*(1 + γscale * 0.166666667.* Dm).^-m.*naturaldisappear
+        demandlh   = (disap > 0) - (2 .* disap - 1) .* exp(-0.166666667 .* (γ0.*D0 + (γ2 + γ1)./2 .* Dm)) .* naturaldisappear
+        demandlhol = (disap > 0) - (2 .* disap - 1) .* # Next line starts probability of nondisappear due to shopper demand.
+                     exp.(-0.166666667.*(γ0.*D0)) .*   # Next line is due to nonshopper demand (taken expectation wrt to γi)
+                     (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* naturaldisappear
 
-    # lip_o = interp1(pdfdata1,pdfdata2,γ1./γscale)./γscale.*dγidg.*demandlh.^3 #
-    # lip_o = exp(-γ1./γscale)./γscale.*dγidg.*demandlh.^3 #
-     lip_o = min((gamcdf(γ2,m,γscale) - gamcdf(γ1,m,γscale)),1).*demandlh.^3 #
-        lip_ol = basellh.*  demandlhol.^3 #  # price likelihood. Next line starts disappear likelihood
+        lip_o  = min((gamcdf(γ2, m, γscale) - gamcdf(γ1, m, γscale)), 1) .* demandlh .^ 3
+        lip_ol = basellh .* demandlhol .^ 3 # Price likelihood. Next line starts disappear likelihood
     else
-    # lip_o = interp1(pdfdata1,pdfdata2,γ1./γscale)./γscale.*dγidg #
-    # lip_o = exp(-γ1./γscale)./γscale.*dγidg #
-    lip_o = min(gamcdf(γ2,m,γscale) - gamcdf(γ1,m,γscale),1)
-        lip_ol = basellh #  # price likelihood. Next line starts disappear likelihood
+        lip_o = min(quantile.(Gamma.(m, γscale), γ2) - quantile.(Gamma.(m, γscale), γ1), 1) # TODO
+        lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
     end
 
-    # lip_o(γ1<0,1) = 0
-    # lip_o(lip_o<0,1) = 0
-    liptemp = (1-olp).*lip_o + olp.*lip_ol
-    olppost = olp.*lip_ol./liptemp
-    lip = log(liptemp)
+    liptemp = (1 - olp) .* lip_o + olp .* lip_ol
+    olppost = olp .* lip_ol ./ liptemp
+    lip = log.(liptemp)
 
     pi_v = zeros(N)
     CSns = zeros(N)

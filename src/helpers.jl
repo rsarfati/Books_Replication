@@ -98,21 +98,18 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     Dm   = δ .* (p2 .^ (-η))
     dDm  = δ .* (-η) .* (p2 .^ (-η-1))
     d2Dm = δ .* (η) .* (η+1) .* (p2 .^ (-η-2))
-    #Solve for the γ rationalizing price choice
+    # Solve for the γ rationalizing price choice
     γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
                        dD0 .+ rounderr .* d2D0, γ0, p2, r)
 
-    # TODO: what is this
     SOC = r .* p2 .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ γ2 .* Dm .+ γ0 .*
             (D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr ^ 2)) .*
             (γ2 .* dDm .+ γ0 .* (dD0 .+ rounderr .* d2D0))
 
-    γ1[imag.(γ1) .≈ 0]  .= real(γ1[imag.(γ1) .≈ 0])
-    γ2[imag.(γ2) .≈ 0]  .= 0
+    γ1[imag.(γ1) .!= 0] .= real.(γ1[imag.(γ1) .!= 0])
+    γ2[imag.(γ2) .!= 0] .= 0
     γ2[real.(SOC) .> 0] .= 0
-    γ2[real.(γ2) .< 0]  .= 0
-
-    ##### WHERE DO NOT MATCH: SOC, γ1, γ2
+    γ2[real.(γ2)  .< 0] .= 0
 
     profit2 = p2 ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
     profitH = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
@@ -122,7 +119,7 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     γ1[real.(γ1) .< 0] .= .0
     γ1[real.(γ1) .> real.(γ2)] .= γ2[real.(γ1) .> real.(γ2)]
 
-    Dm = δ.*(p .^ (-η))
+    Dm = δ .* (p .^ (-η))
 
     if demandcal == 1
         disap = data["disappear"]
@@ -164,34 +161,36 @@ function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scal
     η = scalarparas[3]
     r = scalarparas[4]
 
+    p    = data["p"]
+    N, M = Int.(data["N"], data["M"])
+    cdindex = Int.(data["cdindex"])
+    d_first = Int.(data["first"])
+
     γ1ave = 0.5 * (γ1 + γ2)
 
-    pi_o  = data.p .* (γ1ave  .* Dm + γ0 .* D0) ./ (r + γ1ave  .* Dm + γ0 .* D0)
-    pi_ol = data.p .* (γscale .* Dm + γ0 .* D0) ./ (r + γscale .* Dm + γ0 .* D0)
+    pi_o  = p .* (γ1ave  .* Dm + γ0 .* D0) ./ (r + γ1ave  .* Dm + γ0 .* D0)
+    pi_ol = p .* (γscale .* Dm + γ0 .* D0) ./ (r + γscale .* Dm + γ0 .* D0)
     pi_v  = olppost .* pi_ol + (1-olppost) .* pi_o
 
-    CSns_o = (1/(η-1)) .* γ1ave .* Dm .* data.p ./ (r + γ1ave .* Dm + γ0 .* D0)
-    CSns_ol = (1/(η-1)) .* γscale .* Dm .* data.p./(r + γscale .* Dm + γ0 .* D0)
+    CSns_o = (1/(η-1)) .* γ1ave .* Dm .* p ./ (r + γ1ave .* Dm + γ0 .* D0)
+    CSns_ol = (1/(η-1)) .* γscale .* Dm .* p./(r + γscale .* Dm + γ0 .* D0)
     CSns = olppost .* CSns_ol + (1-olppost) .* CSns_o
 
-    CSgain = zeros(data.N, 1)
-    N = 10000
+    CSgain = zeros(N, 1)
+    N = 10000 #TODO: this looks like trouble
 
-    cdindex = data["cdindex"]
-
-    for k = 1:data.M
-
-        mktsize = cdindex[k]-data["first"][k]+1
-        randomprice = repeat(-[pdif(data["first"][k]:cdindex[k],1) ; -β],1,N) -
-             evrnd(0,1,mktsize+1,N) ./ α[1]
-        [best, bestindex] = max(randomprice)
-        temp = sparse([bestindex mktsize+1],1:N+1,[best - randomprice(end,:) 1])
-        CSgain[data["first"][k]:data["cdindex"][k],1] = sum(temp[1:mktsize,1:N],dims=2) ./ (sum(temp[1:mktsize,1:N] .> 0, dims=2) + 1e-5)
-
+    for k = 1:M
+        mktsize = cdindex[k] - d_first[k] + 1
+        rand_price = repeat(-[pdif(d_first[k]:cdindex[k],1) ; -β], 1, N) -
+             evrnd(0,1,mktsize+1, N) ./ α[1]
+        best, bestindex = findmax(randomprice)
+        temp = sparse(vcat(bestindex, mktsize + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
+        CSgain[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize,1:N], dims=2) ./
+                                          (sum(temp[1:mktsize,1:N] .> 0, dims=2) .+ 1e-5)
     end
+    CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain
+    CSs_ol = γ0 .* D0 ./ (r .+ γscale .* Dm .+ γ0 .* D0) .* CSgain
+    CSs    = olppost .* CSs_ol + (1 .- olppost) .* CSs_o
 
-    CSs_o  = γ0 .* D0 ./ (r + γ1ave  .* Dm + γ0 .* D0) .* CSgain
-    CSs_ol = γ0 .* D0 ./ (r + γscale .* Dm + γ0 .* D0) .* CSgain
-    CSs    = olppost .* CSs_ol + (1 - olppost) .* CSs_o
     return pi_v, CSns, CSs
 end

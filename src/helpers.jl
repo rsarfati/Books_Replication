@@ -11,9 +11,9 @@ function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
 end
 
 function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
-    A = Dm .^ 2.0
-    B = (dDm .* r .* p) .+ (r .* Dm) .+ (2.0 .* Dm .* γ0 .* D0)
-    C = r .* p .* γ0 .* dD0 .+ r .* γ0 .* D0 .+ γ0 .* γ0 .* D0 .* D0
+    A  = Dm .^ 2.0
+    B  = (dDm .* r .* p) .+ (r .* Dm) .+ (2.0 .* Dm .* γ0 .* D0)
+    C  = r .* p .* γ0 .* dD0 .+ r .* γ0 .* D0 .+ γ0 .* γ0 .* D0 .* D0
     γ1 = ((-B .+ ((B .^ 2 .- 4 .* A .* C) .+ 0im) .^ (0.5)) ./ (2 .* A))
     l1 = (real.(γ1) .> 0) .& (imag.(γ1) .≈ 0)
     return γ1, l1
@@ -66,17 +66,17 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     obs_w    = vec(data["obsweight"])
     p        = data["p"]
 
-    γ0 = βsigma3[1] .* (numlist .^ βsigma3[8] ./ mean(numlist.^βsigma3[8]))
-    α  = fill((βsigma3[2]+1) * βsigma3[14] ^ βsigma3[15], N)
-    β  = βsigma3[3] ./ βsigma3[14] ^ βsigma3[15]
-    m  = βsigma3[4]
-    γscale = βsigma3[5] ./ m .* (numlist .^ βsigma3[9] ./
-                mean(numlist .^ βsigma3[9])) .* exp.(βsigma3[12] .* localint)
-    η      = βsigma3[6]+1
-    r      = βsigma3[7]
-    βcond  = βsigma3[10]
-    olp    = βsigma3[13]
-    δ      = βsigma3[14]
+    γ0       = βsigma3[1] .* (numlist .^ βsigma3[8] ./ mean(numlist.^βsigma3[8]))
+    α        = fill((βsigma3[2]+1) * βsigma3[14] ^ βsigma3[15], N)
+    β        = βsigma3[3] ./ βsigma3[14] ^ βsigma3[15]
+    m        = βsigma3[4]
+    η        = βsigma3[6]+1
+    r        = βsigma3[7]
+    βcond    = βsigma3[10]
+    olp      = βsigma3[13]
+    δ        = βsigma3[14]
+    γscale   = βsigma3[5] ./ m .* (numlist .^ βsigma3[9] ./ mean(numlist .^ βsigma3[9])) .*
+                   exp.(βsigma3[12] .* localint)
     nat_disap = βsigma3[16]
 
     ##########
@@ -92,6 +92,7 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     # Solve for the γ rationalizing price choice
     γ1, l1 = solveγPar(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
                        dD0 .- rounderr .* d2D0, γ0, p1, r)
+
     ## calculate γ2
     p2   = p .+ rounderr
     Dm   = δ .* (p2 .^ (-η))
@@ -101,6 +102,7 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
                        dD0 .+ rounderr .* d2D0, γ0, p2, r)
 
+    # TODO: what is this
     SOC = r .* p2 .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ γ2 .* Dm .+ γ0 .*
             (D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr ^ 2)) .*
             (γ2 .* dDm .+ γ0 .* (dD0 .+ rounderr .* d2D0))

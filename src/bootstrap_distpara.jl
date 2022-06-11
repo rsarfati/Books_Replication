@@ -1,6 +1,8 @@
 # Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
-using CSV, DataFrames, Dates, Distributions, MAT, Optim, SparseArrays, Statistics
+using CSV, DataFrames, Dates, Distributions, MAT, Optim, Random, SparseArrays, Statistics
 
+# Set seed for testing purposes
+rng = MersenneTwister(1234)
 ## Input: True data, randomly generated title-level index
 # ~ Contructs bootstrap dataset, runs the estimation ~
 # Output: bootstrap_welfare.csv

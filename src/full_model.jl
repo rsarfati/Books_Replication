@@ -61,23 +61,24 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     # TODO: this gets run a LOT, present run time:
     # 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time)
     #@parallel
-    @time for i = 1
+    @time for i = 1 #:Y
         lip_09[:,i], γ2_09[:,i], γ1_09[:,i], γ0_09[:,i], D0_09[:,i], Dm_09[:,i],
-        pi_09[:,i], CSns_09[:,i], CSs_09[:,i] = obscalnewtest2015(vcat(γ0_δ_vec[i, 1],
-                     βσ4[[6, 7, 8, 9, 11, 12]], λ1, λ2, βcond, βpop, 0, βσ4[13], γ0_δ_vec[i, 2],
-                     βσ4[14], 1), data09, basellh_09, 0, pdif_09, rounderr, WFcal)
+        pi_09[:,i], CSns_09[:,i], CSs_09[:,i] = obscalnewtest2015(
+                     vcat(γ0_δ_vec[i, 1], βσ4[[6, 7, 8, 9, 11, 12]], λ1, λ2,
+                          βcond, βpop, 0, βσ4[13], γ0_δ_vec[i, 2], βσ4[14], 1),
+                          data09, basellh_09, 0, vec(pdif_09), rounderr; WFcal = WFcal)
     end
-    for k=1:M_09
-        llhβ_09[k, :] .= sum(lip_09[first_09[k]:cdindex_09[k],:])
+    for k = 1:M_09
+        llhβ_09[k,:] .= sum(lip_09[first_09[k]:cdindex_09[k],:])
     end
-    maxtemp_09 = maximum(llhβ_09,dims=2)
-    llhadj_09  = exp.(llhβ_09 - repeat(maxtemp_09,1,Y))
+    maxtemp_09 = maximum(llhβ_09, dims=2)
+    llhadj_09  = exp.(llhβ_09 - repeat(maxtemp_09, 1, Y))
 
     ## Calculation for 2012 data
-    lip12 = zeros(N_12, Y)
-    γ112  = lip12
-    γ212  = lip12
-    γ012  = lip12
+    lip12  = zeros(N_12, Y)
+    γ112   = lip12
+    γ212   = lip12
+    γ012   = lip12
     D012   = lip12
     Dm12   = lip12
     ltot12 = zeros(M_12)
@@ -90,9 +91,9 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     for i = 1#:Y
         lip12[:,i], γ212[:,i], γ112[:,i], γ012[:,i], D012[:,i],
         Dm12[:,i], pi12[:,i], CSns12[:,i], CSs12[:,i] = obscalnewtest2015(
-            vcat(γ0_δ_vec[i,1], βσ4[[6 7 8 10 11 12]], λ1, λ2,
-            βcond, βpop, 0, βσ4[13], γ0_δ_vec[i,2], βσ4[14],
-            naturaldisappear), data12, basellh12, 1, pdif_12, rounderr, WFcal)
+            vcat(γ0_δ_vec[i,1], βσ4[[6, 7, 8, 10, 11, 12]], λ1, λ2,
+            βcond, βpop, 0, βσ4[13], γ0_δ_vec[i, 2], βσ4[14],
+            naturaldisappear), data12, basellh12, 1, pdif_12, rounderr; WFcal = WFcal)
     end
     for k=1:M_12
         llhβ12[k,:] .= sum(lip12[first_12[k]:cdindex_12[k],:])
@@ -107,7 +108,8 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     getbmean(γ_l) = -sum(obscalnewtest2015(vcat(0, βσ4[[6, 7, 8]], abs(γ_l[1]),
                                                 βσ4[[11, 12]], λ1, λ2, βcond,
                                                 βpop, γ_l[2], βσ4[13], 1, 1, 1),
-                                                bp, basellhb, 0, vec(bp["p"]), rounderr, false)[1])
+                                                bp, basellhb, 0, vec(bp["p"]),
+                                                rounderr, false)[1])
 
     function integγ0(γinput; return_all = false)
         γ0shape = γinput[1]
@@ -117,22 +119,22 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         δ_σ     = γinput[4]
 
         # Calculate the importance of the grid points
-        γ0cdfvec = vcat(-cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[1]),
+        γ0_cdf_vec = vcat(-cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[1]),
                          cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec),
                          2 .- cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[end]))
-        imp1 = (γ0cdfvec[3:end] - γ0cdfvec[1:end-2]) ./ 2
+        imp1 = (γ0_cdf_vec[3:end] - γ0_cdf_vec[1:end-2]) ./ 2
 
-        γ0cdfvec = vcat(-cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[1]),
+        γ0_cdf_vec = vcat(-cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[1]),
                          cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec),
                          2 .- cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[end]))
 
-        imp2 = (γ0cdfvec[3:end] - γ0cdfvec[1:end-2]) ./ 2
+        imp2 = (γ0_cdf_vec[3:end] - γ0_cdf_vec[1:end-2]) ./ 2
 
         # TODO: find every use of quantile and verify it wasn't meant to be CDF
-        δ_cdfvec = vcat(-cdf(Normal(δ_mean, δ_σ), log(δ_vec[1])),
+        δ_cdf_vec = vcat(-cdf(Normal(δ_mean, δ_σ), log(δ_vec[1])),
                         cdf.(Normal(δ_mean, δ_σ), log.(δ_vec)),
                         2 .- cdf.(Normal(δ_mean,δ_σ), log(δ_vec[end])))
-        imp3 = (δ_cdfvec[3:end] - δ_cdfvec[1:end-2]) ./ 2
+        imp3 = (δ_cdf_vec[3:end] - δ_cdf_vec[1:end-2]) ./ 2
 
         imp_09 = imp1 * imp3'
         imp_12 = imp2 * imp3'
@@ -153,15 +155,16 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     distpara2, f2 = res.minimizer, res.minimum
 
     WFbp = zeros(length(lipb), 3)
-    lipb, γ2bp, γ1bp, γ0bp, D0bp, Dmbp, WFbp[:,1], WFbp[:,2], WFbp[:,3] = obscalnewtest2015(
-        vcat(0, βσ4[[6, 7, 8,]], abs(distpara2[1]), βσ4[[11, 12]], λ1, λ2, βcond,
-        βpop, distpara2[2], βσ4[13], 1, 1, 1), bp, basellhb, 0, bp["p"], rounderr, WFcal)
+    lipb, γ2bp, γ1bp, γ0bp, D0bp, Dmbp,
+    WFbp[:,1], WFbp[:,2], WFbp[:,3] = obscalnewtest2015(vcat(0, βσ4[[6, 7, 8,]],
+        abs(distpara2[1]), βσ4[[11, 12]], λ1, λ2, βcond, βpop, distpara2[2],
+        βσ4[13], 1, 1, 1), bp, basellhb, 0, bp["p"], rounderr; WFcal = WFcal)
 
     f = f1 + f2
     distpara = vcat(distpara1, distpara2)
 
     if WFcal
-        imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all= true)
+        imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
         WF_09       = zeros(N_09, 3)
         WF12        = zeros(N_12, 3)
         AveWF_09    = zeros(M_09, 3)
@@ -176,11 +179,11 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
             WF_09[ind_k, 1]  = pi_09[ind_k,:]   * RPpost
             WF_09[ind_k, 2]  = CSns_09[ind_k,:] * RPpost
             WF_09[ind_k, 3]  = CSs_09[ind_k,:]  * RPpost
-            obsweight        = obsweight_09[ind_k, 1] ./ sum(obsweight_09[ind_k, 1])
+            obsweight        = obsweight_09[ind_k, 1] ./ sum(obsweight_09[ind_k,1])
             AveWF_09[k, 1:3] = obsweight' * WF_09[ind_k, 1:3]
-            y_max = argmax(llhadj_09[k,:])
+            y_max            = argmax(llhadj_09[k,:])
 
-            BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:], llhβ_09[k,y_max] ./ length(ind_k)), 1, length(ind_k))',
+            BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :], llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
                 exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max], γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
                 Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max], CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
 
@@ -199,15 +202,18 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
                 γ012[ind_k,y_max], γ112[ind_k,y_max], γ212[ind_k,y_max],
                 Dm12[ind_k,y_max], D012[ind_k,y_max], pi12[ind_k,y_max], CSns12[ind_k,y_max], CSs12[ind_k,y_max])
         end
+
         fWF = Dict{String,Any}()
         fWF["BestVals_09"] = hcat(cdid_09, numlist_09, p_09, pdif_09, BestVals_09)
         fWF["BestVals_12"] = hcat(cdid_12, numlist_12, p_12, pdif_12, BestVals_12)
-        fWF["BestValsbp"] = hcat(bp["cdid"], bp["numlist"], bp["p"], repeat([0.0, 0.0, 1.0, 1.0]', Int.(bp["N"]), 1), lipb, basellhb, γ0bp, γ1bp, γ2bp, Dmbp, D0bp, WFbp)
+        fWF["BestValsbp"] = hcat(bp["cdid"], bp["numlist"], bp["p"],
+                                 repeat([0.0, 0.0, 1.0, 1.0]', Int.(bp["N"]), 1),
+                                 lipb, basellhb, γ0bp, γ1bp, γ2bp, Dmbp, D0bp, WFbp)
         fWF["AveWF_09"] = AveWF_09
-        fWF["AveWF12"] = AveWF12
-        fWF["WF_09"] = WF_09
-        fWF["WF12"] = WF12
-        fWF["WFbp"] = WFbp
+        fWF["AveWF12"]  = AveWF12
+        fWF["WF_09"]    = WF_09
+        fWF["WF12"]     = WF12
+        fWF["WFbp"]     = WFbp
     end
 
     fother = Dict{String,Any}()
@@ -217,7 +223,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     fother["llhβ_09"]  = llhβ_09
     fother["γ0_δ_vec"] = γ0_δ_vec
     fother["imp_09"]   = imp_09
-    fother["imp_12"]    = imp_12
+    fother["imp_12"]   = imp_12
     fother["ltot_09"]  = ltot_09
     fother["ltot12"]   = ltot12
     fother["imp_09"]   = imp_09

@@ -41,18 +41,14 @@ end
 function demandshopper(α, β, p, cdid, obs_w)
 ```
 """
-function demandshopper(α, β, p, cdid, obs_w)
-    expU = vec(exp.(p .* -α))
-    sum1 = sum(sparse(collect(1:length(cdid)), vec(cdid), vec(obs_w) .* expU))'
-            + exp(β .* α)
-
+function demandshopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vector{T}) where T<:Float64
+    expU = exp.(p .* -α)
+    sum1 = sum(obs_w .* expU) + exp(β * α)
     f1 = expU ./ sum1
     f2 = -α .* expU .* (sum1 .- expU) ./ (sum1 .^ 2)
     f3 = α .^ 2 .* expU .* (sum1 .- expU) .* (sum1 .- 2 .* expU) ./ (sum1 .^ 3)
-
     replace!.([f1, f2, f3], NaN => 0)
-
-    return f1, f2, f3, fill(sum1, size(cdid)), expU
+    return f1, f2, f3, sum1, expU
 end
 
 """

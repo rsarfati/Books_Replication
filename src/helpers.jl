@@ -182,8 +182,6 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
     η = scalarparas[3]
     r = scalarparas[4]
 
-    #TODO: problem with olppost
-
     γ1ave = 0.5 * (γ1 + γ2)
 
     pi_o  = p .* (γ1ave  .* Dm .+ γ0 .* D0) ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0)
@@ -196,6 +194,7 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
 
     CSgain = zeros(N, 1)
     CSgain_OG = zeros(N, 1)
+
     N = 10000 # TODO: this looks like trouble
 
     mktsize = cdindex .- d_first .+ 1
@@ -207,7 +206,7 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
         best_ind = Vector{Float64}(undef, N)
         β_p      = Vector{Float64}(undef, N)
 
-        gumb_draw = rand(rng, Gumbel(0,1), mktsize[k] + 1, N)
+        gumb_draw  = rand(rng, Gumbel(0,1), mktsize[k] + 1, N)
 
         rand_price = repeat(-[pdif[ind_k, 1] ; -β], 1, N) .- gumb_draw ./ α
 

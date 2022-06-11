@@ -133,7 +133,6 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     γ1[real.(γ1) .< 0] .= .0
     γ1[real.(γ1) .> real.(γ2)] .= γ2[real.(γ1) .> real.(γ2)]
 
-    #TODO: Reca added this in
     γ1 = real.(γ1)
     γ2 = real.(γ2)
 
@@ -151,7 +150,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood. Next line starts disappear likelihood
     else
         γ_dist = Gamma.(m, γscale)
-        lip_o  = min.([quantile(γ_dist[i], γ2[i]) - quantile(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
+        lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
         lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
     end
 
@@ -183,10 +182,12 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
     η = scalarparas[3]
     r = scalarparas[4]
 
+    #TODO: problem with olppost
+
     γ1ave = 0.5 * (γ1 + γ2)
 
-    pi_o  = p .* (γ1ave  .* Dm + γ0 .* D0) ./ (r .+ γ1ave  .* Dm + γ0 .* D0)
-    pi_ol = p .* (γscale .* Dm + γ0 .* D0) ./ (r .+ γscale .* Dm + γ0 .* D0)
+    pi_o  = p .* (γ1ave  .* Dm .+ γ0 .* D0) ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0)
+    pi_ol = p .* (γscale .* Dm .+ γ0 .* D0) ./ (r .+ γscale .* Dm .+ γ0 .* D0)
     pi_v  = olppost .* pi_ol .+ (1 .- olppost) .* pi_o
 
     CSns_o  = (1/(η-1)) .* γ1ave  .* Dm .* p ./ (r .+ γ1ave  .* Dm + γ0 .* D0)
@@ -208,32 +209,13 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
 
         gumb_draw = rand(rng, Gumbel(0,1), mktsize[k] + 1, N)
 
-        for i=1:N
-            β_p[i]                 = β - gumb_draw[end, i] / α#β - rand(rng, Gumbel(0, 1)) / α
-            best_p[i], best_ind[i] = findmax(-pdif[ind_k] - gumb_draw[1:end-1, i] ./ α)
-            if best_p[i] < β_p[i]
-                best_ind[i] = mktsize[k] + 1
-                best_p[i]   = β_p[i]
-            end
-        end
-        #temp = sparse(best_ind, 1:N, best_p .- β_p)
-        temp = best_p .- β_p
-        @show sum(temp[best_ind .< mktsize[k]+1], dims=2) ./ (sum(temp .> 0, dims=2) .+ 1e-5)
-
-        #CSgain[ind_k,1] .= sum(temp[best_ind .< mktsize[k]+1], dims=2)[1:end] ./ (sum(temp .> 0, dims=2)[1:end] .+ 1e-5)
-        #CSgain[ind_k,1] .= sum(temp[1:N]) ./ (sum(temp[1:N] .> 0) .+ 1e-5)
-
-        rand_price = repeat(-[pdif[d_first[k]:cdindex[k], 1] ; -β], 1, N) .- gumb_draw ./ α[1]
+        rand_price = repeat(-[pdif[ind_k, 1] ; -β], 1, N) .- gumb_draw ./ α
 
         best, bestindex = vec.(findmax(rand_price, dims = 1))
 
         temp = sparse(vcat((x->x[2]).(bestindex), mktsize[k] + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
 
         CSgain_OG[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize[k],1:N], dims=2) ./ (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
-
-        #@show CSgain22
-        #@show CSgain[ind_k, 1]
-        @show CSgain_OG[ind_k,1]
     end
 
     CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain

@@ -44,7 +44,7 @@ function demandshopper(α, β, p, cdid, obs_w)
 function demandshopper(α, β, p, cdid, obs_w)
     expU = vec(exp.(p .* -α))
     sum1 = sum(sparse(collect(1:length(cdid)), vec(cdid), vec(obs_w) .* expU))'
-            + exp(β .* α[1])
+            + exp(β .* α)
 
     f1 = expU ./ sum1
     f2 = -α .* expU .* (sum1 .- expU) ./ (sum1 .^ 2)
@@ -57,33 +57,37 @@ end
 
 """
 ```
-function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
+function obscalnewtest2015(βσ3, data, basellh, demandcal, p0, rounderr, WFcal)
 ```
 Corresponds to Masao/obscalnewtest2015.m. Works!
 """
-function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFcal)
+function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
+                           rounderr; WFcal = false) where T<:Float64
 
     # [muγ0 α-1 β γishape γimean η-1 r lamda1 lamda2 βcond βpop βlocal olp δ c]
-    numlist  = data["numlist"]
-    localint = data["localint"]
+    numlist  = vec(data["numlist"])
+    localint = vec(data["localint"])
     N        = Int(data["N"])
-    cond_dif = data["conditiondif"]
+    M        = Int(data["M"])
+    cdindex  = Int.(vec(data["cdindex"]))
+    d_first  = Int.(vec(data["first"]))
+    cond_dif = vec(data["conditiondif"])
     cdid     = vec(data["cdid"])
     obs_w    = vec(data["obsweight"])
-    p        = data["p"]
+    p        = vec(data["p"])
 
-    γ0       = βsigma3[1] .* (numlist .^ βsigma3[8] ./ mean(numlist.^βsigma3[8]))
-    α        = fill((βsigma3[2]+1) * βsigma3[14] ^ βsigma3[15], N)
-    β        = βsigma3[3] ./ βsigma3[14] ^ βsigma3[15]
-    m        = βsigma3[4]
-    η        = βsigma3[6]+1
-    r        = βsigma3[7]
-    βcond    = βsigma3[10]
-    olp      = βsigma3[13]
-    δ        = βsigma3[14]
-    γscale   = βsigma3[5] ./ m .* (numlist .^ βsigma3[9] ./ mean(numlist .^ βsigma3[9])) .*
-                   exp.(βsigma3[12] .* localint)
-    nat_disap = βsigma3[16]
+    γ0       = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))
+    α        = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
+    β        = βσ3[3] ./ βσ3[14] ^ βσ3[15]
+    m        = βσ3[4]
+    η        = βσ3[6] + 1
+    r        = βσ3[7]
+    βcond    = βσ3[10]
+    olp      = βσ3[13]
+    δ        = βσ3[14]
+    γscale   = βσ3[5] ./ m .* (numlist .^ βσ3[9] ./ mean(numlist .^ βσ3[9])) .*
+                   exp.(βσ3[12] .* localint)
+    nat_disap = βσ3[16]
 
     ##########
     # Solve for demand and its 1st & 2nd order derivatives
@@ -95,27 +99,30 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
     Dm   = δ .* (p1 .^ (-η))
     dDm  = δ .* (-η) .* (p1 .^ (-η-1))
     d2Dm = δ .* (η) .* (η+1) .* (p1 .^ (-η-2))
+
     # Solve for the γ rationalizing price choice
-    γ1, l1 = solveγPar(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
-                       dD0 .- rounderr .* d2D0, γ0, p1, r)
+    γ1, l1 = solveγPar(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
+                       dDm, dD0 .- rounderr .* d2D0, γ0, p1, r)
 
     ## calculate γ2
     p2   = p .+ rounderr
     Dm   = δ .* (p2 .^ (-η))
     dDm  = δ .* (-η) .* (p2 .^ (-η-1))
     d2Dm = δ .* (η) .* (η+1) .* (p2 .^ (-η-2))
+
     # Solve for the γ rationalizing price choice
-    γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2, dDm,
-                       dD0 .+ rounderr .* d2D0, γ0, p2, r)
+    γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
+                       dDm, dD0 .+ rounderr .* d2D0, γ0, p2, r)
 
     SOC = r .* p2 .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ γ2 .* Dm .+ γ0 .*
             (D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr ^ 2)) .*
             (γ2 .* dDm .+ γ0 .* (dD0 .+ rounderr .* d2D0))
 
-    γ1[imag.(γ1) .!= 0] .= real.(γ1[imag.(γ1) .!= 0])
+    γ1 = real.(γ1)
     γ2[imag.(γ2) .!= 0] .= 0
     γ2[real.(SOC) .> 0] .= 0
     γ2[real.(γ2)  .< 0] .= 0
+    γ2 = real.(γ2)
 
     profit2 = p2 ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
     profitH = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
@@ -144,18 +151,19 @@ function obscalnewtest2015(βsigma3, data, basellh, demandcal, p0, rounderr, WFc
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood. Next line starts disappear likelihood
     else
         γ_dist = Gamma.(m, γscale)
-        lip_o = min.([quantile(γ_dist[i], γ2[i]) - quantile(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
+        lip_o  = min.([quantile(γ_dist[i], γ2[i]) - quantile(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
         lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
     end
 
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
-    olppost = olp .* lip_ol ./ liptemp
+    olppost = vec(olp .* lip_ol ./ liptemp)
     lip = log.(liptemp)
 
     pi_v, CSns, CSs = zeros(N), zeros(N), zeros(N)
 
     if WFcal
-        pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0, p0, data, vcat(α[1], β, η, r))
+        pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0, vec(p0),
+                                        p, N, M, cdindex, d_first, vcat(α, β, η, r))
     end
     return lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs
 end
@@ -166,17 +174,14 @@ function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scal
 ```
 Corresponds to /Masao/welfaresimple.m. Works!
 """
-function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scalarparas)
-
+function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::Vector{T},
+                       olppost::Vector{T}, Dm::Vector{T}, D0::Vector{T}, pdif::Vector{T},
+                       p::Vector{T}, N::S, M::S, cdindex::Vector{S}, d_first::Vector{S},
+                       scalarparas::Vector{T}) where {S<:Int64, T<:Float64}
     α = scalarparas[1]
     β = scalarparas[2]
     η = scalarparas[3]
     r = scalarparas[4]
-
-    p    = data["p"]
-    N, M = Int.(data["N"]), Int.(data["M"])
-    cdindex = Int.(data["cdindex"])
-    d_first = Int.(data["first"])
 
     γ1ave = 0.5 * (γ1 + γ2)
 
@@ -184,22 +189,53 @@ function welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scal
     pi_ol = p .* (γscale .* Dm + γ0 .* D0) ./ (r .+ γscale .* Dm + γ0 .* D0)
     pi_v  = olppost .* pi_ol .+ (1 .- olppost) .* pi_o
 
-    CSns_o = (1/(η-1)) .* γ1ave .* Dm .* p ./ (r .+ γ1ave .* Dm + γ0 .* D0)
-    CSns_ol = (1/(η-1)) .* γscale .* Dm .* p./(r .+ γscale .* Dm + γ0 .* D0)
-    CSns = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
+    CSns_o  = (1/(η-1)) .* γ1ave  .* Dm .* p ./ (r .+ γ1ave  .* Dm + γ0 .* D0)
+    CSns_ol = (1/(η-1)) .* γscale .* Dm .* p ./ (r .+ γscale .* Dm + γ0 .* D0)
+    CSns    = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
 
     CSgain = zeros(N, 1)
+    CSgain_OG = zeros(N, 1)
     N = 10000 # TODO: this looks like trouble
 
+    mktsize = cdindex .- d_first .+ 1
+
     for k = 1:M
-        mktsize = cdindex[k] - d_first[k] + 1
-        rand_price = repeat(-[pdif[d_first[k]:cdindex[k],1] ; -β], 1, N) -
-             rand(Gumbel(0,1), mktsize + 1, N) ./ α[1]
+        ind_k    = d_first[k]:cdindex[k]
+
+        best_p   = Vector{Float64}(undef, N)
+        best_ind = Vector{Float64}(undef, N)
+        β_p      = Vector{Float64}(undef, N)
+
+        gumb_draw = rand(rng, Gumbel(0,1), mktsize[k] + 1, N)
+
+        for i=1:N
+            β_p[i]                 = β - gumb_draw[end, i] / α#β - rand(rng, Gumbel(0, 1)) / α
+            best_p[i], best_ind[i] = findmax(-pdif[ind_k] - gumb_draw[1:end-1, i] ./ α)
+            if best_p[i] < β_p[i]
+                best_ind[i] = mktsize[k] + 1
+                best_p[i]   = β_p[i]
+            end
+        end
+        #temp = sparse(best_ind, 1:N, best_p .- β_p)
+        temp = best_p .- β_p
+        @show sum(temp[best_ind .< mktsize[k]+1], dims=2) ./ (sum(temp .> 0, dims=2) .+ 1e-5)
+
+        #CSgain[ind_k,1] .= sum(temp[best_ind .< mktsize[k]+1], dims=2)[1:end] ./ (sum(temp .> 0, dims=2)[1:end] .+ 1e-5)
+        #CSgain[ind_k,1] .= sum(temp[1:N]) ./ (sum(temp[1:N] .> 0) .+ 1e-5)
+
+        rand_price = repeat(-[pdif[d_first[k]:cdindex[k], 1] ; -β], 1, N) .- gumb_draw ./ α[1]
+
         best, bestindex = vec.(findmax(rand_price, dims = 1))
-        temp = sparse(vcat((x->x[2]).(bestindex), mktsize + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
-        CSgain[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize,1:N], dims=2) ./
-                                          (sum(temp[1:mktsize,1:N] .> 0, dims=2) .+ 1e-5)
+
+        temp = sparse(vcat((x->x[2]).(bestindex), mktsize[k] + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
+
+        CSgain_OG[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize[k],1:N], dims=2) ./ (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
+
+        #@show CSgain22
+        #@show CSgain[ind_k, 1]
+        @show CSgain_OG[ind_k,1]
     end
+
     CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain
     CSs_ol = γ0 .* D0 ./ (r .+ γscale .* Dm .+ γ0 .* D0) .* CSgain
     CSs    = olppost .* CSs_ol + (1 .- olppost) .* CSs_o

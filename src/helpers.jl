@@ -12,44 +12,66 @@ end
 
 """
 ```
-function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
+demand_shopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vector{T}) where T<:Float64
+```
+"""
+function demand_shopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vector{T};
+                        testing::Bool=false) where T<:Float64
+    expU = exp.(p .* -α)
+    sum1 = sum(obs_w .* expU) + exp(β * α)
+    f1 = expU ./ sum1
+    f2 = -α .* expU .* (sum1 .- expU) ./ (sum1 .^ 2)
+    f3 = α .^ 2 .* expU .* (sum1 .- expU) .* (sum1 .- 2 .* expU) ./ (sum1 .^ 3)
+
+    replace!.([f1, f2, f3], NaN => 0)
+
+    if testing
+        return f1, f2, f3, sum1, expU
+    else
+        return f1, f2, f3
+    end
+end
+
+"""
+```
+solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
 ```
 Works.
 """
-function solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
+function solve_γ_Par(Dm::Vector{T}, D0::Vector{T}, dDm::Vector{T}, dD0::Vector{T},
+                   γ0::Vector{T}, p::Vector{T}, r::T; testing::Bool=false) where T<:Float64
     A  = Dm .^ 2.0
     B  = (dDm .* r .* p) .+ (r .* Dm) .+ (2.0 .* Dm .* γ0 .* D0)
     C  = r .* p .* γ0 .* dD0 .+ r .* γ0 .* D0 .+ γ0 .* γ0 .* D0 .* D0
+
     γ1 = ((-B .+ ((B .^ 2 .- 4 .* A .* C) .+ 0im) .^ (0.5)) ./ (2 .* A))
+    if !testing
+        return γ1
+    end
     l1 = (real.(γ1) .> 0) .& (imag.(γ1) .≈ 0)
     return γ1, l1
 end
+
 
 function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
     if x[3]<0 || x[4]<0 || x[12]>1 || x[12]< 0
         return Inf
     end
     xx = vcat(x[1:2], x0[3], x[3:5], x0[7], x[6:(length(x0)-2)])
+
+    #TODO: run this at some point
+    @assert x[3] == xx[4]
+    @assert x[4] == xx[5]
+    @assert x[12] == xx[14]
+
     # if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
     #     return Inf
     # end
+
     return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
 end
 
-"""
-```
-function demandshopper(α, β, p, cdid, obs_w)
-```
-"""
-function demandshopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vector{T}) where T<:Float64
-    expU = exp.(p .* -α)
-    sum1 = sum(obs_w .* expU) + exp(β * α)
-    f1 = expU ./ sum1
-    f2 = -α .* expU .* (sum1 .- expU) ./ (sum1 .^ 2)
-    f3 = α .^ 2 .* expU .* (sum1 .- expU) .* (sum1 .- 2 .* expU) ./ (sum1 .^ 3)
-    replace!.([f1, f2, f3], NaN => 0)
-    return f1, f2, f3, sum1, expU
-end
+
 
 """
 ```
@@ -86,9 +108,9 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     nat_disap = βσ3[16]
 
     ##########
-    # Solve for demand and its 1st & 2nd order derivatives
+    # Solve for demand + its 1st & 2nd order derivatives
     ##########
-    D0, dD0, d2D0, sumpind, expU = demandshopper(α, β, p0 .- βcond .* cond_dif ./ α, cdid, obs_w)
+    D0, dD0, d2D0 = demand_shopper(α, β, p0 .- βcond .* cond_dif ./ α, cdid, obs_w)
 
     ## calculate γ1
     p1   = p .- rounderr
@@ -97,7 +119,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     d2Dm = δ .* (η) .* (η+1) .* (p1 .^ (-η-2))
 
     # Solve for the γ rationalizing price choice
-    γ1, l1 = solveγPar(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
+    γ1 = solve_γ_Par(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
                        dDm, dD0 .- rounderr .* d2D0, γ0, p1, r)
 
     ## calculate γ2
@@ -107,7 +129,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     d2Dm = δ .* (η) .* (η+1) .* (p2 .^ (-η-2))
 
     # Solve for the γ rationalizing price choice
-    γ2, l2 = solveγPar(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
+    γ2 = solve_γ_Par(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
                        dDm, dD0 .+ rounderr .* d2D0, γ0, p2, r)
 
     SOC = r .* p2 .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ γ2 .* Dm .+ γ0 .*
@@ -123,7 +145,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     profit2 = p2 ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
     profitH = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
 
-    γ3, _ = solveγPar(Dm, 0, dDm, 0, 0, p2, r)
+    γ3 = solve_γ_Par(Dm, 0, dDm, 0, 0, p2, r)
     γ2[real.(profitH) .> real.(profit2)] .= γ3[real.(profitH) .> real.(profit2)]
 
     γ1[real.(γ1) .< 0] .= .0
@@ -136,7 +158,9 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
 
     if demandcal == 1
         disap = data["disappear"]
+
         # D0 =demandshopper(α,β,p0- βcond.*data.cond_dif./α,data["cdid"],data["obsweight"]) #
+
         demandlh   = (disap > 0) - (2 .* disap - 1) .* exp(-0.166666667 .* (γ0.*D0 + (γ2 + γ1)./2 .* Dm)) .* nat_disap
         demandlhol = (disap > 0) - (2 .* disap - 1) .*  # Next line starts probability of nondisappear due to shopper demand
                         exp.(-0.166666667.*(γ0.*D0)) .* # Next line is due to nonshopper demand (taken expectation wrt to γi)

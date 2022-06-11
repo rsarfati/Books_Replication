@@ -23,7 +23,7 @@ end
 @load "$path/demand_inputs.jld2" α β p cdid obsw
 @load "$path/demand_outputs.jld2" f1_mat f2_mat f3_mat sum2_mat expU_mat
 
-f1, f2, f3, sum1, expU = demandshopper(α, β, p, cdid, obsw)
+f1, f2, f3, sum1, expU = demand_shopper(α, β, p, cdid, obsw; testing=true)
 
 @testset "Demand of Shoppers (demandshopper)" begin
     @test f1 == f1_mat

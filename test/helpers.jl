@@ -3,8 +3,7 @@ using FileIO, Test, FileIO, JLD2, MAT
 path = dirname(@__FILE__) * "/data/"
 rng = MersenneTwister(1234)
 
-# Will reconstruct jld2 files from .mat files
-# (Run if you've recently regenerated the .mat files)
+# Run if you've recently regenerated the .mat files; will reconstruct the .jld2's
 reload_matlab_files = true
 
 ######################
@@ -48,7 +47,8 @@ end
 @load "$path/solvegamma_inputs.jld2" Dm D0 dDm dD0 γ0 p r
 @load "$path/solvegamma_outputs.jld2" γ1_m l1_m
 
-γ1, l1_m = solve_γ(Dm, D0, dDm, dD0, gamma0, p, r; allout=true)
+γ1, l1_m = solve_γ(Dm, D0, dDm, dD0, gamma0, p, r; allout = true)
+
 @testset "Solve γ" begin
     @test γ1 ≈ γ1_m
     @test l1 == l1_m

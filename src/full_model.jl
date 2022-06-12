@@ -28,31 +28,32 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     γ0_δ_vec = hcat(vec(temp1), vec(temp2))
 
     Y    = length(temp1)
-    M_09 = Int.(data09["M"])
-    N_09 = Int.(data09["N"])
-    M_12 = Int.(data12["M"])
-    N_12 = Int.(data12["N"])
-    first_09 = Int.(data09["first"])
-    p_09 = data09["p"]
-    pdif_09 = data09["pdif"]
-    numlist_09 = Int.(data09["numlist"])
-    cdindex_09 = Int.(data09["cdindex"])
-    cdid_09 = Int.(data09["cdid"])
+    M_09 = Int(data09["M"])
+    N_09 = Int(data09["N"])
+    M_12 = Int(data12["M"])
+    N_12 = Int(data12["N"])
+    first_09 = Int.(vec(data09["first"]))
+    p_09 = vec(data09["p"])
+    pdif_09 = vec(data09["pdif"])
+    numlist_09 = Int.(vec(data09["numlist"]))
+    cdindex_09 = Int.(vec(data09["cdindex"]))
+    cdid_09 = Int.(vec(data09["cdid"]))
 
-    cdid_12 = Int.(data12["cdid"])
-    first_12 = Int.(data12["first"])
-    p_12 = data12["p"]
-    pdif_12 = data12["pdif"]
-    numlist_12 = Int.(data12["numlist"])
-    cdindex_12 = Int.(data12["cdindex"])
-    obsweight_09 = data09["obsweight"]
-    obsweight_12 = data12["obsweight"]
+    cdid_12 = Int.(vec(data12["cdid"]))
+    first_12 = Int.(vec(data12["first"]))
+    p_12 = vec(data12["p"])
+    pdif_12 = vec(data12["pdif"])
+    numlist_12 = Int.(vec(data12["numlist"]))
+    cdindex_12 = Int.(vec(data12["cdindex"]))
+    obsweight_09 = vec(data09["obsweight"])
+    obsweight_12 = vec(data12["obsweight"])
 
     ## Calculation for 09 data
     ltot_09 = zeros(M_09)
     llhβ_09 = zeros(M_09, Y)  # record the log likelihood at a fixed β for a title
     lip_09  = zeros(N_09, Y)  # likelihood of each observation at each β
     γ1_09, γ2_09, γ0_09, D0_09, Dm_09 = lip_09, lip_09, lip_09, lip_09, lip_09
+
     basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
     pi_09, CSns_09, CSs_09 = zeros(N_09, Y), zeros(N_09, Y), zeros(N_09, Y)
@@ -61,12 +62,13 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     # TODO: this gets run a LOT, present run time:
     # 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time)
     #@parallel
-    @time for i = 1 #:Y
+    for i = 1:Y
+        @show i
         lip_09[:,i], γ2_09[:,i], γ1_09[:,i], γ0_09[:,i], D0_09[:,i], Dm_09[:,i],
         pi_09[:,i], CSns_09[:,i], CSs_09[:,i] = obscalnewtest2015(
                      vcat(γ0_δ_vec[i, 1], βσ4[[6, 7, 8, 9, 11, 12]], λ1, λ2,
                           βcond, βpop, 0, βσ4[13], γ0_δ_vec[i, 2], βσ4[14], 1),
-                          data09, basellh_09, 0, vec(pdif_09), rounderr; WFcal = WFcal)
+                     data09, basellh_09, pdif_09, rounderr; demandcal = false, WFcal = WFcal)
     end
     for k = 1:M_09
         llhβ_09[k,:] .= sum(lip_09[first_09[k]:cdindex_09[k],:])
@@ -88,7 +90,8 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
     # iterate for βs
     #@parallel
-    for i = 1#:Y
+    for i = 1:Y
+        @show i
         lip12[:,i], γ212[:,i], γ112[:,i], γ012[:,i], D012[:,i],
         Dm12[:,i], pi12[:,i], CSns12[:,i], CSs12[:,i] = obscalnewtest2015(
             vcat(γ0_δ_vec[i,1], βσ4[[6, 7, 8, 10, 11, 12]], λ1, λ2,
@@ -235,4 +238,23 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     fother["γ1bp"] = γ1bp
 
     return f, distpara, fother, fWF
+end
+
+
+function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
+    if x[3]<0 || x[4]<0 || x[12]>1 || x[12]< 0
+        return Inf
+    end
+    xx = vcat(x[1:2], x0[3], x[3:5], x0[7], x[6:(length(x0)-2)])
+
+    #TODO: run this at some point
+    @assert x[3] == xx[4]
+    @assert x[4] == xx[5]
+    @assert x[12] == xx[14]
+
+    # if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
+    #     return Inf
+    # end
+
+    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
 end

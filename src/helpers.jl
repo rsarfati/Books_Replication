@@ -1,6 +1,6 @@
 import Base.zeros
-zeros(x::Float64) = zeros(Int(round(x)))
-zeros(x::Float64,y::Int64) = zeros(Int(round(x)), y)
+zeros(x::Float64)            = zeros(Int(round(x)))
+zeros(x::Float64,y::Int64)   = zeros(Int(round(x)), y)
 zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
 
 function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
@@ -12,11 +12,13 @@ end
 
 """
 ```
-demand_shopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vector{T}) where T<:Float64
+demand_shopper(α::T, β::T, p::V, cdid::V, obs_w::V;
+               testing::Bool=false) where {T<:Float64, V<:Vector{Float64}}
 ```
+Solve for the demand of shoppers, along with 1st & 2nd order derivatives.
 """
-function demand_shopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vector{T};
-                        testing::Bool=false) where T<:Float64
+function demand_shopper(α::T, β::T, p::V, cdid::V, obs_w::V;
+                        allout::Bool = false) where {T<:Float64,V<:Vector{Float64}}
     expU = exp.(p .* -α)
     sum1 = sum(obs_w .* expU) + exp(β * α)
     f1 = expU ./ sum1
@@ -25,7 +27,7 @@ function demand_shopper(α::T, β::T, p::Vector{T}, cdid::Vector{T}, obs_w::Vect
 
     replace!.([f1, f2, f3], NaN => 0)
 
-    if testing
+    if allout
         return f1, f2, f3, sum1, expU
     else
         return f1, f2, f3
@@ -34,18 +36,21 @@ end
 
 """
 ```
-solve_γ(Dm::Vector{T}, D0::Vector{T}, dDm::Vector{T}, dD0::Vector{T},
-        γ0::Vector{T}, p::Vector{T}, r::T; testing::Bool = false) where T<:Float64
+solve_γ(p_in::V, D0::V, dD0::V, d2D0::V, δ::T, η::T, γ0::V, r::T, ϵ::T;
+                 allout::Bool = false) where {T<:Float64, V<:Vector{Float64}}
 ```
 Wrapper for solving for the γ rationalizing price choice.
 """
-function solve_γ(p_in::, D0, dD0, d2D0, δ, η, γ0, r, ϵ; allout::Bool = false)
+function solve_γ(p_in::V, D0::V, dD0::V, d2D0::V, δ::T, η::T, γ0::V, r::T, ϵ::T;
+                 allout::Bool = false) where {T<:Float64, V<:Vector{Float64}}
+
     Dm   = δ .* (p .^ (-η))
     dDm  = δ .* (-η) .* (p .^ (-η-1))
     d2Dm = δ .* (η) .* (η+1) .* (p .^ (-η-2))
 
-    D0 = D0 .+ ϵ .* dD0 .+ 0.5 .* d2D0 .* ϵ^2
-    dD0 = dD0 .+ ϵ .* d2D0
+    # Adjust for rounding error
+    D0  .+= ϵ .* dD0 .+ 0.5 .* d2D0 .* ϵ^2
+    dD0 .+= ϵ .* d2D0
 
     if allout
         return solve_γ(Dm, D0, dDm, dD0, γ0, p, r), Dm, dDm, d2Dm
@@ -74,34 +79,16 @@ function solve_γ(Dm::V, D0::Union{V,T}, dDm::V, dD0::Union{V,T}, γ0::Union{V,T
     return γ1, (real.(γ1) .> 0) .& (imag.(γ1) .≈ 0)
 end
 
-
-function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
-    if x[3]<0 || x[4]<0 || x[12]>1 || x[12]< 0
-        return Inf
-    end
-    xx = vcat(x[1:2], x0[3], x[3:5], x0[7], x[6:(length(x0)-2)])
-
-    #TODO: run this at some point
-    @assert x[3] == xx[4]
-    @assert x[4] == xx[5]
-    @assert x[12] == xx[14]
-
-    # if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
-    #     return Inf
-    # end
-
-    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
-end
-
 """
 ```
 function obscalnewtest2015(βσ3, data, basellh, demandcal, p0, ϵ, WFcal)
 ```
 Corresponds to Masao/obscalnewtest2015.m. Works!
 """
-function obscalnewtest2015(βσ3, data, basellh, demandcal::Bool, p0::Vector{T}, ϵ; WFcal = false) where T<:Float64
+function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::Bool = false,
+                           WFcal::Bool = false) where {T<:Float64, V<:Vector{Float64}}
 
-    # [muγ0 α-1 β γishape γimean η-1 r lamda1 lamda2 βcond βpop βlocal olp δ c]
+    # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
     numlist  = vec(data["numlist"])
     localint = vec(data["localint"])
     N        = Int(data["N"])
@@ -129,11 +116,11 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal::Bool, p0::Vector{T},
     # Solve for demand + its 1st & 2nd order derivatives
     D0, dD0, d2D0 = demand_shopper(α, β, p0 .- βcond .* cond_dif ./ α, cdid, obs_w)
 
-    # Solve for lower γ rationalizing price choice
+    # Solve for (lower) γ rationalizing price choice
     p1 = p .- ϵ
     γ1 = solve_γ(p1, D0, dD0, d2D0, δ, η, γ0, r, -ϵ)
 
-    # Solve for upper γ rationalizing price choice
+    # Solve for (upper) γ rationalizing price choice
     p2   = p .+ ϵ
     γ2, Dm, dDm, d2Dm = solve_γ(p2, D0, dD0, d2D0, δ, η, γ0, r, ϵ; allout = true)
 
@@ -164,7 +151,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal::Bool, p0::Vector{T},
     if demandcal == 1
         disap = data["disappear"]
 
-        # D0 =demandshopper(α,β,p0- βcond.*data.cond_dif./α,data["cdid"],data["obsweight"]) #
+        # D0 = demandshopper(α,β,p0- βcond.*data.cond_dif./α,data["cdid"],data["obsweight"]) #
 
         demandlh   = (disap > 0) - (2 .* disap - 1) .* exp(-0.166666667 .* (γ0.*D0 + (γ2 + γ1)./2 .* Dm)) .* nat_disap
         demandlhol = (disap > 0) - (2 .* disap - 1) .*  # Next line starts probability of nondisappear due to shopper demand

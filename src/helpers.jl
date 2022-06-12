@@ -34,22 +34,19 @@ end
 
 """
 ```
-solveγPar(Dm, D0, dDm, dD0, γ0, p, r)
+solve_γ(Dm, D0, dDm, dD0, γ0, p, r)
 ```
-Works.
+Solve for the γ rationalizing price choice.
 """
-function solve_γ_Par(Dm::Vector{T}, D0::Vector{T}, dDm::Vector{T}, dD0::Vector{T},
-                   γ0::Vector{T}, p::Vector{T}, r::T; testing::Bool=false) where T<:Float64
+function solve_γ(Dm::Vector{T}, D0::Vector{T}, dDm::Vector{T}, dD0::Vector{T},
+                     γ0::Vector{T}, p::Vector{T}, r::T; testing::Bool = false) where T<:Float64
     A  = Dm .^ 2.0
-    B  = (dDm .* r .* p) .+ (r .* Dm) .+ (2.0 .* Dm .* γ0 .* D0)
-    C  = r .* p .* γ0 .* dD0 .+ r .* γ0 .* D0 .+ γ0 .* γ0 .* D0 .* D0
+    B  = r .* ((dDm .* p) .+ Dm) .+ (2.0 .* Dm .* γ0 .* D0)
+    C  = (r .* γ0) .* ((p .* dD0) .+  D0) .+ (γ0 .^ 2) .* (D0 .^ 2)
 
-    γ1 = ((-B .+ ((B .^ 2 .- 4 .* A .* C) .+ 0im) .^ (0.5)) ./ (2 .* A))
-    if !testing
-        return γ1
-    end
-    l1 = (real.(γ1) .> 0) .& (imag.(γ1) .≈ 0)
-    return γ1, l1
+    γ1 = (-B .+ ((B .^ 2 .- 4 .* A .* C) .+ 0im) .^ (0.5)) ./ (2 .* A)
+
+    return !testing ? γ1 : γ1, (real.(γ1) .> 0) .& (imag.(γ1) .≈ 0)
 end
 
 
@@ -119,7 +116,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     d2Dm = δ .* (η) .* (η+1) .* (p1 .^ (-η-2))
 
     # Solve for the γ rationalizing price choice
-    γ1 = solve_γ_Par(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
+    γ1 = solve_γ(Dm, D0 .- rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
                        dDm, dD0 .- rounderr .* d2D0, γ0, p1, r)
 
     ## calculate γ2
@@ -129,7 +126,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     d2Dm = δ .* (η) .* (η+1) .* (p2 .^ (-η-2))
 
     # Solve for the γ rationalizing price choice
-    γ2 = solve_γ_Par(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
+    γ2 = solve_γ(Dm, D0 .+ rounderr .* dD0 .+ 0.5 .* d2D0 .* rounderr^2,
                        dDm, dD0 .+ rounderr .* d2D0, γ0, p2, r)
 
     SOC = r .* p2 .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ γ2 .* Dm .+ γ0 .*
@@ -145,7 +142,7 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0::Vector{T},
     profit2 = p2 ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
     profitH = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
 
-    γ3 = solve_γ_Par(Dm, 0, dDm, 0, 0, p2, r)
+    γ3 = solve_γ(Dm, 0, dDm, 0, 0, p2, r)
     γ2[real.(profitH) .> real.(profit2)] .= γ3[real.(profitH) .> real.(profit2)]
 
     γ1[real.(γ1) .< 0] .= .0

@@ -34,6 +34,27 @@ f1, f2, f3, sum1, expU = demand_shopper(α, β, p, cdid, obsw; testing=true)
 end
 
 ######################
+# solve_γ
+######################
+if reload_matlab_files
+    v = matread("$path/solvegamma.mat")
+    Dm, D0, dDm, dD0, gamma0, p, γ1_m, l1_m = Vector{Float64}.(vec.([v["Dm"], v["D0"],
+        v["dDm"], v["dD0"], v["gamma0"], v["p"], v["gamma1"], v["l1"]]))
+    r = Float64(v["r"])
+
+    @save "$path/solvegamma_inputs.jld2" Dm D0 dDm dD0 γ0 p r
+    @save "$path/solvegamma_outputs.jld2" γ1_m l1_m
+end
+@load "$path/solvegamma_inputs.jld2" Dm D0 dDm dD0 γ0 p r
+@load "$path/solvegamma_outputs.jld2" γ1_m l1_m
+
+γ1, l1_m = solve_γ(Dm, D0, dDm, dD0, gamma0, p, r; testing=true)
+@testset "Solve γ" begin
+    @test γ1 ≈ γ1_m
+    @test l1 == l1_m
+end
+
+######################
 # welfaresimple
 ######################
 if reload_matlab_files

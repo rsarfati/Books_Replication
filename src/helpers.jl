@@ -226,7 +226,8 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
 
         temp = sparse(vcat((x->x[2]).(bestindex), mktsize[k] + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
 
-        CSgain_OG[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize[k],1:N], dims=2) ./ (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
+        CSgain_OG[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize[k],1:N], dims=2) ./
+                                             (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
     end
 
     CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain

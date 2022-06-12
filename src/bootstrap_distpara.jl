@@ -1,5 +1,4 @@
 # Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
-using CSV, DataFrames, Dates, Distributions, MAT, Optim, Random, SparseArrays, Statistics
 
 # Set seed for testing purposes
 rng = MersenneTwister(1234)
@@ -53,12 +52,6 @@ true_estimates = [0.32135,	5.6459,	14.855,	 1.1614,  0.6486,   1.9196,	 14.771,
 # E[gamma_i] 2009 offline and betalocal, which according to Hongkai's validation
 # mode, is different from Masao's number.)
 
-# TODO: Specify script parameters
-vint      = "2022-06-04"
-run_mode  = 2   # Choose between available modes: 1 or 2 (see description above)
-N_workers = 72  # No. workers to request from cluster
-N_bs      = 200 # No. bootstrap iterations
-
 ## Parallel computing setup
 # The following 3 lines are for reduced-form server.
 # Can change resource parameters (walltime and mem) if necessary
@@ -104,8 +97,7 @@ bcdindexbp = bootindex
 if run_mode == 2
     # Mode 1 can be run on several servers simultaneously to save time;
     # use  `unique` to remove bootstrap runs duplicated on multiple servers.
-    boot = unique(CSV.read("data/bootstrap_estimates.csv",
-                           DataFrame, header=false))[:,2:end]
+    boot = unique(CSV.read("data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
 end
 
 # A validation mode:
@@ -120,6 +112,7 @@ end
 
 ## Run Bootstrap
 for i = 1:N_bs
+    @show i
     ##  Generate bootstrap data
     bs_ind = bootindex[i,:]
 
@@ -221,7 +214,7 @@ for i = 1:N_bs
 
     elseif run_mode == 2
 
-        xinitial = boot[i,:]
+        xinitial = Vector{Float64}(boot[i,:])
         llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp; WFcal = true)
 
         wel09    = mean(fWF["AveWF09"])

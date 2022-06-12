@@ -5,8 +5,8 @@ zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
 
 function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
   m, n = length(v1), length(v2)
-  v1 = reshape(v1, m, 1)
-  v2 = reshape(v2, 1, n)
+  v1   = reshape(v1, m, 1)
+  v2   = reshape(v2, 1, n)
   return repeat(v1, 1, n), repeat(v2, m, 1)
 end
 

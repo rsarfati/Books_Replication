@@ -10,20 +10,13 @@
 using CSV, DataFrames, Dates, Distributions, FixedEffectModels, MAT, Optim
 using Random, RegressionTables, Roots, SparseArrays, Statistics
 
-# Build output folders if don't exist
-path = dirname(@__FILE__)
-!isdir("$path/plots")  && run(`mkdir $path/plots/`)
-!isdir("$path/tables") && run(`mkdir $path/tables/`)
-!isdir("$path/output_data") && run(`mkdir $path/output_data/`)
-
-# Load functions
-include("helpers.jl")
-include("full_model.jl")
-
 # TODO: Adjust flags below for what you want to run.
 test_functions = true
 use_parallel   = false
 run_bootstrap  = false
+
+# TODO: If bootstrap, choose between available modes: 1 or 2 (see description)
+run_mode = 1
 
 # TODO: Specify script parameters
 vint      = "2022-06-12"
@@ -33,7 +26,16 @@ N_bs      = 200 # No. bootstrap iterations
 # TODO: Set estimation hyperparameters
 # ϵ / rounderr
 #
-#
+
+# Build output folders if don't exist
+path = dirname(@__FILE__)
+!isdir("$path/plots")  && run(`mkdir $path/plots/`)
+!isdir("$path/tables") && run(`mkdir $path/tables/`)
+!isdir("$path/output_data") && run(`mkdir $path/output_data/`)
+
+# Load functions
+include("helpers.jl")
+include("full_model.jl")
 
 # Acquire parallel workers (specific to MIT server; requires modification)
 if use_parallel
@@ -47,7 +49,5 @@ end
 
 # Bootstrap
 if run_bootstrap
-    # TODO: Choose between available modes: 1 or 2 (see description above)
-    run_mode  = 1
     #include("bootstrap_distpara.jl")
 end

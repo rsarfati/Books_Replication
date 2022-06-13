@@ -58,6 +58,7 @@ end
     local γ1, l1 = solve_γ(Dm, D0, dDm, dD0, γ0, p, r; allout = true)
 
     @test γ1 ≈ γ1_m
+    @show sum(abs.(real.(γ1 .- γ1_m)))
     @test l1 == l1_m
 end
 
@@ -145,22 +146,23 @@ end
 
 for (i,j) in [(0,0),(0,1)] #,(0,1),(1,1)]
     @testset "obscalnewtest2015 (demandcal = $(i), WFcal = $(j))" begin
-    @load "$path/obscal_inputs.jld2" βσ3 basellh p0 data rounderr
-    @load "$path/obscal_outputs.jld2" v_mat
 
-    local demandcal = (i == 1)
-    local WFcal     = (j == 1)
-    local lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs = obscalnewtest2015(βσ3, data, basellh, p0, rounderr;
-                                                         demandcal = demandcal, WFcal = WFcal)
+        @load "$path/obscal_inputs.jld2" βσ3 basellh p0 data rounderr
+        @load "$path/obscal_outputs.jld2" v_mat
 
-        @show vecF64(v_mat["$i$j"]["lip"])    == lip
-        @show vecF64(v_mat["$i$j"]["gamma2"]) == γ2
-        @show vecF64(v_mat["$i$j"]["gamma1"]) == γ1
-        @show vecF64(v_mat["$i$j"]["gamma0"]) == γ0
-        @show vecF64(v_mat["$i$j"]["D0"])     == D0
-        @show vecF64(v_mat["$i$j"]["Dm"])     == Dm
-        @show vecF64(v_mat["$i$j"]["pi"])     == pi_v
-        @show vecF64(v_mat["$i$j"]["CSns"])   == CSns
-        @show vecF64(v_mat["$i$j"]["CSs"])    == CSs
+        local demandcal = (i == 1)
+        local WFcal     = (j == 1)
+        local lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs = obscalnewtest2015(βσ3, data, basellh, p0, rounderr;
+                                                             demandcal = demandcal, WFcal = WFcal)
+        # @test vecF64(v_mat["$i$j"]["lip"])    ≈ lip #
+        @show sum(abs.(real.(vecF64(v_mat["$i$j"]["lip"]) - lip)))
+        # @test vecF64(v_mat["$i$j"]["gamma2"]) ≈  γ2 #
+        # @test vecF64(v_mat["$i$j"]["gamma1"]) ≈  γ1 #
+        # @test vecF64(v_mat["$i$j"]["gamma0"]) ≈  γ0
+        # @test vecF64(v_mat["$i$j"]["D0"])     ≈  D0
+        # @test vecF64(v_mat["$i$j"]["Dm"])     ≈  Dm
+        # @test vecF64(v_mat["$i$j"]["pi"])     ≈ pi_v
+        # @test vecF64(v_mat["$i$j"]["CSns"])   ≈  CSns
+        # @test vecF64(v_mat["$i$j"]["CSs"])    ≈  CSs
     end
 end

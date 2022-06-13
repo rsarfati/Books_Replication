@@ -133,10 +133,9 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
         imp2 = (γ0_cdf_vec[3:end] - γ0_cdf_vec[1:end-2]) ./ 2
 
-        # TODO: find every use of quantile and verify it wasn't meant to be CDF
-        δ_cdf_vec = vcat(-cdf(Normal(δ_mean, δ_σ), log(δ_vec[1])),
-                        cdf.(Normal(δ_mean, δ_σ), log.(δ_vec)),
-                        2 .- cdf.(Normal(δ_mean,δ_σ), log(δ_vec[end])))
+        δ_cdf_vec = [    -cdf( Normal(δ_mean, δ_σ), log( δ_vec[1]));
+                          cdf.(Normal(δ_mean, δ_σ), log.(δ_vec));
+                     2 .- cdf.(Normal(δ_mean, δ_σ), log( δ_vec[end]))]
         imp3 = (δ_cdf_vec[3:end] - δ_cdf_vec[1:end-2]) ./ 2
 
         imp_09 = imp1 * imp3'
@@ -159,7 +158,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
     WFbp = zeros(length(lipb), 3)
     lipb, γ2bp, γ1bp, γ0bp, D0bp, Dmbp,
-    WFbp[:,1], WFbp[:,2], WFbp[:,3] = obscalnewtest2015(vcat(0, βσ4[[6, 7, 8,]],
+    WFbp[:,1], WFbp[:,2], WFbp[:,3] = obscalnewtest2015(vcat(0, βσ4[[6, 7, 8]],
         abs(distpara2[1]), βσ4[[11, 12]], λ1, λ2, βcond, βpop, distpara2[2],
         βσ4[13], 1, 1, 1), bp, basellhb, 0, bp["p"], rounderr; WFcal = WFcal)
 

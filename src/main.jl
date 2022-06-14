@@ -19,7 +19,7 @@ run_bootstrap  = false
 run_mode = 1
 
 # TODO: Specify script parameters
-vint      = "2022-06-12"
+vint      = "2022-06-14"
 N_workers = 72  # No. workers to request from cluster
 N_bs      = 200 # No. bootstrap iterations
 

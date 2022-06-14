@@ -33,7 +33,7 @@ function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
     replace!.([D0, dD0, d2D0], NaN => 0)
 
     if allout
-        return D0, dD0, d2D0, sum1, expU
+        return D0, dD0, d2D0, sum2, expU
     else
         return D0, dD0, d2D0
     end
@@ -65,8 +65,9 @@ solve_γ(p_in::V, D0::V, dD0::V, d2D0::V, δ::T, η::T, γ0::V, r::T, ϵ::T;
 ```
 Wrapper for solving for the γ rationalizing price choice.
 """
-function solve_γ(p_in::V, D0::V, dD0::V, d2D0::V, δ::T, η::T, γ0::V, r::T, ϵ::T;
-                 allout::Bool = false) where {T<:Float64, V<:Vector{Number}}
+function solve_γ(p::Union{U,V}, D0::Union{U,V}, dD0::Union{U,V}, d2D0::Union{U,V},
+                 δ::T, η::T, γ0::Union{U,V}, r::T, ϵ::T;
+                 allout::Bool = false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
     Dm   = δ .* (p .^ (-η))
     dDm  = δ .* (-η) .* (p .^ (-η-1))
@@ -90,8 +91,9 @@ solve_γ(Dm::V, D0::Union{V,T}, dDm::V, dD0::Union{V,T}, γ0::Union{V,T}, p::Vec
 ```
 Solve for the Poisson rate γ rationalizing a store i's title k price choice. [page 37]
 """
-function solve_γ(Dm::V, D0::Union{V,T}, dDm::V, dD0::Union{V,T}, γ0::Union{V,T}, p::Vector{T},
-                 r::T; allout::Bool = false) where {T<:Float64, V<:Vector{Number}}
+function solve_γ(Dm::Union{T,U,V}, D0::Union{T,U,V}, dDm::Union{T,U,V},
+                 dD0::Union{T,U,V}, γ0::Union{T,U,V}, p::Union{T,U,V}, r::T;
+                 allout::Bool = false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
     A  = Dm .^ 2.0
     B  = r .* ((p .* dDm) .+ Dm) .+ (2.0 .* Dm .* γ0 .* D0)
@@ -190,17 +192,15 @@ function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::
         γ_dist = Gamma.(m, γscale)
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
         lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
-        @show maximum(lip_o), minimum(γ_dist)
     end
 
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
     olppost = vec(olp .* lip_ol ./ liptemp)
     lip = log.(liptemp)
-    @show sum(lip)
     pi_v, CSns, CSs = zeros(N), zeros(N), zeros(N)
 
     if WFcal
-        pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0, vec(p0),
+        pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0, p0,
                                         p, N, M, cdindex, d_first, vcat(α, β, η, r))
     end
     return lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs
@@ -231,7 +231,7 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
     CSns_ol = (1/(η-1)) .* γscale .* Dm .* p ./ (r .+ γscale .* Dm + γ0 .* D0)
     CSns    = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
 
-    CSgain = zeros(N, 1)
+    CSgain    = zeros(N, 1)
     CSgain_OG = zeros(N, 1)
 
     N = 10000 # TODO: this looks like trouble
@@ -247,14 +247,14 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
 
         gumb_draw  = rand(rng, Gumbel(0,1), mktsize[k] + 1, N)
 
-        rand_price = repeat(-[pdif[ind_k, 1] ; -β], 1, N) .- gumb_draw ./ α
+        rand_price = repeat(-[pdif[ind_k,1] ; -β], 1, N) .- gumb_draw ./ α
 
         best, bestindex = vec.(findmax(rand_price, dims = 1))
 
-        temp = sparse(vcat((x->x[2]).(bestindex), mktsize[k] + 1), 1:N+1, vcat(best .- rand_price[end,:], 1))
+        temp = sparse([(x->x[2]).(bestindex); mktsize[k]+1], 1:N+1, [best .- rand_price[end,:]; 1])
 
-        CSgain_OG[d_first[k]:cdindex[k], 1] = sum(temp[1:mktsize[k],1:N], dims=2) ./
-                                             (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
+        CSgain[ind_k,1] = sum(temp[1:mktsize[k],1:N], dims=2) ./
+                          (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
     end
 
     CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain

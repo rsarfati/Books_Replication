@@ -14,9 +14,10 @@ reload_matlab_files = true
 # demandshopper
 ######################
 if reload_matlab_files
-    local v             = matread("$path/testfile_demand.mat")
-    local p, cdid, obsw = vecF64.([v["p"], v["data"]["cdid"], v["data"]["obsweight"]])
-    local α, β          = Float64.([v["alpha"][1], v["beta"]])
+    local v       = matread("$path/testfile_demand.mat")
+    local p, obsw = vecF64.([v["p"], v["data"]["obsweight"]])
+    local cdid    = vecI64(v["data"]["cdid"])
+    local α, β    = Float64.([v["alpha"][1], v["beta"]])
 
     local f1_mat, f2_mat, f3_mat, sum2_mat, expU_mat = vecF64.([v["f1"],
         v["f2"], v["f3"], v["sum2"], v["expU"]])
@@ -29,12 +30,12 @@ end
     @load "$path/demand_inputs.jld2" α β p cdid obsw
     @load "$path/demand_outputs.jld2" f1_mat f2_mat f3_mat sum2_mat expU_mat
 
-    local f1, f2, f3, sum1, expU = demand_shopper(α, β, p, cdid, obsw; allout = true)
+    local f1, f2, f3, sum2, expU = demand_shopper(α, β, p, cdid, obsw; allout = true)
 
     @test f1 == f1_mat
     @test f2 == f2_mat
     @test f3 == f3_mat
-    @test fill(sum1, size(cdid)) == sum2_mat
+    @test sum2 == sum2_mat
     @test expU == expU_mat
 end
 
@@ -86,34 +87,7 @@ end
                                                        p, N, M, cdindex, d_first, scalarparas)
     @test pi_mat   == pi_test
     @test CSns_mat == CSns_test
-    @test maximum(abs.(CSs_mat .- CSs_test)) < 1e-5
-end
-
-######################
-# welfaresimple
-######################
-if reload_matlab_files
-    v = matread("$path/testfile_welfare.mat")
-    local γ1, γ2, γscale, γ0, olppost, Dm, D0, p0, p, scalarparas, pi_mat,
-    CSns_mat, CSs_mat = vecF64.([v["gamma1"], v["gamma2"], v["gammascale"], v["gamma0"],
-                                 v["olppost"], v["Dm"], v["D0"], v["pdif"], v["data"]["p"],
-                                 v["scalarparas"], v["pi"], v["CSns"], v["CSs"]])
-    local cdindex, d_first  = Vector{Int64}.(vec.([v["data"]["cdindex"], v["data"]["first"]]))
-    local N, M              = Int64.([v["data"]["N"], v["data"]["M"]])
-
-    @save "$path/welfare_inputs.jld2" γ1 γ2 γscale γ0 olppost Dm D0 p0 p N M cdindex d_first scalarparas
-    @save "$path/welfare_outputs.jld2" pi_mat CSs_mat CSns_mat
-end
-
-@testset "Welfare Computation (welfaresimple)" begin
-    @load "$path/welfare_inputs.jld2" γ1 γ2 γscale γ0 olppost Dm D0 p0 p N M cdindex d_first scalarparas
-    @load "$path/welfare_outputs.jld2" pi_mat CSs_mat CSns_mat
-
-    local pi_test, CSns_test, CSs_test = welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, p0,
-                                                 p, N, M, cdindex, d_first, scalarparas)
-    @test pi_mat == pi_test
-    @test CSns_mat == CSns_test
-    @test maximum(abs.(CSs_mat .- CSs_test)) < 1e-5
+    @test maximum(abs.(CSs_mat .- CSs_test)) < 1e-4
 end
 
 ######################
@@ -133,16 +107,7 @@ if reload_matlab_files
 
     @save "$path/obscal_inputs.jld2" βσ3 basellh p0 data rounderr
     @save "$path/obscal_outputs.jld2" v_mat
-    #@save "$path/obscal_outputs_00.jld2" lip_00 gamma2_00 gamma1_00 gamma0_00 D0_00 Dm_00 pi_00 CSns_00 CSs_00
-    #@save "$path/obscal_outputs_01.jld2" lip_01 gamma2_01 gamma1_01 gamma0_01 D0_01 Dm_01 pi_01 CSns_01 CSs_01
-    #@save "$path/obscal_outputs_10.jld2" lip_10 gamma2_10 gamma1_10 gamma0_10 D0_10 Dm_10 pi_10 CSns_10 CSs_10
-    #@save "$path/obscal_outputs_11.jld2" lip_11 gamma2_11 gamma1_11 gamma0_11 D0_11 Dm_11 pi_11 CSns_11 CSs_11
 end
-
-# @load "$path/obscal_outputs_00.jld2" lip_00 gamma2_00 gamma1_00 gamma0_00 D0_00 Dm_00 pi_00 CSns_00 CSs_00
-# @load "$path/obscal_outputs_01.jld2" lip_01 gamma2_01 gamma1_01 gamma0_01 D0_01 Dm_01 pi_01 CSns_01 CSs_01
-# @load "$path/obscal_outputs_10.jld2" lip_10 gamma2_10 gamma1_10 gamma0_10 D0_10 Dm_10 pi_10 CSns_10 CSs_10
-# @load "$path/obscal_outputs_11.jld2" lip_11 gamma2_11 gamma1_11 gamma0_11 D0_11 Dm_11 pi_11 CSns_11 CSs_11
 
 for (i,j) in [(0,0),(0,1)] #,(0,1),(1,1)]
     @testset "obscalnewtest2015 (demandcal = $(i), WFcal = $(j))" begin
@@ -154,15 +119,14 @@ for (i,j) in [(0,0),(0,1)] #,(0,1),(1,1)]
         local WFcal     = (j == 1)
         local lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs = obscalnewtest2015(βσ3, data, basellh, p0, rounderr;
                                                              demandcal = demandcal, WFcal = WFcal)
-        # @test vecF64(v_mat["$i$j"]["lip"])    ≈ lip #
-        @show sum(abs.(real.(vecF64(v_mat["$i$j"]["lip"]) - lip)))
-        # @test vecF64(v_mat["$i$j"]["gamma2"]) ≈  γ2 #
-        # @test vecF64(v_mat["$i$j"]["gamma1"]) ≈  γ1 #
-        # @test vecF64(v_mat["$i$j"]["gamma0"]) ≈  γ0
-        # @test vecF64(v_mat["$i$j"]["D0"])     ≈  D0
-        # @test vecF64(v_mat["$i$j"]["Dm"])     ≈  Dm
-        # @test vecF64(v_mat["$i$j"]["pi"])     ≈ pi_v
-        # @test vecF64(v_mat["$i$j"]["CSns"])   ≈  CSns
-        # @test vecF64(v_mat["$i$j"]["CSs"])    ≈  CSs
+        @test vecF64(v_mat["$i$j"]["lip"])    ≈ lip
+        @test vecF64(v_mat["$i$j"]["gamma2"]) ≈ γ2
+        @test vecF64(v_mat["$i$j"]["gamma1"]) ≈ γ1
+        @test vecF64(v_mat["$i$j"]["gamma0"]) ≈ γ0
+        @test vecF64(v_mat["$i$j"]["D0"])     ≈ D0
+        @test vecF64(v_mat["$i$j"]["Dm"])     ≈ Dm
+        @test vecF64(v_mat["$i$j"]["pi"])     ≈ pi_v
+        @test vecF64(v_mat["$i$j"]["CSns"])   ≈ CSns
+        @test maximum(abs.(vecF64(v_mat["$i$j"]["CSs"]) .- CSs)) < 1e-4
     end
 end

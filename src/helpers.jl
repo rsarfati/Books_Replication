@@ -20,7 +20,7 @@ Solve for the demand of shoppers, along with 1st & 2nd order derivatives.
 Note utility for outside good -> price that is the lowest (leave condition out).
 """
 function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
-                        allout::Bool = false) where {T<:Float64,V<:Vector{Float64}}
+                        allout::Bool = false) where {T<:Float64,V<:Vector{T}}
     N    = length(cdid)
     expU = exp.(p .* -α)
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1) .+ exp(β * α)
@@ -39,7 +39,7 @@ function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
     end
 end
 function demand_shopper(α::T, β::T, β_1::T, p::V, cdid::Vector{Int64}, cond::V, obs_w::V;
-                        allout::Bool = false) where {T<:Float64,V<:Vector{Float64}}
+                        allout::Bool = false) where {T<:Float64,V<:Vector{T}}
     N    = length(cdid)
     expU = exp.(p .* -α .+ cond .* β_1)
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
@@ -215,7 +215,7 @@ Corresponds to /Masao/welfaresimple.m. Works!
 function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::Vector{T},
                        olppost::Vector{T}, Dm::Vector{T}, D0::Vector{T}, pdif::Vector{T},
                        p::Vector{T}, N::S, M::S, cdindex::Vector{S}, d_first::Vector{S},
-                       scalarparas::Vector{T}) where {S<:Int64, T<:Float64}
+                       scalarparas::Vector{T}; N_draws::S = 10000) where {S<:Int64, T<:Float64}
     α = scalarparas[1]
     β = scalarparas[2]
     η = scalarparas[3]
@@ -234,27 +234,26 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
     CSgain    = zeros(N, 1)
     CSgain_OG = zeros(N, 1)
 
-    N = 10000 # TODO: this looks like trouble
-
     mktsize = cdindex .- d_first .+ 1
 
     for k = 1:M
         ind_k    = d_first[k]:cdindex[k]
 
-        best_p   = Vector{Float64}(undef, N)
-        best_ind = Vector{Float64}(undef, N)
-        β_p      = Vector{Float64}(undef, N)
+        best_p   = Vector{Float64}(undef, N_draws)
+        best_ind = Vector{Float64}(undef, N_draws)
+        β_p      = Vector{Float64}(undef, N_draws)
 
-        gumb_draw  = rand(rng, Gumbel(0,1), mktsize[k] + 1, N)
+        gumb_draw  = rand(rng, Gumbel(0,1), mktsize[k] + 1, N_draws)
 
-        rand_price = repeat(-[pdif[ind_k,1] ; -β], 1, N) .- gumb_draw ./ α
+        rand_price = repeat(-[pdif[ind_k,1] ; -β], 1, N_draws) .- gumb_draw ./ α
 
         best, bestindex = vec.(findmax(rand_price, dims = 1))
 
-        temp = sparse([(x->x[2]).(bestindex); mktsize[k]+1], 1:N+1, [best .- rand_price[end,:]; 1])
+        temp = sparse([(x->x[2]).(bestindex); mktsize[k]+1], 1:N_draws+1,
+                      [best .- rand_price[end,:]; 1])
 
-        CSgain[ind_k,1] = sum(temp[1:mktsize[k],1:N], dims=2) ./
-                          (sum(temp[1:mktsize[k],1:N] .> 0, dims=2) .+ 1e-5)
+        CSgain[ind_k,1] = sum(temp[1:mktsize[k],1:N_draws], dims=2) ./
+                          (sum(temp[1:mktsize[k],1:N_draws] .> 0, dims=2) .+ 1e-5)
     end
 
     CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain

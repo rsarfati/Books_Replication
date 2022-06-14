@@ -10,9 +10,7 @@ vecC64(x::Any) = Vector{ComplexF64}(vec(x))
 # Run if you've recently regenerated the .mat files; will reconstruct the .jld2's
 reload_matlab_files = true
 
-######################
-# demandshopper
-######################
+## demandshopper ##
 if reload_matlab_files
     local v       = matread("$path/testfile_demand.mat")
     local p, obsw = vecF64.([v["p"], v["data"]["obsweight"]])
@@ -25,7 +23,6 @@ if reload_matlab_files
     @save "$path/demand_inputs.jld2" α β p cdid obsw
     @save "$path/demand_outputs.jld2" f1_mat f2_mat f3_mat sum2_mat expU_mat
 end
-
 @testset "Demand of Shoppers (demandshopper)" begin
     @load "$path/demand_inputs.jld2" α β p cdid obsw
     @load "$path/demand_outputs.jld2" f1_mat f2_mat f3_mat sum2_mat expU_mat
@@ -39,9 +36,7 @@ end
     @test expU == expU_mat
 end
 
-######################
-# solve_γ
-######################
+## solve_γ ##
 if reload_matlab_files
     local v    = matread("$path/solvegamma.mat")
     local r    = Float64(v["r"])
@@ -51,7 +46,6 @@ if reload_matlab_files
     @save "$path/solvegamma_inputs.jld2" Dm D0 dDm dD0 γ0 p r
     @save "$path/solvegamma_outputs.jld2" γ1_m l1_m
 end
-
 @testset "Solve γ" begin
     @load "$path/solvegamma_inputs.jld2" Dm D0 dDm dD0 γ0 p r
     @load "$path/solvegamma_outputs.jld2" γ1_m l1_m
@@ -59,26 +53,22 @@ end
     local γ1, l1 = solve_γ(Dm, D0, dDm, dD0, γ0, p, r; allout = true)
 
     @test γ1 ≈ γ1_m
-    @show sum(abs.(real.(γ1 .- γ1_m)))
     @test l1 == l1_m
 end
 
-######################
-# welfaresimple
-######################
+## welfaresimple ##
 if reload_matlab_files
     local v = matread("$path/testfile_welfare.mat")
     local γ1, γ2, γscale, γ0, olppost, Dm, D0, p0, p, scalarparas,
-    pi_mat, CSns_mat, CSs_mat = vecF64.([v["gamma1"], v["gamma2"], v["gammascale"], v["gamma0"],
-                                 v["olppost"], v["Dm"], v["D0"], v["pdif"], v["data"]["p"],
-                                 v["scalarparas"], v["pi"], v["CSns"], v["CSs"]])
+    pi_mat, CSns_mat, CSs_mat = vecF64.([v["gamma1"], v["gamma2"], v["gammascale"],
+                                 v["gamma0"], v["olppost"], v["Dm"], v["D0"], v["pdif"],
+                                 v["data"]["p"], v["scalarparas"], v["pi"], v["CSns"], v["CSs"]])
     local cdindex, d_first = vecI64.([v["data"]["cdindex"], v["data"]["first"]])
     local N, M             = Int64.([v["data"]["N"], v["data"]["M"]])
 
     @save "$path/welfare_inputs.jld2" γ1 γ2 γscale γ0 olppost Dm D0 p0 p N M cdindex d_first scalarparas
     @save "$path/welfare_outputs.jld2" pi_mat CSs_mat CSns_mat
 end
-
 @testset "Welfare Computation (welfaresimple)" begin
     @load "$path/welfare_inputs.jld2" γ1 γ2 γscale γ0 olppost Dm D0 p0 p N M cdindex d_first scalarparas
     @load "$path/welfare_outputs.jld2" pi_mat CSs_mat CSns_mat
@@ -90,9 +80,7 @@ end
     @test maximum(abs.(CSs_mat .- CSs_test)) < 1e-4
 end
 
-######################
-# obscalnewtest2015
-######################
+## obscalnewtest2015 ##
 if reload_matlab_files
     local v_in = matread("$path/obscal_inputs.mat")
     local βσ3, basellh, p0 = vecF64.([v_in["betasigma3"], v_in["basellh"], v_in["p0"]])
@@ -108,7 +96,6 @@ if reload_matlab_files
     @save "$path/obscal_inputs.jld2" βσ3 basellh p0 data rounderr
     @save "$path/obscal_outputs.jld2" v_mat
 end
-
 for (i,j) in [(0,0),(0,1)] #,(0,1),(1,1)]
     @testset "obscalnewtest2015 (demandcal = $(i), WFcal = $(j))" begin
 

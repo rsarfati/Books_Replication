@@ -3,7 +3,7 @@ zeros(x::Float64)            = zeros(Int(round(x)))
 zeros(x::Float64,y::Int64)   = zeros(Int(round(x)), y)
 zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
 
-function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T}
+function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T<:Float64}
   m, n = length(v1), length(v2)
   v1   = reshape(v1, m, 1)
   v2   = reshape(v2, 1, n)
@@ -20,7 +20,7 @@ Solve for the demand of shoppers, along with 1st & 2nd order derivatives.
 Note utility for outside good -> price that is the lowest (leave condition out).
 """
 function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
-                        allout::Bool = false) where {T<:Float64,V<:Vector{T}}
+                        allout::Bool = false) where {T<:Float64, V<:Vector{T}}
     N    = length(cdid)
     expU = exp.(p .* -α)
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1) .+ exp(β * α)

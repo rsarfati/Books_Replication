@@ -7,14 +7,14 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
     #               alpha-1 β γishape  γimean09 γimean12  eta-1 r
     #               olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
-    βσ5 = vcat(distpara0, x0[1], x0[2]/(1+x0[1]), x0[3],
-        x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1), x0[5]*10*x0[7]/10/8^(-x0[6]-1),
-        x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1], 0, 0, x0[12:13], x0[14])
+    βσ5 = [distpara0; x0[1]; x0[2]/(1+x0[1]); x0[3]; x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
+           x0[5]*10*x0[7]/10/8^(-x0[6]-1); x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1]; 0; 0;
+           x0[12:13]; x0[14]]
 
     rounderr = 0.025
     naturaldisappear = βσ5[22]
 
-    βσ4 = βσ5[vcat(1:5, 7:19, 6, 20, 21)]
+    βσ4 = βσ5[[1:5; 7:19; 6; 20; 21]]
 
     λ1    = βσ4[15]
     λ2    = βσ4[16]
@@ -62,13 +62,27 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     # TODO: this gets run a LOT, present run time:
     # 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time)
     #@parallel
-    for i = 1:Y
+    println("Iterating for γ0...")
+   #  out_09 = if parallel
+   #     @distributed (hcat) for i in 1:Y
+   #         obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
+   #                            βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
+   #                           data09, basellh_09, pdif_09, rounderr;
+   #                           demandcal=false, WFcal = WFcal)
+   #     end
+   # else
+   #     hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
+   #                              βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
+   #                             data09, basellh_09, pdif_09, rounderr;
+   #                             demandcal=false, WFcal = WFcal) for i=1:Y]...)
+   # end
+   for i = 1:Y
         @show i
         lip_09[:,i], γ2_09[:,i], γ1_09[:,i], γ0_09[:,i], D0_09[:,i], Dm_09[:,i],
         pi_09[:,i], CSns_09[:,i], CSs_09[:,i] = obscalnewtest2015(
-                     vcat(γ0_δ_vec[i, 1], βσ4[[6, 7, 8, 9, 11, 12]], λ1, λ2,
-                          βcond, βpop, 0, βσ4[13], γ0_δ_vec[i, 2], βσ4[14], 1),
-                     data09, basellh_09, pdif_09, rounderr; demandcal = false, WFcal = WFcal)
+                     [γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2; βcond;
+                      βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1], data09,
+                     basellh_09, pdif_09, rounderr; demandcal=false, WFcal = WFcal)
     end
     for k = 1:M_09
         llhβ_09[k,:] .= sum(lip_09[first_09[k]:cdindex_09[k],:])
@@ -83,8 +97,8 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     γ012   = lip12
     D012   = lip12
     Dm12   = lip12
-    ltot12 = zeros(M_12)
-    llhβ12 = zeros(M_12, Y)  # record the log likelihood at a fixed β for a title
+    ltot12    = zeros(M_12)
+    llhβ12    = zeros(M_12, Y)  # record the log likelihood at a fixed β for a title
     basellh12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
     pi12, CSns12, CSs12 = zeros(N_12, Y), zeros(N_12, Y), zeros(N_12, Y)
 
@@ -94,9 +108,9 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         @show i
         lip12[:,i], γ212[:,i], γ112[:,i], γ012[:,i], D012[:,i],
         Dm12[:,i], pi12[:,i], CSns12[:,i], CSs12[:,i] = obscalnewtest2015(
-            vcat(γ0_δ_vec[i,1], βσ4[[6, 7, 8, 10, 11, 12]], λ1, λ2,
-            βcond, βpop, 0, βσ4[13], γ0_δ_vec[i, 2], βσ4[14],
-            naturaldisappear), data12, basellh12, 1, pdif_12, rounderr; WFcal = WFcal)
+            [γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2; βcond; βpop; 0;
+            βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear], data12, basellh12,
+            pdif_12, rounderr; demandcal=true, WFcal = WFcal)
     end
     for k=1:M_12
         llhβ12[k,:] .= sum(lip12[first_12[k]:cdindex_12[k],:])
@@ -178,11 +192,11 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
             RPpost = llhadj_09[k,:] .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
             ind_k  = first_09[k]:cdindex_09[k]
 
-            WF_09[ind_k, 1]  = pi_09[ind_k,:]   * RPpost
-            WF_09[ind_k, 2]  = CSns_09[ind_k,:] * RPpost
-            WF_09[ind_k, 3]  = CSs_09[ind_k,:]  * RPpost
+            WF_09[ind_k,1]  = pi_09[ind_k,:]   * RPpost
+            WF_09[ind_k,2]  = CSns_09[ind_k,:] * RPpost
+            WF_09[ind_k,3]  = CSs_09[ind_k,:]  * RPpost
             obsweight        = obsweight_09[ind_k, 1] ./ sum(obsweight_09[ind_k,1])
-            AveWF_09[k, 1:3] = obsweight' * WF_09[ind_k, 1:3]
+            AveWF_09[k,1:3] = obsweight' * WF_09[ind_k,1:3]
             y_max            = argmax(llhadj_09[k,:])
 
             BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :], llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',

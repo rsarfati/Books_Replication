@@ -7,25 +7,32 @@
 #
 # Users should CTRL-F for all TODO's in this script to adjust settings for personal use.
 # ***************************************************************************************
-using CSV, DataFrames, Dates, Distributions, FixedEffectModels, MAT, Optim
+using CSV, DataFrames, Dates, Distributed, Distributions, FixedEffectModels, MAT, Optim
 using Random, RegressionTables, Roots, SparseArrays, Statistics
 
-# TODO: Adjust flags below for what you want to run.
-test_functions = true
-use_parallel   = false
-run_bootstrap  = false
+## TODO: Specify script parameters
 
-# TODO: If bootstrap, choose between available modes: 1 or 2 (see description)
-run_mode = 1
+vint    = "2022-06-14"
+n_procs = 2  # No. workers to request from cluster
+n_bs    = 200 # No. bootstrap iterations
 
-# TODO: Specify script parameters
-vint      = "2022-06-14"
-N_workers = 72  # No. workers to request from cluster
-N_bs      = 200 # No. bootstrap iterations
+## TODO: Adjust flags below for what you want to run.
 
-# TODO: Set estimation hyperparameters
+test_functions = true  # Test code matches MATLAB (for developers)
+parallel       = true  # Distribute work across multiple processes?
+estmation      = true  # Estimate model
+run_bootstrap  = false # Run bootstrap for SEs?
+run_mode = 1 # If running bootstrap, choose between modes 1 or 2 (see expltn.)
+
+## TODO: Adjust estimation hyperparameters
 # ϵ / rounderr
-#
+
+# Add worker processes, load necessary packages on said workers
+if parallel
+    addprocs(n_procs)
+    @everywhere using CSV, DataFrames, Dates, Distributions, FixedEffectModels, MAT
+    @everywhere using Optim, Random, RegressionTables, Roots, SparseArrays, Statistics
+end
 
 # Build output folders if don't exist
 path = dirname(@__FILE__)
@@ -34,15 +41,10 @@ path = dirname(@__FILE__)
 !isdir("$path/output_data") && run(`mkdir $path/output_data/`)
 
 # Load functions
-include("helpers.jl")
-include("full_model.jl")
+@everywhere include("helpers.jl")
+@everywhere include("full_model.jl")
 
-# Acquire parallel workers (specific to MIT server; requires modification)
-if use_parallel
-    # TODO: Accomodate code for personal computing environment.
-end
-
-# Test output of functions
+# Test function output, if you've been modifying code
 if test_functions
     include("../test/helpers.jl")
 end

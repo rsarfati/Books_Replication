@@ -3,6 +3,10 @@ zeros(x::Float64)            = zeros(Int(round(x)))
 zeros(x::Float64,y::Int64)   = zeros(Int(round(x)), y)
 zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
 
+vecF64(x::Any) = Vector{Float64}(vec(x))
+vecI64(x::Any) = Vector{Int64}(vec(x))
+vecC64(x::Any) = Vector{ComplexF64}(vec(x))
+
 function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T<:Float64}
   m, n = length(v1), length(v2)
   v1   = reshape(v1, m, 1)
@@ -116,16 +120,16 @@ function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::
                            WFcal::Bool = false) where {T<:Float64, V<:Vector{Float64}}
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
-    numlist  = vec(data["numlist"])
-    localint = vec(data["localint"])
+    numlist  = vecF64(data["numlist"])
+    localint = vecF64(data["localint"])
     N        = Int(data["N"])
     M        = Int(data["M"])
-    cdindex  = Int.(vec(data["cdindex"]))
-    d_first  = Int.(vec(data["first"]))
-    cond_dif = vec(data["conditiondif"])
-    cdid     = Int.(vec(data["cdid"]))
-    obs_w    = vec(data["obsweight"])
-    p        = vec(data["p"])
+    cdindex  = vecI64(data["cdindex"])
+    d_first  = vecI64(data["first"])
+    cond_dif = vecF64(data["conditiondif"])
+    cdid     = vecI64(data["cdid"])
+    obs_w    = vecF64(data["obsweight"])
+    p        = vecF64(data["p"])
 
     γ0       = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))
     α        = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
@@ -176,21 +180,20 @@ function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::
 
     Dm = δ .* (p .^ (-η))
 
+    γ_dist = Gamma.(m, γscale)
+
     if demandcal == 1
-        disap = data["disappear"]
-
-        # D0 = demandshopper(α,β,p0- βcond.*data.cond_dif./α,data["cdid"],data["obsweight"]) #
-
-        demandlh   = (disap > 0) - (2 .* disap - 1) .* exp(-0.166666667 .* (γ0.*D0 + (γ2 + γ1)./2 .* Dm)) .* nat_disap
-        demandlhol = (disap > 0) - (2 .* disap - 1) .*  # Next line starts probability of nondisappear due to shopper demand
+        disap      = data["disappear"]
+        demandlh   = (disap .> 0) .- (2 .* disap .- 1) .* exp.(-0.166666667 .* (γ0.*D0 .+ (γ2 .+ γ1)./2 .* Dm)) .* nat_disap
+        demandlhol = (disap .> 0) .- (2 .* disap .- 1) .*  # Next line starts probability of nondisappear due to shopper demand
                         exp.(-0.166666667.*(γ0.*D0)) .* # Next line is due to nonshopper demand (taken expectation wrt to γi)
                         (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* nat_disap
 
-        lip_o  = min((gamcdf(γ2, m, γscale) - gamcdf(γ1, m, γscale)), 1) .* demandlh .^ 3
+        lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) .* demandlh .^ 3
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood. Next line starts disappear likelihood
     else
-        γ_dist = Gamma.(m, γscale)
-        lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) # TODO
+
+        lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1)
         lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
     end
 
@@ -203,7 +206,7 @@ function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::
         pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0, p0,
                                         p, N, M, cdindex, d_first, vcat(α, β, η, r))
     end
-    return lip, γ2, γ1, γ0, D0, Dm, pi_v, CSns, CSs
+    return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs]
 end
 
 """
@@ -243,7 +246,7 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
         best_ind = Vector{Float64}(undef, N_draws)
         β_p      = Vector{Float64}(undef, N_draws)
 
-        gumb_draw  = rand(rng, Gumbel(0,1), mktsize[k] + 1, N_draws)
+        gumb_draw  = rand(Gumbel(0,1), mktsize[k] + 1, N_draws)
 
         rand_price = repeat(-[pdif[ind_k,1] ; -β], 1, N_draws) .- gumb_draw ./ α
 

@@ -3,11 +3,7 @@ using FileIO, Test, FileIO, JLD2, MAT
 path = dirname(@__FILE__) * "/data/"
 rng = MersenneTwister(1234)
 
-vecF64(x::Any) = Vector{Float64}(vec(x))
-vecI64(x::Any) = Vector{Int64}(vec(x))
-vecC64(x::Any) = Vector{ComplexF64}(vec(x))
-
-# Run if you've recently regenerated the .mat files; will reconstruct the .jld2's
+# TODO: run if you've recently regenerated the .mat files & want to reconstruct .jld2's
 reload_matlab_files = true
 
 ## demandshopper ##

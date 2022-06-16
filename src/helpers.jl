@@ -122,14 +122,14 @@ function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
     numlist  = vecF64(data["numlist"])
     localint = vecF64(data["localint"])
-    N        = Int(data["N"])
-    M        = Int(data["M"])
     cdindex  = vecI64(data["cdindex"])
     d_first  = vecI64(data["first"])
     cond_dif = vecF64(data["conditiondif"])
     cdid     = vecI64(data["cdid"])
     obs_w    = vecF64(data["obsweight"])
     p        = vecF64(data["p"])
+    N        = Int(data["N"])
+    M        = Int(data["M"])
 
     γ0       = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))
     α        = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
@@ -255,7 +255,7 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
         temp = sparse([(x->x[2]).(bestindex); mktsize[k]+1], 1:N_draws+1,
                       [best .- rand_price[end,:]; 1])
 
-        CSgain[ind_k,1] = sum(temp[1:mktsize[k],1:N_draws], dims=2) ./
+        CSgain[ind_k,1] =  sum(temp[1:mktsize[k],1:N_draws],      dims=2) ./
                           (sum(temp[1:mktsize[k],1:N_draws] .> 0, dims=2) .+ 1e-5)
     end
 

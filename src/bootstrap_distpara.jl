@@ -2,6 +2,7 @@
 
 # Set seed for testing purposes
 rng = MersenneTwister(1234)
+path = dirname(@__FILE__)
 ## Input: True data, randomly generated title-level index
 # ~ Contructs bootstrap dataset, runs the estimation ~
 # Output: bootstrap_welfare.csv
@@ -21,10 +22,10 @@ rng = MersenneTwister(1234)
 ## Two modes
 # This file has two modes. Mode 2 can be run after Mode 1.
 
-# In the first mode, it cold starts to estimates parameters in the first
+# In the first mode, it cold starts to estimate parameters in the first
 # input of the likelihood function full_model_all with
 # bootstrap sample, and save the results in bootstrap_estimates.csv. These
-# parameters are/transform to alpha, beta, gammaishape, gammaimean09,
+# parameters are (or transform to) alpha, beta, gammaishape, gammaimean09,
 # gammaimean12, eta, r, olp, c, lamda1, lamda2, betacond, betapop, olm,
 # oltheta, naturaldisappear. This mode is very computationally intensive
 # (involves optimization) and has to be run on servers and still takes
@@ -52,24 +53,13 @@ true_estimates = [0.32135,	5.6459,	14.855,	 1.1614,  0.6486,   1.9196,	 14.771,
 # E[gamma_i] 2009 offline and betalocal, which according to Hongkai's validation
 # mode, is different from Masao's number.)
 
-## Parallel computing setup
-# The following 3 lines are for reduced-form server.
-# Can change resource parameters (walltime and mem) if necessary
-# dcluster = parcluster
-# dcluster.ResourceTemplate = '-l nodes=^N^, software = MATLAB_Distrib_Comp_Engine+^N^,
-# walltime = 80:00:00, mem = 64gb'
-# dcluster.saveProfile
-
-# This line is common for all servers or desktop. Choose number of workers! accordingly.
-#parpool(N_workers)
-
 ## Load data
 # Mat file created by Masao contains original data, random index for bootstrap.
-vars = matread("data/DataToRun_pop09_boot.mat")
+vars = matread("$path/data/DataToRun_pop09_boot.mat")
 
 ## Data Renaming and Setup Pre-Bootstrap
-γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
-δ_vec  = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
+γ0vec     = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
+δ_vec     = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
 data12    = vars["data12nopop"]
 data09    = vars["data09nopop"]
 bp        = vars["bpnopop"]
@@ -87,20 +77,14 @@ bmktsizebp = bootindex
 bfirstbp   = bootindex
 bcdindexbp = bootindex
 
-# Meta Programming
-# f1 = eval(Meta.parse("@formula(xt_lag0 ~ " *
-#                      (*).(["$(s_p(p))xt1_lag$(p)" for p=0:lags-1]...) *
-#                      (lags>1 ? (*).([" + Dzt_lag$(p)" for p=1:lags-1]...) : "") *
-#                      " + (Dzt_lag0  ~ " *
-#                      (*).(["$(s_p(p))zt1_lag$(p)" for p=0:lags-1]...) * "))"))
-
+boot = DataFrame()
 if run_mode == 2
     # Mode 1 can be run on several servers simultaneously to save time;
     # use  `unique` to remove bootstrap runs duplicated on multiple servers.
-    boot = unique(CSV.read("data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
+    boot = unique(CSV.read("$path/data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
 end
 
-# A validation mode:
+## A validation mode:
 # if one wants to reproduce the true data estimates or validate the
 # estimation method is the same as we used for the true data estimates, the
 # following tricks can be used to reproduce the true data set.
@@ -160,9 +144,10 @@ for i = 1:N_bs
     end
 
     bend12   = cumsum(bmktsize12[i,:])
-    bstart12 = vcat(1, bend12[1:end-1] .+ 1)
+    bstart12 = [1; bend12[1:end-1] .+ 1]
 
     for j = 1:length(bfirst12[i,:])
+
         j_rng_12  = Int.(bstart12[j]:bend12[j])
         ij_rng_12 = Int.(bfirst12[i,j]:bcdindex12[i,j])
 
@@ -197,11 +182,13 @@ for i = 1:N_bs
     bbp["N"]       = length(bbp["p"])
     bbp["M"]       = length(bbp["first"])
 
+    distpara0 = vec(vars["distpara0"])
+
     # Optimization
     if run_mode == 1
 
         x0 = true_estimates[7:20]
-        objectivefun(x) = objective(x, x0, vec(vars["distpara0"]), γ0vec, δ_vec, bdata12, bdata09, bbp)
+        objectivefun(x) = objective(x, x0, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp)
         x00 = x0
         # TODO: investigate why these columns are being deleted
         #deleteat!(x0, [3, 7])
@@ -282,6 +269,7 @@ boot_welfare = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
 boot_welfare = unique(boot_welfare)
 boot_welfare = boot_welfare[:, (end-8):end]
 
+# TODO: find every use of quantile and verify it wasn't meant to be CDF
 welfare_std_boot = [std(boot_welfare[:,j])             for j=1:9]
 welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
 welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]

@@ -1,17 +1,17 @@
 # Based on file <fullmodelllhWFAug22newtest2015.m>
-function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = false)
+function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = false, rounderr = 0.025)
     # βσ5 = [γ0shape γ0mean09 γ0mean12 δ_σ
-    #               γimeanbp βlocal alpha-1 β γishape  γimean09
-    #               γimean12  eta-1 r olp c λ1 λ2 βcond βpop
-    #               olm ol_θ naturaldisappear]
+    #        γimeanbp βlocal alpha-1 β γishape  γimean09
+    #        γimean12  eta-1 r olp c λ1 λ2 βcond βpop
+    #        olm ol_θ naturaldisappear]
+
     # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
-    #               alpha-1 β γishape  γimean09 γimean12  eta-1 r
-    #               olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
+    #        alpha-1 β γishape  γimean09 γimean12  eta-1 r
+    #        olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
     βσ5 = [distpara0; x0[1]; x0[2]/(1+x0[1]); x0[3]; x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
            x0[5]*10*x0[7]/10/8^(-x0[6]-1); x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1]; 0; 0;
            x0[12:13]; x0[14]]
 
-    rounderr = 0.025
     naturaldisappear = βσ5[22]
 
     βσ4 = βσ5[[1:5; 7:19; 6; 20; 21]]
@@ -49,7 +49,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     obsweight_09 = vecF64(data09["obsweight"])
     obsweight_12 = vecF64(data12["obsweight"])
 
-    basellh_09   = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
+    basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
     bp_p = vecF64(bp["p"])
 
@@ -94,7 +94,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     llhβ_12    = zeros(M_12, Y)  # record the log likelihood at a fixed β for a title
     basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
 
-    println("Iterating for γ0...")
+    println("Iterating for βs...")
     out_12 = if parallel
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
@@ -108,6 +108,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
                                data12, basellh12, pdif_12, rounderr;
                                demandcal = true, WFcal = WFcal) for i=1:Y]...)
     end
+
     lip_12  = out_12[0*N_12+1:1*N_12,:]
     γ2_12   = out_12[1*N_12+1:2*N_12,:]
     γ1_12   = out_12[2*N_12+1:3*N_12,:]
@@ -190,38 +191,42 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     γ0_bp   = out_bp[3*N_bp+1:4*N_bp,:]
     D0_bp   = out_bp[4*N_bp+1:5*N_bp,:]
     Dm_bp   = out_bp[5*N_bp+1:6*N_bp,:]
-    WF_bp[:, 1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
-    WF_bp[:, 2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
-    WF_bp[:, 3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
+    WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
+    WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
+    WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
 
     f = f1 + f2
     distpara = [distpara1; distpara2]
 
     if WFcal
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
+
         WF_09       = zeros(N_09, 3)
         WF_12       = zeros(N_12, 3)
+
         AveWF_09    = zeros(M_09, 3)
         AveWF_12    = zeros(M_12, 3)
+
         BestVals_09 = zeros(N_09,13)
         BestVals_12 = zeros(N_12,13)
 
         for k = 1:M_09
             RPpost = llhadj_09[k,:]' .* vec(imp_09) ./ exp.(ltot_09[k] - maxtemp_09[k])
+
             ind_k  = first_09[k]:cdindex_09[k]
 
             WF_09[ind_k,1]  = pi_09[ind_k,:]   * RPpost
             WF_09[ind_k,2]  = CSns_09[ind_k,:] * RPpost
             WF_09[ind_k,3]  = CSs_09[ind_k,:]  * RPpost
-            obsweight        = obsweight_09[ind_k, 1] ./ sum(obsweight_09[ind_k,1])
+            obsweight       = obsweight_09[ind_k,1] ./ sum(obsweight_09[ind_k,1])
             AveWF_09[k,1:3] = obsweight' * WF_09[ind_k,1:3]
-            y_max            = argmax(llhadj_09[k,:])
+            y_max           = argmax(llhadj_09[k,:])
 
             BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :], llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
                 exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max], γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
                 Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max], CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
 
-            RPpost = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k]-maxtemp_12[k])
+            RPpost = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
 
             ind_k           = first_12[k]:cdindex_12[k]
             WF_12[ind_k,1]  = pi_12[ind_k,:]  * RPpost
@@ -240,9 +245,9 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         fWF = Dict{String,Any}()
         fWF["BestVals_09"] = hcat(cdid_09, numlist_09, p_09, pdif_09, BestVals_09)
         fWF["BestVals_12"] = hcat(cdid_12, numlist_12, p_12, pdif_12, BestVals_12)
-        fWF["BestValsbp"] = hcat(bp["cdid"], bp["numlist"], bp["p"],
-                                 repeat([0.0, 0.0, 1.0, 1.0]', Int.(bp["N"]), 1),
-                                 lipb, basellhb, γ0_bp, γ1_bp, γ2_bp, Dm_bp, D0_bp, WF_bp)
+        fWF["BestValsbp"]  = hcat(bp["cdid"], bp["numlist"], bp["p"],
+                                  repeat([0.0, 0.0, 1.0, 1.0]', Int(bp["N"]), 1),
+                                  lipb, basellhb, γ0_bp, γ1_bp, γ2_bp, Dm_bp, D0_bp, WF_bp)
         fWF["AveWF_09"] = AveWF_09
         fWF["AveWF12"]  = AveWF_12
         fWF["WF_09"]    = WF_09
@@ -269,23 +274,4 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     fother["γ1bp"] = γ1_bp
 
     return f, distpara, fother, fWF
-end
-
-
-function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
-    if x[3]<0 || x[4]<0 || x[12]>1 || x[12]< 0
-        return Inf
-    end
-    xx = vcat(x[1:2], x0[3], x[3:5], x0[7], x[6:(length(x0)-2)])
-
-    #TODO: run this at some point
-    @assert x[3] == xx[4]
-    @assert x[4] == xx[5]
-    @assert x[12] == xx[14]
-
-    # if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
-    #     return Inf
-    # end
-
-    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
 end

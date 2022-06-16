@@ -17,22 +17,10 @@ function estimate_model(; vint::String = "0",
 	data09    = vars["data09nopop"]
 	bp        = vars["bpnopop"]
 
-	bootindex = vecI64(vars["bootindex"])
-
-	bmktsize09 = bootindex
-	bfirst09   = bootindex
-	bcdindex09 = bootindex
-
-	bmktsize12 = bootindex
-	bfirst12   = bootindex
-	bcdindex12 = bootindex
-
-	bmktsizebp = bootindex
-	bfirstbp   = bootindex
-	bcdindexbp = bootindex
+	distpara0 = vec(vars["distpara0"])
 
 	x0 = θ_init[7:20]
-	objectivefun(x) = objective(x, x0, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp)
+	objectivefun(x) = objective(x, x0, distpara0, γ0vec, δ_vec, data12, data09, bp)
 
 	x00 = x0
 

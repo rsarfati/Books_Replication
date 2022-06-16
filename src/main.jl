@@ -19,14 +19,14 @@ path = dirname(@__FILE__)
 
 ## TODO: Specify script parameters
 vint    = "2022-06-14"
-n_procs = 2  # No. workers to request from cluster
+n_procs = 20  # No. workers to request from cluster
 n_bs    = 200 # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
 
-test_functions = true  # Test code matches MATLAB (for developers)
+test_functions = false  # Test code matches MATLAB (for developers)
 parallel       = true  # Distribute work across multiple processes?
-estmation      = true  # Estimate model
+estimation     = true  # Estimate model
 run_bootstrap  = false # Run bootstrap for SEs?
 run_mode       = 1     # Running bootstrap? Choose between modes 1 or 2 (see explanation).
 
@@ -38,6 +38,8 @@ if parallel
     addprocs(n_procs)
     @everywhere using CSV, DataFrames, Dates, Distributions, FixedEffectModels, MAT
     @everywhere using Optim, Random, RegressionTables, Roots, SparseArrays, Statistics
+    @everywhere path = dirname(@__FILE__)
+    println("Added worker processes!")
 end
 
 # Load functions
@@ -59,6 +61,6 @@ if run_bootstrap
     #include("bootstrap_distpara.jl")
 end
 
-if parallel
-    rmprocs(workers())
-end
+#if parallel
+#    rmprocs(workers())
+#end

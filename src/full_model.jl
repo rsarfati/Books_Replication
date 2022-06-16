@@ -99,13 +99,13 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
                               βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear],
-                             data12, basellh12, pdif_12, rounderr;
+                             data12, basellh_12, pdif_12, rounderr;
                              demandcal = true, WFcal = WFcal)
        end
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
                                 βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear],
-                               data12, basellh12, pdif_12, rounderr;
+                               data12, basellh_12, pdif_12, rounderr;
                                demandcal = true, WFcal = WFcal) for i=1:Y]...)
     end
 
@@ -197,7 +197,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
     f = f1 + f2
     distpara = [distpara1; distpara2]
-
+    fWF = Dict{String,Any}()
     if WFcal
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
@@ -242,7 +242,6 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
                 Dm_12[ind_k,y_max], D0_12[ind_k,y_max], pi_12[ind_k,y_max], CSns_12[ind_k,y_max], CSs_12[ind_k,y_max])
         end
 
-        fWF = Dict{String,Any}()
         fWF["BestVals_09"] = hcat(cdid_09, numlist_09, p_09, pdif_09, BestVals_09)
         fWF["BestVals_12"] = hcat(cdid_12, numlist_12, p_12, pdif_12, BestVals_12)
         fWF["BestValsbp"]  = hcat(bp["cdid"], bp["numlist"], bp["p"],

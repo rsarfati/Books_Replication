@@ -28,7 +28,7 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 	x0 = x0[[1:2; 4:6; 8:end]]# [3, 7])
     #x0[[3,7]] .= 0.0
 	if only_likelihoods
-		return get_likelihoods(x, θ_init[7:20], distpara0, γ0vec, δ_vec, data12, data09, bp)
+            return get_likelihoods(x0, θ_init[7:20], distpara0, γ0vec, δ_vec, data12, data09, bp)
 	end
 
 	out =  objectivefun(x0)

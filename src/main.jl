@@ -1,5 +1,5 @@
-using CSV, DataFrames, Dates, Distributed, Distributions, FixedEffectModels, MAT, Optim
-using Random, RegressionTables, Roots, SparseArrays, Statistics
+using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
+using JLD2, MAT, Optim, Random, RegressionTables, Roots, SparseArrays, Statistics
 
 # Build output folders if don't exist
 path = dirname(@__FILE__)
@@ -27,7 +27,7 @@ n_bs    = 200 # No. bootstrap iterations
 test_functions = false  # Test code matches MATLAB (for developers)
 parallel       = true  # Distribute work across multiple processes?
 output_lik     = true  # Do you want to simply fetch the likelihood of a set of parameters?
-estimation     = true  # Estimate model
+estimation     = false  # Estimate model
 run_bootstrap  = false # Run bootstrap for SEs?
 run_mode       = 1     # Running bootstrap? Choose between modes 1 or 2 (see explanation).
 

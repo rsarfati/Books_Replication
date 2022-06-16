@@ -1,4 +1,4 @@
-using FileIO, Test, FileIO, JLD2, MAT
+using Test, FileIO, JLD2, MAT
 
 path = dirname(@__FILE__) * "/data/"
 rng = MersenneTwister(1234)

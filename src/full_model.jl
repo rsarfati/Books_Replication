@@ -144,16 +144,15 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         δ_σ     = γinput[4]
 
         # Calculate the importance of the grid points
-        γ0_cdf_vec = vcat(-cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[1]),
-                         cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec),
-                         2 .- cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[end]))
-        imp1 = (γ0_cdf_vec[3:end] - γ0_cdf_vec[1:end-2]) ./ 2
+        γ0_09_cdf_vec = [    -cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[1]);
+                              cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec);
+                         2 .- cdf.(Gamma(γ0shape, γ0_θ_09), γ0vec[end])]
+        imp1 = (γ0_09_cdf_vec[3:end] - γ0_09_cdf_vec[1:end-2]) ./ 2
 
-        γ0_cdf_vec = vcat(-cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[1]),
-                         cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec),
-                         2 .- cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[end]))
-
-        imp2 = (γ0_cdf_vec[3:end] - γ0_cdf_vec[1:end-2]) ./ 2
+        γ0_12_cdf_vec = [    -cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[1]);
+                              cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec);
+                         2 .- cdf.(Gamma(γ0shape, γ0_θ_12), γ0vec[end])]
+        imp2 = (γ0_12_cdf_vec[3:end] - γ0_12_cdf_vec[1:end-2]) ./ 2
 
         δ_cdf_vec = [    -cdf( Normal(δ_mean, δ_σ), log( δ_vec[1]));
                           cdf.(Normal(δ_mean, δ_σ), log.(δ_vec));
@@ -197,7 +196,10 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
     f = f1 + f2
     distpara = [distpara1; distpara2]
-    fWF = Dict{String,Any}()
+
+    fWF    = Dict{String,Any}()
+    fother = Dict{String,Any}()
+
     if WFcal
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
@@ -254,7 +256,6 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         fWF["WFbp"]     = WF_bp
     end
 
-    fother = Dict{String,Any}()
     fother["lip12"]    = lip_12
     fother["llhβ12"]   = llhβ_12
     fother["lip_09"]   = lip_09
@@ -266,11 +267,11 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     fother["ltot12"]   = ltot_12
     fother["imp_09"]   = imp_09
 
-    fother["γ1_09"] = γ1_09
-    fother["γ112"]  = γ1_12
+    fother["γ1_09"]    = γ1_09
+    fother["γ112"]     = γ1_12
 
-    fother["lipb"] = lipb
-    fother["γ1bp"] = γ1_bp
+    fother["lipb"]     = lipb
+    fother["γ1bp"]     = γ1_bp
 
     return f, distpara, fother, fWF, f1, f2
 end

@@ -199,7 +199,7 @@ function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::
 
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
     olppost = vec(olp .* lip_ol ./ liptemp)
-    lip = log.(liptemp)
+    lip     = log.(liptemp)
     pi_v, CSns, CSs = zeros(N), zeros(N), zeros(N)
 
     if WFcal

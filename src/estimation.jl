@@ -1,6 +1,6 @@
 # Does a single estimation, starting from true parameter values estimated from
 # the data.
-function estimate_model(; vint::String = "0",
+function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
  			θ_init::Vector{T} = [0.32135,	5.6459,	14.855,	1.1614,  0.6486,   1.9196,	 14.771,
  					     -2.4895,	1,	    0.44004, 0.32415, 0.87235,  0.5,	 0.25921,
 				  	     -9.1217,  80.267,	-13.647, 1.7296,  8.8188,   0.92622, 4.283,
@@ -27,7 +27,11 @@ function estimate_model(; vint::String = "0",
 	# TODO: investigate why these columns are being deleted
 	x0 = x0[[1:2; 4:6; 8:end]]# [3, 7])
     #x0[[3,7]] .= 0.0
-    @show objectivefun(x0)
+	if only_likelihoods
+		return get_likelihoods(x, θ_init[7:20], distpara0, γ0vec, δ_vec, data12, data09, bp)
+	end
+
+	out =  objectivefun(x0)
 
 	res     = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5)))
 	x, fval = res.minimizer, res.minimum
@@ -38,9 +42,20 @@ function estimate_model(; vint::String = "0",
 	return θ
 end
 
+function get_likelihoods(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
+	if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
+        @show "Bad news"
+        return Inf
+    end
+    xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
+
+	f, distpara, fother, fWF, f1, f2 = full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
+    return f, f1, f2
+end
+
 function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
     if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
-        @show "bad news"
+        @show "Bad news"
         return Inf
     end
     xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]

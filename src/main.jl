@@ -26,6 +26,7 @@ n_bs    = 200 # No. bootstrap iterations
 
 test_functions = false  # Test code matches MATLAB (for developers)
 parallel       = true  # Distribute work across multiple processes?
+output_lik     = true  # Do you want to simply fetch the likelihood of a set of parameters?
 estimation     = true  # Estimate model
 run_bootstrap  = false # Run bootstrap for SEs?
 run_mode       = 1     # Running bootstrap? Choose between modes 1 or 2 (see explanation).
@@ -49,6 +50,13 @@ end
 # Test function output, if you've been modifying code
 if test_functions
     include("$path/../test/helpers.jl")
+end
+
+if output_lik
+    include("$path/estimation.jl")
+    f, f1, f2 = estimate_model(only_likelihoods = true)
+    @save "likelihoods.jld2" f f1 f2
+    #CSV.write("likelihoods.csv", )
 end
 
 # Estimate model from known parameters

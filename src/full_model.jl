@@ -272,5 +272,5 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     fother["lipb"] = lipb
     fother["γ1bp"] = γ1_bp
 
-    return f, distpara, fother, fWF
+    return f, distpara, fother, fWF, f1, f2
 end

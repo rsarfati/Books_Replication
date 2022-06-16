@@ -20,15 +20,15 @@ function estimate_model(; vint::String = "0",
 	distpara0 = vec(vars["distpara0"])
 
 	x0 = θ_init[7:20]
-	objectivefun(x) = objective(x, x0, distpara0, γ0vec, δ_vec, data12, data09, bp)
+	objectivefun(x) = objective(x, θ_init[7:20], distpara0, γ0vec, δ_vec, data12, data09, bp)
 
-	x00 = x0
+	x00 = deepcopy(x0)
 
 	# TODO: investigate why these columns are being deleted
-	#deleteat!(x0, [3, 7])
-        x0[[3,7]] .= 0.0
+	x0 = x0[[1:2; 4:6; 8:end]]# [3, 7])
+    #x0[[3,7]] .= 0.0
     @show objectivefun(x0)
-    
+
 	res     = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5)))
 	x, fval = res.minimizer, res.minimum
 
@@ -39,20 +39,11 @@ function estimate_model(; vint::String = "0",
 end
 
 function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
-    #if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
-    #    return Inf
-    #end
-
-    xx = vcat(x[1:2], x0[3], x[3:5], x0[7], x[6:(length(x0)-2)])
-
-    @show "In objective"
-    @assert x[3] == xx[4]
-    @assert x[4] == xx[5]
-    @assert x[12] == xx[14]
-
-    if xx[4]<0 || xx[5]<0 || xx[14]>1 || xx[14]< 0
+    if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
         @show "bad news"
         return Inf
     end
+    xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
+
     return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
 end

@@ -18,7 +18,7 @@ path = dirname(@__FILE__)
 # ***************************************************************************************
 
 ## TODO: Specify script parameters
-vint    = "2022-06-14"
+vint    = "2022-06-15"
 n_procs = 20  # No. workers to request from cluster
 n_bs    = 200 # No. bootstrap iterations
 
@@ -35,7 +35,7 @@ rounderr = 0.025
 
 # Add worker processes, load necessary packages on said workers
 if parallel
-    addprocs(n_procs)
+    #addprocs(n_procs)
     @everywhere using CSV, DataFrames, Dates, Distributions, FixedEffectModels, MAT
     @everywhere using Optim, Random, RegressionTables, Roots, SparseArrays, Statistics
     @everywhere path = dirname(@__FILE__)
@@ -54,6 +54,7 @@ end
 # Estimate model from known parameters
 if estimation
     include("$path/estimation.jl")
+    estimate_model()
 end
 
 # Bootstrap

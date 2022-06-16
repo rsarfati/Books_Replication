@@ -45,5 +45,5 @@ function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
     end
     xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
 
-    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
+    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)[1]
 end

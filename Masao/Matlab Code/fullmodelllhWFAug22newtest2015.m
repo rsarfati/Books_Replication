@@ -165,7 +165,7 @@ basellhb =  gampdf(bp.p,olm,oltheta)*2*rounderr;
 
 
 
-    function [ltot] = integgamma0(gammainput)
+    function [ltot,importance09,importance12,ltot09,ltot12] = integgamma0(gammainput)
         
         gamma0shape = gammainput(1);
         gamma0theta09 = gammainput(2)/gammainput(1);

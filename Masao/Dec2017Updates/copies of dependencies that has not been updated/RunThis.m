@@ -25,7 +25,7 @@ x0([3 7]) = [];
 
 %%
 estimates = [x(1:2) x00(3) x(3:5) x00(7) x(6:(length(x00)-2))];
-dlmwrite('estimates.csv',estimates,'delimiter',',','-append');
+dlmwrite('estimates.csv', estimates, 'delimiter', ',', '-append');
 xx = estimates;
 betasigma5new = [ distpara0...
     [xx(1) xx(2)/(1+xx(1)) xx(3) ...

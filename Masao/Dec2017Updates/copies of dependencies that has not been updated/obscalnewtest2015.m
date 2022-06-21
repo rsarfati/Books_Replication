@@ -40,7 +40,7 @@ dDm=delta.*(-eta).*(p.^(-eta-1));
 d2Dm=delta.*(eta).*(eta+1).*(p.^(-eta-2));
 
 %Solve for the gamma that rationalize the price choice
-[gamma2,l2]=solvegammaPar(Dm,D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2,dDm,dD0+rounderr.*d2D0,gamma0,p,r);
+[gamma2,l2]=solvegammaPar(Dm,D0+rounderr .* dD0+0.5.*d2D0 .* rounderr^2,dDm,dD0+rounderr.*d2D0,gamma0,p,r);
 
 SOC = r.*p.*(gamma2.*d2Dm + gamma0.*d2D0) + 2*(r+gamma2.*Dm + gamma0.*(D0+rounderr.*dD0+0.5.*d2D0.*rounderr^2)).*(gamma2.*dDm + gamma0.*(dD0+rounderr.*d2D0));
 
@@ -149,7 +149,7 @@ if demandcal == 1
 else
 %    lip_o = interp1(pdfdata1,pdfdata2,gamma1./gammascale)./gammascale.*dgammaidg; % ;
 %     lip_o = exp(-gamma1./gammascale)./gammascale.*dgammaidg; % ;
-lip_o = min(gamcdf(gamma2,m,gammascale) - gamcdf(gamma1,m,gammascale),1);
+    lip_o = min(gamcdf(gamma2, m,gammascale) - gamcdf(gamma1,m,gammascale),1);
     lip_ol = basellh; %;  % price likelihood. Next line starts disappear likelihood
 end
 

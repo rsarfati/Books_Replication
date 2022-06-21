@@ -165,7 +165,7 @@ basellhb =  gampdf(bp.p,olm,oltheta)*2*rounderr;
 
 
 
-    function [ltot] = integgamma0(gammainput)
+    function [ltot,importance09,importance12,ltot09,ltot12] = integgamma0(gammainput)
         
         gamma0shape = gammainput(1);
         gamma0theta09 = gammainput(2)/gammainput(1);
@@ -191,7 +191,6 @@ basellhb =  gampdf(bp.p,olm,oltheta)*2*rounderr;
         ltot12 = maxtemp12 + log(llhadj12*importance12(:));
         ltot12total = -sum(ltot12);
         ltot = ltot09total  + ltot12total;
-        
     end
 
 [distpara1,f1,~,fmindisplay] = fminunc(@integgamma0,betasigma4(1:4),optimset('MaxFunEvals',1e4,'Display','off','LargeScale','off'));
@@ -231,7 +230,7 @@ if WFcal
     BestVals09 = zeros(data09.N,13);
     BestVals12 = zeros(data12.N,13);
     for k = 1:data09.M
-        RPpost = llhadj09(k,:)'.*importance09(:)/exp(ltot09(k)-maxtemp09(k));
+        RPpost = llhadj09(k,:)'.* importance09(:)/exp(ltot09(k)-maxtemp09(k));
         Indexk = data09.first(k):data09.cdindex(k);
         WF09(Indexk,1) = pi09(Indexk,:)*RPpost;
         WF09(Indexk,2) = CSns09(Indexk,:)*RPpost;

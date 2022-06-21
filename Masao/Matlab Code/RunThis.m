@@ -33,14 +33,14 @@ betasigma5new = [ distpara0...
     xx(6:11).*[1 0.1 1 0.1 0.01 0.1 ] 0 0] xx(12:13) xx(14)];
 dlmwrite('betasigma_record.csv',betasigma5new,'delimiter',',','-append');
 
-[llh, newdistpara,fother,fWF] = fullmodelllhWFAug22newtest2015(estimates,distpara0,gamma0vec,deltavec, data12,data09,bp);
+[llh, newdistpara, fother, fWF] = fullmodelllhWFAug22newtest2015(estimates,distpara0,gamma0vec,deltavec, data12,data09,bp);
 clocktime = clock;
 clocktime = clocktime(1:5);
 
 wel09 = mean(fWF.AveWF09);
 wel12 = mean(fWF.AveWF12);
 weloff = mean(fWF.WFbp);
-output = [llh- 8223*log(20), newdistpara,estimates,weloff,wel09,wel12,clocktime];
+output = [llh- 8223*log(20), newdistpara, estimates, weloff, wel09, wel12, clocktime];
 
 dlmwrite('results2.csv',output,'delimiter',',','-append');
 %save('fWF.mat','fWF')

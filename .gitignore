@@ -1,0 +1,10 @@
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+*.m~
+.DS_Store
+Manifest.toml
+
+reference/
+Masao/*.csv

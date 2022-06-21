@@ -18,7 +18,7 @@ path = dirname(@__FILE__)
 # ***************************************************************************************
 
 ## TODO: Specify script parameters
-vint    = "2022-06-15"
+vint    = "2022-06-20"
 n_procs = 20  # No. workers to request from cluster
 n_bs    = 200 # No. bootstrap iterations
 

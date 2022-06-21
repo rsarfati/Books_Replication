@@ -10,7 +10,7 @@ expU=exp(p.*(-alpha));
 %     sum1(j)=sum(expU(cdindex(j-1)+1:cdindex(j)))+exp(beta);
 % end
 
-sum1 = sum(sparse(1:length(data.cdid),data.cdid,data.obsweight.*expU))' + exp(beta.*alpha(1));
+sum1 = sum(sparse(1:length(data.cdid), data.cdid, data.obsweight .* expU))' + exp(beta.*alpha(1));
 sum2 = sum1(data.cdid);
 
 %denominator for searchers

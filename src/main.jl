@@ -1,5 +1,5 @@
 using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
-using JLD2, MAT, Optim, Random, RegressionTables, Roots, SparseArrays, Statistics
+using JLD2, MAT, Optim, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
 
 # Build output folders if don't exist
 path = dirname(@__FILE__)

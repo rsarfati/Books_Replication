@@ -265,3 +265,198 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
 
     return pi_v, CSns, CSs
 end
+
+"""
+```
+output_statistics(boot_out = "$path/data/bootstrap_welfare.csv")
+```
+Outputs variables in same order of paper table.
+"""
+function output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint="", write_out = false)
+    boot = CSV.read(boot_out, DataFrame, header = true)
+    boot = unique(boot)
+    boot = boot[:, 2:15]
+
+    distpara = CSV.read(boot_out, DataFrame, header = true)
+    distpara = unique(distpara)
+    distpara = distpara[:, 16:21]
+
+    b_boot = zeros(size(boot, 1), 25)
+    for i = 1:size(boot,1)
+        xx = Vector(boot[i,:])
+        est = [Vector(distpara[i,:]);
+                xx[1];
+                xx[2]/(1+xx[1]);
+                xx[3];
+                xx[4] * 10 * xx[7] / 10 / 9.5 ^ (-xx[6] - 1);
+                xx[5] * 10 * xx[7] / 10 / 8.0 ^ (-xx[6] - 1);
+                xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];
+                0;
+                0;
+                xx[12:13];
+                xx[14]]
+
+        @show est
+
+        b_boot[i,1] = est[1]
+        b_boot[i,2] = est[2]
+        b_boot[i,3] = est[3]
+        b_boot[i,4] = est[7]
+        b_boot[i,5] = est[8]
+        b_boot[i,6] = est[13]
+        b_boot[i,7] = est[15]
+        b_boot[i,8] = est[4]
+        b_boot[i,9] = est[12]
+        b_boot[i,10] = est[9]
+        b_boot[i,11] = est[10] .* est[9]
+
+        @show est[10], est[9]
+
+        b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1)
+        b_boot[i,13] = est[11] .* est[9]
+        b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1)
+        b_boot[i,15] = est[5]
+        b_boot[i,16] = (est[5]./10).^(est[12]+1)
+        b_boot[i,17] = est[6]
+        b_boot[i,18] = est[16]
+        b_boot[i,19] = est[17]
+        b_boot[i,20] = est[18]
+        b_boot[i,21] = est[19]
+        b_boot[i,22] = est[14]
+        b_boot[i,23] = est[20]
+        b_boot[i,24] = est[20] .* est[21]
+        b_boot[i,25] = 1.0 - est[22]
+    end
+    betasigma_std_boot = [std(b_boot[:,j])             for j=1:25]
+    betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
+    betasigma_boot_5   = [quantile(b_boot[:,j], 0.05)  for j=1:25]
+    betasigma_boot_10  = [quantile(b_boot[:,j], 0.1)   for j=1:25]
+    betasigma_boot_90  = [quantile(b_boot[:,j], 0.9)   for j=1:25]
+    betasigma_boot_95  = [quantile(b_boot[:,j], 0.95)  for j=1:25]
+    betasigma_boot_975 = [quantile(b_boot[:,j], 0.975) for j=1:25]
+
+    # Bootstrap Welfare Statistics
+    boot_welfare = CSV.read(boot_out, DataFrame, header=false)
+    boot_welfare = unique(boot_welfare)
+    boot_welfare = boot_welfare[:, (end-8):end]
+
+    # TODO: find every use of quantile and verify it wasn't meant to be CDF
+    welfare_std_boot = [std(boot_welfare[:,j])             for j=1:9]
+    welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
+    welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]
+    welfare_boot_10  = [quantile(boot_welfare[:,j], 0.1)   for j=1:9]
+    welfare_boot_90  = [quantile(boot_welfare[:,j], 0.9)   for j=1:9]
+    welfare_boot_95  = [quantile(boot_welfare[:,j], 0.95)  for j=1:9]
+    welfare_boot_975 = [quantile(boot_welfare[:,j], 0.975) for j=1:9]
+
+    # Column definitions are same as rows in Summary201609.xlsx.
+    if write_out
+        CSV.write("data/bootstrap_estimates_$(vint).csv",         Tables.table(b_boot))
+        CSV.write("data/bootstrap_welfare_estimates_$(vint).csv", boot_welfare)
+    end
+    return b_boot, boot_welfare
+end
+
+"""
+Mapping of parameter vector to table locations + paper names:
+. 1 => gamma0 shape parameter      == γ_s_shape   => 11
+. 2 => E[gamma_0] 2009 online      == γ_s_on_09   => 3
+. 3 => E[gamma_0] 2012 online      == γ_s_on_12   => 4
+. 4 => alpha-1                     == α           => 12
+. 5 => beta                        == Δ_p_out     => 13
+- 6 => r                          (== r)
+. 7 => c                           == c           => 14
+. 8 => sigma_delta                 == σ_δ         => 7
+. 9 => eta-1                       == η           => 6
+- 10 => gamma_i shape parameter   (== γ_ns_shape)
+. 11 => E[gamma_i] 2009 online     == γ_ns_on_09  => 8
+  12 => demand at p=10 2009 online
+. 13 => E[gamma_i] 2012 online     == γ_ns_on_12  => 9
+  14 => demand at p=10 2012 online
+? 15 => E[gamma_i] 2009 offline
+  16 => demand at p=10 2009 offline
+? 17 => betalocal
+. 18 => lamda1                     == γ_s_pop     => 10
+. 19 => lamda2                     == γ_ns_pop    => 5
+- 20 => betacond
+- 21 => betapop
+. 22 => Pr(random price)           == R_p         => 15
+. 23 => shape param. of rand price == s_R         => 17
+. 24 => mean of random price       == μ_R         => 16
+. 25 => Natural Disappear          == R_q         => 18
+
+Welfare 2009  profit
+Welfare 2009 CS nonshopper
+Welfare 2009  CS shopper
+Welfare 2012 profit
+Welfare 2012 CS shopper
+Welfare 2012 CS nonshopper
+Welfare 2009 offline  profit
+Welfare 2009 offline CS nonshopper
+Welfare 2009 offline CS shopper
+"""
+function make_table_results(b_boot::Matrix{Float64}; table_title = "estimates.tex",
+                table_rows = Dict([i => e for (i,e) in enumerate(
+                    [#=1=# (:γ_ns_of_09_std, "Mean arrival 2009 offline standard title (\$\\Bar{\\gamma}^{ns}_{09,of,std}\$)", "0.65 (0.17)"),
+                     #=2=# (:γ_ns_of_09_loc, "Mean arrival 2009 offline local interest (\$\\Bar{\\gamma}^{ns}_{12,of,std}\$)", "1.25 (0.37)"),
+                     #=3=# (:γ_ns_on_09, "Mean arrival 2009 online (\$\\Bar{\\gamma}^{ns}_{09,on}\$)", "14.90 (3.61)"),
+                     #=4=# (:γ_ns_on_12, "Mean arrival 2012 online (\$\\Bar{\\gamma}^{ns}_{12,on}\$)", "7.95 (2.00)"),
+                     #=5=# (:γ_ns_pop, "Popularity effect on arrival (\$\\gamma^{ns}_{Pop}\$)", "-1.36 (0.19)"),
+                     #=6=# (:η, "Nonshopper price elasticity (\$\\eta\$)", "1.87 (0.08)"),
+                     #"\\tp{Nonshopper condition elasticity (\$\\eta^c\$)}"),
+                     #=7=# (:σ_δ, "StDev of title-level unobservable (\$\\sigma_{\\delta}\$)", "1.16 (0.05)"),
+                     #=8=# (:γ_s_on_09, "Mean arrival 2009 online (\$\\Bar{\\gamma}^s_{09}\$)","5.65 (1.41)"),
+                     #=9=# (:γ_s_on_12, "Mean arrival 2012 online (\$\\Bar{\\gamma}^s_{12}\$)","14.86 (3.10)"),
+                     #=10=# (:γ_s_pop, "Popularity effect on arrival (\$\\gamma^{s}_{Pop}\$)","0.80 (0.09)"),
+                     #=11=# (:γ_s_shape, "Arrival distribution shape parameter (\$\\gamma^s_{shape}\$)","0.32 (0.03)"),
+                     #=12=# (:α, "Shopper price coefficient (\$\\alpha\$)", "15.77 (1.28)"),
+                     #=13=# (:Δ_p_out, "Outside option relative price (\$\\Delta p^{out}\$)", "0.16 (0.02)"),
+                     #=14=# (:c, "Effect of unobservable on price coefficient (\$c\$)", "-0.91 (0.07)"),
+                     #=15=# (:R_p, "Probability of randomly chosen price (\$R^p\$)", "0.26 (0.02)"),
+                     #=16=# (:μ_R, "Mean of randomly chosen price (\$\\mu^R\$)", "15.25 (0.80)"),
+                     #=17=# (:s_R, "Random price shape parameter (\$s^R\$)", "1.73 (0.09)"),
+                     #=18=# (:R_q, "Background disappearance rate (\$R^q\$)", "0.07 (0.01)")])]),
+                label = "tab:my_label", include_paper = true)
+
+    boot_mean = mean(b_boot, dims=1)
+    boot_std  =  std(b_boot, dims=1)
+
+    boot_ind = Dict([:γ_s_shape => 1, :γ_s_on_09 => 2, :γ_s_on_12 => 3, :α => 4, :Δ_p_out => 5, # :r => 6,
+                     :c => 7, :σ_δ => 8, :η => 9, # :γ_s_shape => 10,
+                     :γ_ns_on_09 => 11, :γ_ns_on_12 => 13, :γ_ns_of_09_std => 15, #12, 14, 16 are demand at p=10
+                     :γ_s_pop => 18, :γ_ns_pop => 19, #20, 21 are βcond, βpop...
+                     :R_p => 22, :s_R => 23, :μ_R => 24, :R_q => 25])
+
+    io = open(table_title, "w")
+    if include_paper
+        write(io, "\\begin{table}[h]\n\\centering\n\\begin{tabular}{c|c|c}")
+        write(io, "\\toprule Parameter & New Est. & Paper Est. (SE)\\\\[2mm]")
+    else
+        write(io, "\\begin{table}[h]\n\\centering\n\\begin{tabular}{c|c}")
+        write(io, "\\toprule Parameter & New Est. \\\\[2mm]")
+    end
+
+    for i=1:length(table_rows)
+        θ_i = table_rows[i][1]
+        if i==1
+            write(io, "\\hline \n Nonshopper arrival and demand  \\\\ \n \\hline\n")
+        elseif θ_i == :γ_s_on_09
+            write(io, "\\hline \n Shopper arrival and demand  \\\\ \n \\hline\n")
+        elseif θ_i == :R_p
+            write(io, "\\hline \n Departures from fully rational model  \\\\ \n \\hline\n")
+        end
+        write(io, table_rows[i][2] * " & ")
+        
+        if !(i==1 || i==2) # TODO: temporary catch bc I can't find these variables...
+            k = boot_ind[θ_i]
+            boot_μ =  (θ_i == :η)       ? 1 + boot_mean[k] :
+                     ((θ_i == :Δ_p_out) ?    -boot_mean[k] :
+                                              boot_mean[k])
+            @printf(io, " %0.2f (%0.2f)", boot_μ, boot_std[k])
+        end
+        include_paper ? @printf(io, " & %s", table_rows[i][3]) : nothing
+        write(io, "\\\\ \n ")
+    end
+    write(io, "\\end{tabular}\\label{$label}\\end{table}")
+    close(io)
+end

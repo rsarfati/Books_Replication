@@ -177,10 +177,10 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     res = optimize(getbmean, βσ5[5:6])
     distpara2, f2 = res.minimizer, res.minimum
 
-    out_bp = obscalnewtest2015(vcat(0, βσ4[[6, 7, 8]],
-        abs(distpara2[1]), βσ4[[11, 12]], λ1, λ2, βcond, βpop, distpara2[2],
-        βσ4[13], 1, 1, 1), bp, basellhb, bp_p, rounderr; demandcal = false, WFcal = WFcal)
-
+    out_bp = obscalnewtest2015([0; βσ4[[6, 7, 8]]; abs(distpara2[1]); βσ4[[11, 12]];
+                               λ1; λ2; βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
+                               bp, basellhb, bp_p, rounderr; demandcal = false,
+                               WFcal = WFcal)
     N_bp  = length(bp_p)
     WF_bp = zeros(N_bp, 3)
 

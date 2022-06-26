@@ -224,7 +224,7 @@ distpara = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
 distpara = unique(distpara)
 distpara = distpara[:, 16:21]
 
-b_boot = zeros(size(boot,1), 25)
+b_boot = zeros(size(boot, 1), 25)
 for i = 1:size(boot,1)
     xx = Vector(boot[i,:])
     est = vcat(Vector(distpara[i,:]), xx[1], xx[2]/(1+xx[1]), xx[3],

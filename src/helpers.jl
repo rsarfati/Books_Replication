@@ -273,61 +273,58 @@ output_statistics(boot_out = "$path/data/bootstrap_welfare.csv")
 Outputs variables in same order of paper table.
 """
 function output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint="", write_out = false)
-    boot = CSV.read(boot_out, DataFrame, header = true)
+    boot = CSV.read(boot_out, DataFrame, header = false)
     boot = unique(boot)
     boot = boot[:, 2:15]
+    N_bs = size(boot, 1)
 
-    distpara = CSV.read(boot_out, DataFrame, header = true)
+    distpara = CSV.read(boot_out, DataFrame, header = false)
     distpara = unique(distpara)
     distpara = distpara[:, 16:21]
 
-    b_boot = zeros(size(boot, 1), 25)
-    for i = 1:size(boot,1)
-        xx = Vector(boot[i,:])
-        est = [Vector(distpara[i,:]);
-                xx[1];
-                xx[2]/(1+xx[1]);
-                xx[3];
-                xx[4] * 10 * xx[7] / 10 / 9.5 ^ (-xx[6] - 1);
-                xx[5] * 10 * xx[7] / 10 / 8.0 ^ (-xx[6] - 1);
-                xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];
-                0;
-                0;
-                xx[12:13];
-                xx[14]]
+    b_boot = zeros(N_bs, 25)
 
-        @show est
+    for i = 1:N_bs
+        xx  =  Vector(boot[i, :])      # 1:14 -> boot_out[:, 2:15]
+        est = [Vector(distpara[i, :]); # 1:6  -> boot_out[:, 16:21]
+               xx[1];                 # 7
+               xx[2] / (1 + xx[1]);   # 8
+               xx[3];                 # 9
+               xx[4] * 10 * xx[7] / 10 / 9.5 ^ (-xx[6] - 1); # 10
+               xx[5] * 10 * xx[7] / 10 / 8.0 ^ (-xx[6] - 1); # 11
+               xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];      # 12:17
+               0;         # 18
+               0;         # 19
+               xx[12:13]; # 20:21
+               xx[14]]    # 22
 
-        b_boot[i,1] = est[1]
-        b_boot[i,2] = est[2]
-        b_boot[i,3] = est[3]
-        b_boot[i,4] = est[7]
-        b_boot[i,5] = est[8]
-        b_boot[i,6] = est[13]
-        b_boot[i,7] = est[15]
-        b_boot[i,8] = est[4]
-        b_boot[i,9] = est[12]
-        b_boot[i,10] = est[9]
-        b_boot[i,11] = est[10] .* est[9]
-
-        @show est[10], est[9]
-
-        b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1)
-        b_boot[i,13] = est[11] .* est[9]
-        b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1)
-        b_boot[i,15] = est[5]
-        b_boot[i,16] = (est[5]./10).^(est[12]+1)
-        b_boot[i,17] = est[6]
-        b_boot[i,18] = est[16]
-        b_boot[i,19] = est[17]
-        b_boot[i,20] = est[18]
-        b_boot[i,21] = est[19]
-        b_boot[i,22] = est[14]
-        b_boot[i,23] = est[20]
-        b_boot[i,24] = est[20] .* est[21]
-        b_boot[i,25] = 1.0 - est[22]
+        b_boot[i, 1] = est[1]  # γ_s_shape
+        b_boot[i, 2] = est[2]  # γ_s_on_09
+        b_boot[i, 3] = est[3]  # γ_s_on_12
+        b_boot[i, 4] = est[7]  # α
+        b_boot[i, 5] = est[8]  # Δ_p_out
+        b_boot[i, 6] = est[13] # (FIXED: r)
+        b_boot[i, 7] = est[15] # c
+        b_boot[i, 8] = est[4]  # σ_δ
+        b_boot[i, 9] = est[12] # η
+        b_boot[i,10] = est[9]                                      # (FIXED: γ_ns_shape)
+        b_boot[i,11] =  est[10] .* est[9] # γ_ns_on_09
+        b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1) # (demand at p=10 2009 online)
+        b_boot[i,13] =  est[11] .* est[9] # γ_ns_on_12
+        b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1) # (demand at p=10 2012 online)
+        b_boot[i,15] = est[5]                                      # (E[gamma_i] 2009 offline)
+        b_boot[i,16] = (est[5] ./ 10) .^ (est[12] .+ 1)            # (demand at p=10 2009 offline)
+        b_boot[i,17] = est[6]                                      # (βlocal)
+        b_boot[i,18] = est[16]            # γ_s_pop
+        b_boot[i,19] = est[17]            # γ_ns_pop
+        b_boot[i,20] = est[18] # (NOT USED: betacond)
+        b_boot[i,21] = est[19] # (NOT USED: betapop)
+        b_boot[i,22] = est[14]            # R_p
+        b_boot[i,23] = est[20]            # s_R
+        b_boot[i,24] = est[20] .* est[21] # μ_R
+        b_boot[i,25] = 1.0 - est[22]      # R_q
     end
-    betasigma_std_boot = [std(b_boot[:,j])             for j=1:25]
+    betasigma_std_boot = [     std(b_boot[:,j])        for j=1:25]
     betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
     betasigma_boot_5   = [quantile(b_boot[:,j], 0.05)  for j=1:25]
     betasigma_boot_10  = [quantile(b_boot[:,j], 0.1)   for j=1:25]
@@ -341,7 +338,7 @@ function output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint
     boot_welfare = boot_welfare[:, (end-8):end]
 
     # TODO: find every use of quantile and verify it wasn't meant to be CDF
-    welfare_std_boot = [std(boot_welfare[:,j])             for j=1:9]
+    welfare_std_boot = [     std(boot_welfare[:,j])        for j=1:9]
     welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
     welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]
     welfare_boot_10  = [quantile(boot_welfare[:,j], 0.1)   for j=1:9]
@@ -358,17 +355,17 @@ function output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint
 end
 
 """
-Mapping of parameter vector to table locations + paper names:
+Mapping of parameter vector to table names + locations:
 . 1 => gamma0 shape parameter      == γ_s_shape   => 11
 . 2 => E[gamma_0] 2009 online      == γ_s_on_09   => 3
 . 3 => E[gamma_0] 2012 online      == γ_s_on_12   => 4
 . 4 => alpha-1                     == α           => 12
 . 5 => beta                        == Δ_p_out     => 13
-- 6 => r                          (== r)
+X 6 => r                          (== r)
 . 7 => c                           == c           => 14
 . 8 => sigma_delta                 == σ_δ         => 7
 . 9 => eta-1                       == η           => 6
-- 10 => gamma_i shape parameter   (== γ_ns_shape)
+X 10 => gamma_i shape parameter   (== γ_ns_shape)
 . 11 => E[gamma_i] 2009 online     == γ_ns_on_09  => 8
   12 => demand at p=10 2009 online
 . 13 => E[gamma_i] 2012 online     == γ_ns_on_12  => 9
@@ -378,8 +375,8 @@ Mapping of parameter vector to table locations + paper names:
 ? 17 => betalocal
 . 18 => lamda1                     == γ_s_pop     => 10
 . 19 => lamda2                     == γ_ns_pop    => 5
-- 20 => betacond
-- 21 => betapop
+X 20 => betacond
+X 21 => betapop
 . 22 => Pr(random price)           == R_p         => 15
 . 23 => shape param. of rand price == s_R         => 17
 . 24 => mean of random price       == μ_R         => 16
@@ -423,11 +420,11 @@ function make_table_results(b_boot::Matrix{Float64}; table_title = "estimates.te
 
     boot_ind = Dict([:γ_s_shape => 1, :γ_s_on_09 => 2, :γ_s_on_12 => 3, :α => 4, :Δ_p_out => 5, # :r => 6,
                      :c => 7, :σ_δ => 8, :η => 9, # :γ_s_shape => 10,
-                     :γ_ns_on_09 => 11, :γ_ns_on_12 => 13, :γ_ns_of_09_std => 15, #12, 14, 16 are demand at p=10
-                     :γ_s_pop => 18, :γ_ns_pop => 19, #20, 21 are βcond, βpop...
+                     :γ_ns_on_09 => 11, :γ_ns_on_12 => 13, :γ_ns_of_09 => 15, #12, 14, 16 are demand at p=10
+                     :γ_s_pop => 18, :γ_ns_pop => 19, # :βcond => 20, :βpop => 21
                      :R_p => 22, :s_R => 23, :μ_R => 24, :R_q => 25])
 
-    io = open(table_title, "w")
+    io = open("tables/" * table_title, "w")
     if include_paper
         write(io, "\\begin{table}[h]\n\\centering\n\\begin{tabular}{c|c|c}")
         write(io, "\\toprule Parameter & New Est. & Paper Est. (SE)\\\\[2mm]")
@@ -446,7 +443,7 @@ function make_table_results(b_boot::Matrix{Float64}; table_title = "estimates.te
             write(io, "\\hline \n Departures from fully rational model  \\\\ \n \\hline\n")
         end
         write(io, table_rows[i][2] * " & ")
-        
+
         if !(i==1 || i==2) # TODO: temporary catch bc I can't find these variables...
             k = boot_ind[θ_i]
             boot_μ =  (θ_i == :η)       ? 1 + boot_mean[k] :

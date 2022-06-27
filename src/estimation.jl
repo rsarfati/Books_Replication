@@ -33,7 +33,8 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 
 	out =  objectivefun(x0)
 
-	res     = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5)))
+	res     = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5),
+					   iterations = Int(1e5), show_trace = true, store_trace = true))
 	x, fval = res.minimizer, res.minimum
 
 	θ = [x[1:2], x00[3], x[3:5], x00[7], x[6:(length(x00)-2)]]

@@ -39,7 +39,7 @@ if parallel
     @everywhere using Random, RegressionTables, Roots, SparseArrays, Statistics
     @everywhere path     = dirname(@__FILE__)
     @everywhere rounderr = 0.025
-    println("Added worker processes!")
+    println("Added $(length(workers())) worker processes!")
 end
 
 # Loadsfunctions

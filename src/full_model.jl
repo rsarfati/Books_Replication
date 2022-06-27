@@ -1,5 +1,5 @@
 # Based on file <fullmodelllhWFAug22newtest2015.m>
-function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = false, rounderr = 0.025)
+function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = false, rounderr = 0.025, parallel=true)
     # βσ5 = [γ0shape γ0mean09 γ0mean12 δ_σ
     #        γimeanbp βlocal alpha-1 β γishape  γimean09
     #        γimean12  eta-1 r olp c λ1 λ2 βcond βpop

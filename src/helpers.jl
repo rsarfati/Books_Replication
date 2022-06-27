@@ -444,7 +444,8 @@ function make_table_results(b_boot::Matrix{Float64}; table_title = "estimates.te
         end
         write(io, table_rows[i][2] * " & ")
 
-        if !(i==1 || i==2) # TODO: temporary catch bc I can't find these variables...
+        # TODO: temporary catch bc I can't find these variables...
+        if !(i==1 || i==2)
             k = boot_ind[θ_i]
             boot_μ =  (θ_i == :η)       ? 1 + boot_mean[k] :
                      ((θ_i == :Δ_p_out) ?    -boot_mean[k] :

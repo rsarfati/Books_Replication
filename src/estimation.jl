@@ -44,21 +44,32 @@ end
 
 function get_likelihoods(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
 	if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
-        @show "Bad news"
+        println("Bad news: Parameters out of bounds.")
         return Inf
     end
     xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
 
-	f, distpara, fother, fWF, f1, f2 = full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
+	out = try
+		full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)
+	catch err
+		@show typeof(err)
+		Inf, Inf, Inf, Inf, Inf, Inf
+	end
+	f, distpara, fother, fWF, f1, f2 = out
     return f, f1, f2
 end
 
 function objective(x, x0, distpara0, γ0vec, δvec, data12, data09, bp)
     if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
-        @show "Bad news"
+        println("Bad news: Parameters out of bounds.")
         return Inf
     end
     xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
-
-    return full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)[1]
+	out = try
+		full_model(xx, distpara0, γ0vec, δvec, data12, data09, bp)[1]
+	catch err
+		@show typeof(err)
+		Inf
+	end
+    return out
 end

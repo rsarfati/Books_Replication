@@ -57,8 +57,8 @@ if output_lik
 end
 
 # Estimate model from known parameters
-estimation    ? estimate_model()                       : nothing
+estimation    ? estimate_model() : nothing
 # Run bootstrap script
 run_bootstrap ? include("$path/bootstrap_distpara.jl") : nothing
 # Release workers
-parallel      ? rmprocs(workers())                     : nothing
+parallel      ? rmprocs(workers()) : nothing

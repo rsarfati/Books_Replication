@@ -14,21 +14,20 @@ path = dirname(@__FILE__)
 # This Julia implementation (Aug 2021 - June 2022) is by Reca Sarfati (sarfati@mit.edu),
 # which is based on MATLAB code from Masao Fukui, Hongkai Zhang, & [others]
 #
-# Users should CTRL-F for all TODO's in this script to adjust settings for personal use.
+# Users should CTRL-F for all TODO flags in this script to adjust settings for personal use.
 # ***************************************************************************************
 
 ## TODO: Specify script parameters
-vint     = "2022-06-26"
+vint     = "2022-06-27"
 n_procs  = 100   # No. workers to request from cluster
 N_bs     = 200   # No. bootstrap iterations
-rounderr = 0.025 # Round error for stores
 
 ## TODO: Adjust flags below for what you want to run.
 parallel      = true   # Distribute work across multiple processes?
 run_tests     = false  # Test code matches MATLAB (for developers)
-output_lik    = false   # Do you want to simply fetch the likelihood of a set of parameters?
-estimation    = true  # Estimate model
-run_bootstrap = false   # Run bootstrap for SEs?
+output_lik    = false  # Do you want to simply fetch the likelihood of a set of parameters?
+estimation    = true   # Estimate model
+run_bootstrap = false  # Run bootstrap for SEs?
 run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers
@@ -37,18 +36,18 @@ if parallel
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions
     @everywhere using FileIO, FixedEffectModels, JLD2, MAT, Optim, Printf
     @everywhere using Random, RegressionTables, Roots, SparseArrays, Statistics
-    @everywhere path     = dirname(@__FILE__)
-    @everywhere rounderr = 0.025
+    @everywhere path = dirname(@__FILE__)
     println("Added $(length(workers())) worker processes!")
 end
 
-# Loadsfunctions
+# Loads functions
+@everywhere rounderr = 0.025
 @everywhere include("$path/helpers.jl")
 @everywhere include("$path/full_model.jl")
 @everywhere include("$path/estimation.jl")
 
 # Test function output (good idea if you've been modifying code)
-run_tests ? include("$path/../test/helpers.jl") : nothing
+!run_tests && include("$path/../test/helpers.jl")
 
 # Only solve for likelihoods
 if output_lik
@@ -57,8 +56,8 @@ if output_lik
 end
 
 # Estimate model from known parameters
-estimation    ? estimate_model() : nothing
+!estimation    && estimate_model()
 # Run bootstrap script
-run_bootstrap ? include("$path/bootstrap_distpara.jl") : nothing
+!run_bootstrap && include("$path/bootstrap_distpara.jl")
 # Release workers
-parallel      ? rmprocs(workers()) : nothing
+!parallel      && rmprocs(workers())

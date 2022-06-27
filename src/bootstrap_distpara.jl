@@ -3,6 +3,8 @@
 # Set seed for testing purposes
 rng = MersenneTwister(1234)
 path = dirname(@__FILE__)
+
+@show run_mode
 ## Input: True data, randomly generated title-level index
 # ~ Contructs bootstrap dataset, runs the estimation ~
 # Output: bootstrap_welfare.csv
@@ -195,7 +197,7 @@ for i = 1:N_bs
         x, fval = res.minimizer, res.minimum
 
         estimates = [i; x[1:2]; x00[3]; x[3:5]; x00[7]; x[6:(length(x00)-2)]]
-        CSV.write("bootstrap_estimates_$(vint).csv", Tables.table(estimates))
+        CSV.write("$path/output_data/bootstrap_estimates_$(vint).csv", Tables.table(estimates))
 
     elseif run_mode == :EVAL
 
@@ -206,9 +208,9 @@ for i = 1:N_bs
         wel12    = mean(fWF["AveWF12"])
         weloff   = mean(fWF["WFbp"])
         result_w = [i; xinitial; newdistpara; wel09; wel12; weloff]
-        CSV.write("bootstrap_welfare_$(vint).csv", result_w)
+        CSV.write("$path/output_data/bootstrap_welfare_$(vint).csv", result_w)
     end
 end
-b_boot = output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv",
+b_boot = output_statistics(; boot_out = "$path/output_data/bootstrap_welfare_$(vint).csv",
                            vint = "2022-06-26", write_out = true)[1]
-make_table_results(b_boot; table_title = "estimates_20220626_mode_$(mode).tex")
+make_table_results(b_boot; table_title = "estimates_20220626_mode_$(String(run_mode)).tex")

@@ -26,9 +26,9 @@ rounderr = 0.025 # Round error for stores
 ## TODO: Adjust flags below for what you want to run.
 parallel      = true   # Distribute work across multiple processes?
 run_tests     = false  # Test code matches MATLAB (for developers)
-output_lik    = true   # Do you want to simply fetch the likelihood of a set of parameters?
-estimation    = false  # Estimate model
-run_bootstrap = true   # Run bootstrap for SEs?
+output_lik    = false   # Do you want to simply fetch the likelihood of a set of parameters?
+estimation    = true  # Estimate model
+run_bootstrap = false   # Run bootstrap for SEs?
 run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers

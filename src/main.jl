@@ -37,8 +37,8 @@ rounderr = 0.025
 # Add worker processes, load necessary packages on said workers
 if parallel
     addprocs(n_procs)
-    @everywhere using CSV, DataFrames, Dates, Distributions, FixedEffectModels, MAT
-    @everywhere using Optim, Random, RegressionTables, Roots, SparseArrays, Statistics
+    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
+    @everywhere using JLD2, MAT, Optim, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
     @everywhere path = dirname(@__FILE__)
     println("Added worker processes!")
 end

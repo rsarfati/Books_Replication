@@ -116,21 +116,24 @@ function obscalnewtest2015(βσ3, data, basellh, demandcal, p0, ϵ, WFcal)
 ```
 Corresponds to Masao/obscalnewtest2015.m. Works!
 """
-function obscalnewtest2015(βσ3::V, data, basellh::V, p0::V, ϵ::T; demandcal::Bool = false,
-                           WFcal::Bool = false) where {T<:Float64, V<:Vector{Float64}}
+function obscalnewtest2015(βσ3::V, numlist::V, localint::V, cdindex::U, d_first::U,
+                           cond_dif::V, cdid::U, obs_w::V, p::V, N::S, M::S,
+                           #data,
+                           basellh::V, p0::V, ϵ::T; demandcal::Bool = false,
+                           WFcal::Bool = false) where {S<:Int64, T<:Float64,
+                                                       U<:Vector{S}, V<:Vector{T}}
+    # numlist  = vecF64(data["numlist"])
+    # localint = vecF64(data["localint"])
+    # cdindex  = vecI64(data["cdindex"])
+    # d_first  = vecI64(data["first"])
+    # cond_dif = vecF64(data["conditiondif"])
+    # cdid     = vecI64(data["cdid"])
+    # obs_w    = vecF64(data["obsweight"])
+    # p        = vecF64(data["p"])
+    # N        = Int(data["N"])
+    # M        = Int(data["M"])
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
-    numlist  = vecF64(data["numlist"])
-    localint = vecF64(data["localint"])
-    cdindex  = vecI64(data["cdindex"])
-    d_first  = vecI64(data["first"])
-    cond_dif = vecF64(data["conditiondif"])
-    cdid     = vecI64(data["cdid"])
-    obs_w    = vecF64(data["obsweight"])
-    p        = vecF64(data["p"])
-    N        = Int(data["N"])
-    M        = Int(data["M"])
-
     γ0       = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))
     α        = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
     β        = βσ3[3] ./ βσ3[14] ^ βσ3[15]

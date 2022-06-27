@@ -23,10 +23,10 @@ n_procs  = 100   # No. workers to request from cluster
 N_bs     = 200   # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel      = true   # Distribute work across multiple processes?
+parallel      = false   # Distribute work across multiple processes?
 run_tests     = false  # Test code matches MATLAB (for developers)
-output_lik    = false  # Do you want to simply fetch the likelihood of a set of parameters?
-estimation    = true   # Estimate model
+output_lik    = true  # Do you want to simply fetch the likelihood of a set of parameters?
+estimation    = false   # Estimate model
 run_bootstrap = false  # Run bootstrap for SEs?
 run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 
@@ -51,7 +51,7 @@ end
 
 # Only solve for likelihoods
 if output_lik
-    f, f1, f2 = estimate_model(only_likelihoods = true)
+    f, f1, f2 = estimate_model(only_likelihoods = true, parallel = parallel)
     @save "likelihoods.jld2" f f1 f2
 end
 

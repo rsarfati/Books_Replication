@@ -94,6 +94,8 @@ end
 # in mode 2, in addition to the line above:
 # boot(1,:) = results2(end, 8:21)
 
+N_bs = 200
+
 ## Run Bootstrap
 for i = 1:N_bs
     @show i
@@ -212,7 +214,7 @@ for i = 1:N_bs
         CSV.write("bootstrap_welfare.csv", result_w)
     end
 end
-b_boot = output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint="2022-06-26", write_out = true)
+b_boot = output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint="2022-06-26", write_out = true)[1]
 make_table_results(b_boot; table_title = "estimates_20220626.tex")
 
 ## Lines adapted from Masao's standard_errors.m, can be run after Mode 2.

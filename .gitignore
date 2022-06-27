@@ -2,6 +2,8 @@
 *.jl.*.cov
 *.jl.mem
 *~$*.xlsx
+*.#*
+*.jl#
 
 *.m~
 .DS_Store

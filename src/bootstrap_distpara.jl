@@ -65,21 +65,21 @@ data09    = vars["data09nopop"]
 bp        = vars["bpnopop"]
 bootindex = Int.(vars["bootindex"])
 
-bmktsize09 = bootindex
-bfirst09   = bootindex
-bcdindex09 = bootindex
-
-bmktsize12 = bootindex
-bfirst12   = bootindex
-bcdindex12 = bootindex
-
-bmktsizebp = bootindex
-bfirstbp   = bootindex
-bcdindexbp = bootindex
+# bmktsize09 = bootindex
+# bfirst09   = bootindex
+# bcdindex09 = bootindex
+#
+# bmktsize12 = bootindex
+# bfirst12   = bootindex
+# bcdindex12 = bootindex
+#
+# bmktsizebp = bootindex
+# bfirstbp   = bootindex
+# bcdindexbp = bootindex
 
 boot = DataFrame()
-if run_mode == 2
-    # Mode 1 can be run on several servers simultaneously to save time;
+if run_mode == :EVAL
+    # Mode 1 (optimize) can be run on several servers simultaneously to save time;
     # use  `unique` to remove bootstrap runs duplicated on multiple servers.
     boot = unique(CSV.read("$path/data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
 end
@@ -94,8 +94,6 @@ end
 # in mode 2, in addition to the line above:
 # boot(1,:) = results2(end, 8:21)
 
-N_bs = 200
-
 ## Run Bootstrap
 for i = 1:N_bs
     @show i
@@ -103,10 +101,10 @@ for i = 1:N_bs
     bs_ind = bootindex[i,:]
 
     #################### 2009 ####################
-    bmktsize09[i,:] = Int.(data09["mktsize"][bs_ind])
-    bfirst09[i,:]   = Int.(data09["first"][bs_ind])
-    bcdindex09[i,:] = Int.(data09["cdindex"][bs_ind])
-    mktsize_09      = Int(sum(bmktsize09[i,:]))
+    bmktsize09 = Int.(data09["mktsize"][bs_ind])
+    bfirst09   = Int.(data09["first"][bs_ind])
+    bcdindex09 = Int.(data09["cdindex"][bs_ind])
+    mktsize_09 = Int(sum(bmktsize09))
 
     bdata09 = Dict{String, Any}()
     for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
@@ -114,44 +112,44 @@ for i = 1:N_bs
         bdata09[String(x)] = zeros(mktsize_09)
     end
 
-    bend09 = Int.(cumsum(bmktsize09[i,:]))
+    bend09   = Int.(cumsum(bmktsize09))
     bstart09 = vcat(1, bend09[1:end-1] .+ 1)
 
-    for j = 1:length(bfirst09[i,:])
+    for j = 1:length(bfirst09)
         rng_j_09  = bstart09[j]:bend09[j]
-        rng_ij_09 = Int.(bfirst09[i,j]:bcdindex09[i,j])
+        rng_ij_09 = bfirst09[j]:bcdindex09[j]
 
         bdata09["cdid"][rng_j_09] = fill(j, length(rng_j_09), 1)
         for x in [:p, :obsweight, :numlist, :condition, :localint,
                   :popular, :pdif, :conditiondif, :basecond]
-            bdata09[String(x)][rng_j_09] .= data09[String(x)][rng_ij_09]#
+            bdata09[String(x)][rng_j_09] .= data09[String(x)][rng_ij_09]
         end
     end
     bdata09["first"]   = bstart09'
     bdata09["cdindex"] = bend09'
-    bdata09["mktsize"] = bmktsize09[i,:]'
+    bdata09["mktsize"] = bmktsize09'
     bdata09["N"] = length(bdata09["p"])
     bdata09["M"] = length(bdata09["first"])
 
     #################### 2012 ####################
-    bmktsize12[i,:] = data12["mktsize"][bs_ind]
-    bfirst12[i,:]   = data12["first"][bs_ind]
-    bcdindex12[i,:] = data12["cdindex"][bs_ind]
+    bmktsize12 = data12["mktsize"][bs_ind]
+    bfirst12   = data12["first"][bs_ind]
+    bcdindex12 = data12["cdindex"][bs_ind]
 
-    mktsize_12 = Int(sum(bmktsize12[i,:]))
+    mktsize_12 = Int(sum(bmktsize12))
     bdata12 = Dict{String, Any}()
     for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
               :popular, :pdif, :conditiondif, :basecond, :disappear]
         bdata12[String(x)] = zeros(mktsize_12)
     end
 
-    bend12   = cumsum(bmktsize12[i,:])
+    bend12   = cumsum(bmktsize12)
     bstart12 = [1; bend12[1:end-1] .+ 1]
 
-    for j = 1:length(bfirst12[i,:])
+    for j = 1:length(bfirst12)
 
         j_rng_12  = Int.(bstart12[j]:bend12[j])
-        ij_rng_12 = Int.(bfirst12[i,j]:bcdindex12[i,j])
+        ij_rng_12 = Int.(bfirst12[j]:bcdindex12[j])
 
         bdata12["cdid"][j_rng_12] = fill(j, length(j_rng_12), 1)
 
@@ -162,16 +160,16 @@ for i = 1:N_bs
     end
     bdata12["first"]   = bstart12'
     bdata12["cdindex"] = bend12'
-    bdata12["mktsize"] = bmktsize12[i,:]'
+    bdata12["mktsize"] = bmktsize12'
     bdata12["N"]       = length(bdata12["p"])
     bdata12["M"]       = length(bdata12["first"])
 
     # bp
-    bmktsizebp[i,:] = bp["mktsize"][bs_ind]
-    bfirstbp[i,:]   = bp["first"][bs_ind]
-    bcdindexbp[i,:] = bp["cdindex"][bs_ind]
-    bendbp          = cumsum(bmktsizebp[i,:])
-    bstartbp        = vcat(1, bendbp[1:end-1] .+ 1)
+    bmktsizebp = bp["mktsize"][bs_ind]
+    bfirstbp   = bp["first"][bs_ind]
+    bcdindexbp = bp["cdindex"][bs_ind]
+    bendbp     = cumsum(bmktsizebp)
+    bstartbp   = vcat(1, bendbp[1:end-1] .+ 1)
 
     bbp = Dict{String,Any}()
     bbp["cdid"] = collect(1:236)  # bp.cdid[bs_ind]
@@ -180,108 +178,37 @@ for i = 1:N_bs
     end
     bbp["first"]   = bstartbp'
     bbp["cdindex"] = bendbp'
-    bbp["mktsize"] = bmktsizebp[i,:]'
+    bbp["mktsize"] = bmktsizebp'
     bbp["N"]       = length(bbp["p"])
     bbp["M"]       = length(bbp["first"])
 
     distpara0 = vec(vars["distpara0"])
 
-    # Optimization
-    if run_mode == 1
+    if run_mode == :OPTIM
 
         x0 = true_estimates[7:20]
         objectivefun(x) = objective(x, x0, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp)
         x00 = x0
-        # TODO: investigate why these columns are being deleted
         # deleteat!(x0, [3, 7])
 
         res = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5)))
         x, fval = res.minimizer, res.minimum
 
-        estimates = [i, x[1:2], x00[3], x[3:5], x00[7], x[6:(length(x00)-2)]]
+        estimates = [i; x[1:2]; x00[3]; x[3:5]; x00[7]; x[6:(length(x00)-2)]]
         CSV.write("bootstrap_estimates_$(vint).csv", Tables.table(estimates))
 
-    elseif run_mode == 2
+    elseif run_mode == :EVAL
 
         xinitial = Vector{Float64}(boot[i,:])
-        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp; WFcal = true)
-
+        llh, newdistpara, fother, fWF = full_model(xinitial, distpara0, γ0vec,
+                                        δ_vec, bdata12, bdata09, bbp; WFcal = true)
         wel09    = mean(fWF["AveWF09"])
         wel12    = mean(fWF["AveWF12"])
         weloff   = mean(fWF["WFbp"])
-        result_w = [i, xinitial, newdistpara, wel09, wel12, weloff]
-
-        CSV.write("bootstrap_welfare.csv", result_w)
+        result_w = [i; xinitial; newdistpara; wel09; wel12; weloff]
+        CSV.write("bootstrap_welfare_$(vint).csv", result_w)
     end
 end
-b_boot = output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint="2022-06-26", write_out = true)[1]
-make_table_results(b_boot; table_title = "estimates_20220626.tex")
-
-## Lines adapted from Masao's standard_errors.m, can be run after Mode 2.
-
-# Bootstrap β_σ statistics
-# boot = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
-# boot = unique(boot)
-# boot = boot[:, 2:15]
-#
-# distpara = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
-# distpara = unique(distpara)
-# distpara = distpara[:, 16:21]
-#
-# b_boot = zeros(size(boot, 1), 25)
-# for i = 1:size(boot,1)
-#     xx = Vector(boot[i,:])
-#     est = vcat(Vector(distpara[i,:]), xx[1], xx[2]/(1+xx[1]), xx[3],
-#                xx[4]*10*xx[7]/10/9.5^(-xx[6]-1), xx[5]*10*xx[7]/10/8^(-xx[6]-1),
-#                xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1], 0, 0, xx[12:13], xx[14])
-#     b_boot[i,1] = est[1]
-#     b_boot[i,2] = est[2]
-#     b_boot[i,3] = est[3]
-#     b_boot[i,4] = est[7]
-#     b_boot[i,5] = est[8]
-#     b_boot[i,6] = est[13]
-#     b_boot[i,7] = est[15]
-#     b_boot[i,8] = est[4]
-#     b_boot[i,9] = est[12]
-#     b_boot[i,10] = est[9]
-#     b_boot[i,11] = est[10] .* est[9]
-#     b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1)
-#     b_boot[i,13] = est[11] .* est[9]
-#     b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1)
-#     b_boot[i,15] = est[5]
-#     b_boot[i,16] = (est[5]./10).^(est[12]+1)
-#     b_boot[i,17] = est[6]
-#     b_boot[i,18] = est[16]
-#     b_boot[i,19] = est[17]
-#     b_boot[i,20] = est[18]
-#     b_boot[i,21] = est[19]
-#     b_boot[i,22] = est[14]
-#     b_boot[i,23] = est[20]
-#     b_boot[i,24] = est[20] .* est[21]
-#     b_boot[i,25] = 1.0 - est[22]
-# end
-# betasigma_std_boot = [std(b_boot[:,j])             for j=1:25]
-# betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
-# betasigma_boot_5   = [quantile(b_boot[:,j], 0.05)  for j=1:25]
-# betasigma_boot_10  = [quantile(b_boot[:,j], 0.1)   for j=1:25]
-# betasigma_boot_90  = [quantile(b_boot[:,j], 0.9)   for j=1:25]
-# betasigma_boot_95  = [quantile(b_boot[:,j], 0.95)  for j=1:25]
-# betasigma_boot_975 = [quantile(b_boot[:,j], 0.975) for j=1:25]
-#
-# # Bootstrap Welfare Statistics
-# boot_welfare = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
-# boot_welfare = unique(boot_welfare)
-# boot_welfare = boot_welfare[:, (end-8):end]
-#
-# # TODO: find every use of quantile and verify it wasn't meant to be CDF
-# welfare_std_boot = [std(boot_welfare[:,j])             for j=1:9]
-# welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
-# welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]
-# welfare_boot_10  = [quantile(boot_welfare[:,j], 0.1)   for j=1:9]
-# welfare_boot_90  = [quantile(boot_welfare[:,j], 0.9)   for j=1:9]
-# welfare_boot_95  = [quantile(boot_welfare[:,j], 0.95)  for j=1:9]
-# welfare_boot_975 = [quantile(boot_welfare[:,j], 0.975) for j=1:9]
-#
-# # Column definitions are same as rows in Summary201609.xlsx.
-# CSV.write("data/bootstrap_estimates_$(vint).csv",         Tables.table(b_boot))
-# CSV.write("data/bootstrap_welfare_estimates_$(vint).csv", boot_welfare)
+b_boot = output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv",
+                           vint = "2022-06-26", write_out = true)[1]
+make_table_results(b_boot; table_title = "estimates_20220626_mode_$(mode).tex")

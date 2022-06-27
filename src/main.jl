@@ -18,58 +18,47 @@ path = dirname(@__FILE__)
 # ***************************************************************************************
 
 ## TODO: Specify script parameters
-vint    = "2022-06-26"
-n_procs = 100  # No. workers to request from cluster
-n_bs    = 200 # No. bootstrap iterations
+vint     = "2022-06-26"
+n_procs  = 100   # No. workers to request from cluster
+N_bs     = 200   # No. bootstrap iterations
+rounderr = 0.025 # Round error for stores
 
 ## TODO: Adjust flags below for what you want to run.
-
-test_functions = false  # Test code matches MATLAB (for developers)
-parallel       = true  # Distribute work across multiple processes?
-output_lik     = true  # Do you want to simply fetch the likelihood of a set of parameters?
-estimation     = false  # Estimate model
-run_bootstrap  = true # Run bootstrap for SEs?
-run_mode       = 1     # Running bootstrap? Choose between modes 1 or 2 (see explanation).
-
-## TODO: Set hyperparameters
-rounderr = 0.025
+parallel      = true   # Distribute work across multiple processes?
+run_tests     = false  # Test code matches MATLAB (for developers)
+output_lik    = true   # Do you want to simply fetch the likelihood of a set of parameters?
+estimation    = false  # Estimate model
+run_bootstrap = true   # Run bootstrap for SEs?
+run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers
 if parallel
     addprocs(n_procs)
-    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
-    @everywhere using JLD2, MAT, Optim, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
-    @everywhere path = dirname(@__FILE__)
+    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions
+    @everywhere using FileIO, FixedEffectModels, JLD2, MAT, Optim, Printf
+    @everywhere using Random, RegressionTables, Roots, SparseArrays, Statistics
+    @everywhere path     = dirname(@__FILE__)
+    @everywhere rounderr = 0.025
     println("Added worker processes!")
 end
 
-# Load functions
+# Loadsfunctions
 @everywhere include("$path/helpers.jl")
 @everywhere include("$path/full_model.jl")
+@everywhere include("$path/estimation.jl")
 
-# Test function output, if you've been modifying code
-if test_functions
-    include("$path/../test/helpers.jl")
-end
+# Test function output (good idea if you've been modifying code)
+run_tests ? include("$path/../test/helpers.jl") : nothing
 
+# Only solve for likelihoods
 if output_lik
-    include("$path/estimation.jl")
     f, f1, f2 = estimate_model(only_likelihoods = true)
     @save "likelihoods.jld2" f f1 f2
-    #CSV.write("likelihoods.csv", )
 end
 
 # Estimate model from known parameters
-if estimation
-    include("$path/estimation.jl")
-    estimate_model()
-end
-
-# Bootstrap
-if run_bootstrap
-    include("bootstrap_distpara.jl")
-end
-
-if parallel
-    rmprocs(workers())
-end
+estimation    ? estimate_model()                       : nothing
+# Run bootstrap script
+run_bootstrap ? include("$path/bootstrap_distpara.jl") : nothing
+# Release workers
+parallel      ? rmprocs(workers())                     : nothing

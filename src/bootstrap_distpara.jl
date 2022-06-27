@@ -191,7 +191,7 @@ for i = 1:N_bs
         objectivefun(x) = objective(x, x0, distpara0, γ0vec, δ_vec, bdata12, bdata09, bbp)
         x00 = x0
         # TODO: investigate why these columns are being deleted
-        #deleteat!(x0, [3, 7])
+        # deleteat!(x0, [3, 7])
 
         res = optimize(objectivefun, x0, Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5)))
         x, fval = res.minimizer, res.minimum
@@ -212,72 +212,74 @@ for i = 1:N_bs
         CSV.write("bootstrap_welfare.csv", result_w)
     end
 end
+b_boot = output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint="2022-06-26", write_out = true)
+make_table_results(b_boot; table_title = "estimates_20220626.tex")
 
 ## Lines adapted from Masao's standard_errors.m, can be run after Mode 2.
 
 # Bootstrap β_σ statistics
-boot = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
-boot = unique(boot)
-boot = boot[:, 2:15]
-
-distpara = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
-distpara = unique(distpara)
-distpara = distpara[:, 16:21]
-
-b_boot = zeros(size(boot, 1), 25)
-for i = 1:size(boot,1)
-    xx = Vector(boot[i,:])
-    est = vcat(Vector(distpara[i,:]), xx[1], xx[2]/(1+xx[1]), xx[3],
-               xx[4]*10*xx[7]/10/9.5^(-xx[6]-1), xx[5]*10*xx[7]/10/8^(-xx[6]-1),
-               xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1], 0, 0, xx[12:13], xx[14])
-    b_boot[i,1] = est[1]
-    b_boot[i,2] = est[2]
-    b_boot[i,3] = est[3]
-    b_boot[i,4] = est[7]
-    b_boot[i,5] = est[8]
-    b_boot[i,6] = est[13]
-    b_boot[i,7] = est[15]
-    b_boot[i,8] = est[4]
-    b_boot[i,9] = est[12]
-    b_boot[i,10] = est[9]
-    b_boot[i,11] = est[10] .* est[9]
-    b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1)
-    b_boot[i,13] = est[11] .* est[9]
-    b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1)
-    b_boot[i,15] = est[5]
-    b_boot[i,16] = (est[5]./10).^(est[12]+1)
-    b_boot[i,17] = est[6]
-    b_boot[i,18] = est[16]
-    b_boot[i,19] = est[17]
-    b_boot[i,20] = est[18]
-    b_boot[i,21] = est[19]
-    b_boot[i,22] = est[14]
-    b_boot[i,23] = est[20]
-    b_boot[i,24] = est[20] .* est[21]
-    b_boot[i,25] = 1.0 - est[22]
-end
-betasigma_std_boot = [std(b_boot[:,j])             for j=1:25]
-betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
-betasigma_boot_5   = [quantile(b_boot[:,j], 0.05)  for j=1:25]
-betasigma_boot_10  = [quantile(b_boot[:,j], 0.1)   for j=1:25]
-betasigma_boot_90  = [quantile(b_boot[:,j], 0.9)   for j=1:25]
-betasigma_boot_95  = [quantile(b_boot[:,j], 0.95)  for j=1:25]
-betasigma_boot_975 = [quantile(b_boot[:,j], 0.975) for j=1:25]
-
-# Bootstrap Welfare Statistics
-boot_welfare = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
-boot_welfare = unique(boot_welfare)
-boot_welfare = boot_welfare[:, (end-8):end]
-
-# TODO: find every use of quantile and verify it wasn't meant to be CDF
-welfare_std_boot = [std(boot_welfare[:,j])             for j=1:9]
-welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
-welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]
-welfare_boot_10  = [quantile(boot_welfare[:,j], 0.1)   for j=1:9]
-welfare_boot_90  = [quantile(boot_welfare[:,j], 0.9)   for j=1:9]
-welfare_boot_95  = [quantile(boot_welfare[:,j], 0.95)  for j=1:9]
-welfare_boot_975 = [quantile(boot_welfare[:,j], 0.975) for j=1:9]
-
-# Column definitions are same as rows in Summary201609.xlsx.
-CSV.write("data/bootstrap_estimates_$(vint).csv",         Tables.table(b_boot))
-CSV.write("data/bootstrap_welfare_estimates_$(vint).csv", boot_welfare)
+# boot = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
+# boot = unique(boot)
+# boot = boot[:, 2:15]
+#
+# distpara = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
+# distpara = unique(distpara)
+# distpara = distpara[:, 16:21]
+#
+# b_boot = zeros(size(boot, 1), 25)
+# for i = 1:size(boot,1)
+#     xx = Vector(boot[i,:])
+#     est = vcat(Vector(distpara[i,:]), xx[1], xx[2]/(1+xx[1]), xx[3],
+#                xx[4]*10*xx[7]/10/9.5^(-xx[6]-1), xx[5]*10*xx[7]/10/8^(-xx[6]-1),
+#                xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1], 0, 0, xx[12:13], xx[14])
+#     b_boot[i,1] = est[1]
+#     b_boot[i,2] = est[2]
+#     b_boot[i,3] = est[3]
+#     b_boot[i,4] = est[7]
+#     b_boot[i,5] = est[8]
+#     b_boot[i,6] = est[13]
+#     b_boot[i,7] = est[15]
+#     b_boot[i,8] = est[4]
+#     b_boot[i,9] = est[12]
+#     b_boot[i,10] = est[9]
+#     b_boot[i,11] = est[10] .* est[9]
+#     b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1)
+#     b_boot[i,13] = est[11] .* est[9]
+#     b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1)
+#     b_boot[i,15] = est[5]
+#     b_boot[i,16] = (est[5]./10).^(est[12]+1)
+#     b_boot[i,17] = est[6]
+#     b_boot[i,18] = est[16]
+#     b_boot[i,19] = est[17]
+#     b_boot[i,20] = est[18]
+#     b_boot[i,21] = est[19]
+#     b_boot[i,22] = est[14]
+#     b_boot[i,23] = est[20]
+#     b_boot[i,24] = est[20] .* est[21]
+#     b_boot[i,25] = 1.0 - est[22]
+# end
+# betasigma_std_boot = [std(b_boot[:,j])             for j=1:25]
+# betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
+# betasigma_boot_5   = [quantile(b_boot[:,j], 0.05)  for j=1:25]
+# betasigma_boot_10  = [quantile(b_boot[:,j], 0.1)   for j=1:25]
+# betasigma_boot_90  = [quantile(b_boot[:,j], 0.9)   for j=1:25]
+# betasigma_boot_95  = [quantile(b_boot[:,j], 0.95)  for j=1:25]
+# betasigma_boot_975 = [quantile(b_boot[:,j], 0.975) for j=1:25]
+#
+# # Bootstrap Welfare Statistics
+# boot_welfare = CSV.read("data/bootstrap_welfare.csv", DataFrame, header=false)
+# boot_welfare = unique(boot_welfare)
+# boot_welfare = boot_welfare[:, (end-8):end]
+#
+# # TODO: find every use of quantile and verify it wasn't meant to be CDF
+# welfare_std_boot = [std(boot_welfare[:,j])             for j=1:9]
+# welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
+# welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]
+# welfare_boot_10  = [quantile(boot_welfare[:,j], 0.1)   for j=1:9]
+# welfare_boot_90  = [quantile(boot_welfare[:,j], 0.9)   for j=1:9]
+# welfare_boot_95  = [quantile(boot_welfare[:,j], 0.95)  for j=1:9]
+# welfare_boot_975 = [quantile(boot_welfare[:,j], 0.975) for j=1:9]
+#
+# # Column definitions are same as rows in Summary201609.xlsx.
+# CSV.write("data/bootstrap_estimates_$(vint).csv",         Tables.table(b_boot))
+# CSV.write("data/bootstrap_welfare_estimates_$(vint).csv", boot_welfare)

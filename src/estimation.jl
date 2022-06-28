@@ -91,21 +91,8 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 	return θ
 end
 
-function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
-			 parallel::Bool=true, allout = false) where {V<:Vector{Float64}, W<:Vector{Int64},
-										 				 D<:Dict{Symbol,Vector{<:Number}}}
-	out = try
-		full_model(x, distpara0, data12, data09, bp; parallel = parallel)
-	catch err
-		#print(err)
-		throw(err)
-		Inf
-	end
-	return allout ? out :  out[1]
-end
-
-function build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S},
-				 free_ind::Vector{T}, fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
+function build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T}, 
+				 fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
 	N = length(fix_ind) + length(free_ind)
 	x = zeros(N)
 	x[free_ind] .= θ_free_val
@@ -113,56 +100,15 @@ function build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S},
 	return x
 end
 
-#TODO: this function is redundant with obj, and arguably they perform one another's functions
-function get_llh(θ::V, distpara0::V, data12::D, data09::D, bp::D;
-			     parallel::Bool=true) where {V<:Vector{Float64}, W<:Vector{Int64},
-										     D<:Dict{Symbol,Vector{<:Number}}}
-	N = length(fix_ind) + length(free_ind)
-	x = zeros(N)
-	x[free_ind] .= θ
-	x[fix_ind]  .= θ_fix_val
-
+function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
+			 parallel::Bool=true, allout = false) where {V<:Vector{Float64}, W<:Vector{Int64},
+										 				 D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
-		full_model(x, distpara0, data12, data09, bp; parallel = parallel)
+		full_model(θ, distpara0, data12, data09, bp; parallel = parallel)
 	catch err
 		#print(err)
 		throw(err)
 		Inf
 	end
-	f, distpara, fother, fWF, f1, f2 = out
-	return f, f1, f2
-end
-
-
-#### OLD!
-function get_likelihoods(x, x0, distpara0, data12, data09, bp; parallel::Bool=true)
-	if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
-        println("Bad news: Parameters out of bounds.")
-        return Inf
-    end
-    xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
-	out = try
-		full_model(xx, distpara0, data12, data09, bp; parallel=parallel)
-	catch err
-		#print(err)
-		throw(err)
-		Inf, Inf, Inf, Inf, Inf, Inf
-	end
-	f, distpara, fother, fWF, f1, f2 = out
-    return f, f1, f2
-end
-function objective(x, x0, distpara0, data12, data09, bp; parallel::Bool=true)
-    if x[3] < 0 || x[4] < 0 || x[12] > 1 || x[12] < 0
-        println("Bad news: Parameters out of bounds.")
-        return Inf
-    end
-    xx = [x[1:2]; x0[3]; x[3:5]; x0[7]; x[6:(length(x0)-2)]]
-	out = try
-		full_model(xx, distpara0, data12, data09, bp; parallel=parallel)[1]
-	catch err
-		#print(err)
-		throw(err)
-		Inf
-	end
-    return out
+	return allout ? out :  out[1]
 end

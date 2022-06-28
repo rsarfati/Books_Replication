@@ -1,21 +1,22 @@
 """
 ```
-function full_model(x0, distpara0,
-                    data12, data09, bp;
-                    γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100),
-                	δ_vec = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20),
-                    WFcal = false, rounderr = 0.025, parallel = true, VERBOSE = true)
+full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
+           γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100),
+           δ_vec = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20),
+           WFcal = false, rounderr = 0.025, parallel = true,
+           VERBOSE = true) where {V <: Vector{Float64}, D<:Dict{Symbol, Vector{<:Number}}}
 ```
-Evaluates model at a given x0 and distpara0, given online data from 2009 and
-2012 (data09, data12), and offline 2009 data (bp).
+
+Evaluates model at a given x0 and distpara0, given 2009 + 20012 online data (d_on_09, d_on_12),
+and offline 2009 data (bp).
 
 Based on the file <fullmodelllhWFAug22newtest2015.m>.
 """
-function full_model(x0, distpara0,
-                    data12, data09, bp;
+function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     γ0vec = [quantile.(Gamma(0.5, 20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
                 	δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
-                    WFcal = false, rounderr = 0.025, parallel = true, VERBOSE = true)
+                    WFcal = false, rounderr = 0.025, parallel = true,
+                    VERBOSE = true) where {V <: Vector{Float64}, D<:Dict{Symbol, Vector{<:Number}}}
 
     # βσ5 = [γ0shape γ0mean09 γ0mean12 δ_σ
     #        γimeanbp βlocal alpha-1 β γishape  γimean09
@@ -26,7 +27,7 @@ function full_model(x0, distpara0,
     #        alpha-1 β γishape  γimean09 γimean12  eta-1 r
     #        olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
 
-    βσ5 = [distpara0;
+    βσ5 = [distpara0; #6
            x0[1];
            x0[2]/(1+x0[1]);
            x0[3];
@@ -37,8 +38,9 @@ function full_model(x0, distpara0,
            0;
            x0[12:13];
            x0[14]]
+    # 22 long
 
-    naturaldisappear = βσ5[22]
+    naturaldisappear = x0[14]
 
     βσ4 = βσ5[[1:5; 7:19; 6; 20; 21]]
 
@@ -54,61 +56,65 @@ function full_model(x0, distpara0,
     γ0_δ_vec     = hcat(vec(temp1), vec(temp2))
 
     Y    = length(temp1)
-    M_09 = Int(data09["M"])
-    N_09 = Int(data09["N"])
-    M_12 = Int(data12["M"])
-    N_12 = Int(data12["N"])
-    M_bp = Int(bp["M"])
-    N_bp = Int(bp["N"])
+    N_09 = length(d_on_09[:p])
+    N_12 = length(d_on_12[:p])
+    N_bp = length(d_of_09[:p])
 
-    numlist_09   = vecF64(data09["numlist"])
-    localint_09  = vecF64(data09["localint"])
-    cdindex_09   = vecI64(data09["cdindex"])
-    first_09     = vecI64(data09["first"])
-    cond_dif_09  = vecF64(data09["conditiondif"])
-    cdid_09      = vecI64(data09["cdid"])
-    p_09         = vecF64(data09["p"])
-    pdif_09      = vecF64(data09["pdif"])
-    obs_w_09     = vecF64(data09["obsweight"])
+    M_09 = length(d_on_09[:first])
+    M_12 = length(d_on_12[:first])
+    M_bp = length(d_of_09[:first])
 
-    numlist_12   = vecF64(data12["numlist"])
-    localint_12  = vecF64(data12["localint"])
-    cdindex_12   = vecI64(data12["cdindex"])
-    first_12     = vecI64(data12["first"])
-    cond_dif_12  = vecF64(data12["conditiondif"])
-    cdid_12      = vecI64(data12["cdid"])
-    p_12         = vecF64(data12["p"])
-    pdif_12      = vecF64(data12["pdif"])
-    obs_w_12     = vecF64(data12["obsweight"])
+    numlist_09   = d_on_09[:numlist]
+    localint_09  = d_on_09[:localint]
+    cdindex_09   = d_on_09[:cdindex]
+    first_09     = d_on_09[:first]
+    cond_dif_09  = d_on_09[:conditiondif]
+    cdid_09      = d_on_09[:cdid]
+    p_09         = d_on_09[:p]
+    pdif_09      = d_on_09[:pdif]
+    obs_w_09     = d_on_09[:obsweight]
 
-    disap        = vecF64(data12["disappear"])
+    numlist_12   = d_on_12[:numlist]
+    localint_12  = d_on_12[:localint]
+    cdindex_12   = d_on_12[:cdindex]
+    first_12     = d_on_12[:first]
+    cond_dif_12  = d_on_12[:conditiondif]
+    cdid_12      = d_on_12[:cdid]
+    p_12         = d_on_12[:p]
+    pdif_12      = d_on_12[:pdif]
+    obs_w_12     = d_on_12[:obsweight]
 
-    numlist_bp   = vecF64(bp["numlist"])
-    localint_bp  = vecF64(bp["localint"])
-    cdindex_bp   = vecI64(bp["cdindex"])
-    first_bp     = vecI64(bp["first"])
-    cond_dif_bp  = vecF64(bp["conditiondif"])
-    cdid_bp      = vecI64(bp["cdid"])
-    p_bp         = vecF64(bp["p"])
-    obs_w_bp     = vecF64(bp["obsweight"])
+    disap        = d_on_12[:disappear]
+
+    numlist_bp   = d_of_09[:numlist]
+    localint_bp  = d_of_09[:localint]
+    cdindex_bp   = d_of_09[:cdindex]
+    first_bp     = d_of_09[:first]
+    cond_dif_bp  = d_of_09[:conditiondif]
+    cdid_bp      = d_of_09[:cdid]
+    p_bp         = d_of_09[:p]
+    obs_w_bp     = d_of_09[:obsweight]
 
     # Calculation for 09 data
-    ltot_09    = zeros(M_09)
-    llhβ_09    = zeros(M_09, Y)  # Record log likelihood at a fixed β for a title
+    ltot_09, llhβ_09 = zeros(M_09), zeros(M_09, Y)
     basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
     ## Calculation for 2012 data
-    ltot_12    = zeros(M_12)
-    llhβ_12    = zeros(M_12, Y)  # Record log likelihood at a fixed β for a title
+    ltot_12, llhβ_12 = zeros(M_12), zeros(M_12, Y)
     basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
 
-    # OPTIMIZE: 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time) per call
+    ## Calculation for 09 offline data
+    basellhb   = pdf.(Gamma(olm, ol_θ), p_bp) * 2 * rounderr
+
+    # OPTIMIZE: INIT 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time) / call
+    # WFcal = true:  1.935566 seconds (53.25 k allocations: 1.267 GiB, 10.41% gc time)
+    # WFcal = false: 0.004776 seconds (33.38 k allocations: 2.988 MiB)
     VERBOSE && println("Iterating for γ0... (1/2)")
     out_09 = if parallel
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
                               βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
-                             #data09,
+                             #d_on_09,
                              numlist_09, localint_09, cdindex_09, first_09,
                              cond_dif_09, cdid_09, obs_w_09, p_09, N_09, M_09,
                              basellh_09, pdif_09, rounderr;
@@ -117,7 +123,7 @@ function full_model(x0, distpara0,
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
                                 βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
-                               #data09,
+                               #d_on_09,
                                numlist_09, localint_09, cdindex_09, first_09,
                                cond_dif_09, cdid_09, obs_w_09, p_09, N_09, M_09,
                                basellh_09, pdif_09, rounderr;
@@ -136,17 +142,20 @@ function full_model(x0, distpara0,
     CSs_09  = out_09[8*N_09+1:9*N_09,:]
 
     for k = 1:M_09
+        # Record log likelihood at a fixed β for a title
         llhβ_09[k,:] .= sum(lip_09[first_09[k]:cdindex_09[k],:])
     end
     maxtemp_09 = maximum(llhβ_09, dims=2)
     llhadj_09  = exp.(llhβ_09 - repeat(maxtemp_09, 1, Y))
 
     VERBOSE && println("Iterating for βs... (1/2)")
+
     out_12 = if parallel
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
-                              βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear],
-                             #data12,
+                              βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
+                              naturaldisappear],
+                             #d_on_12,
                              numlist_12, localint_12, cdindex_12, first_12,
                              cond_dif_12, cdid_12, obs_w_12, p_12, N_12, M_12,
                              basellh_12, pdif_12, rounderr;
@@ -154,8 +163,9 @@ function full_model(x0, distpara0,
        end
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
-                                βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear],
-                               #data12,
+                                βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
+                                naturaldisappear],
+                               #d_on_12,
                                numlist_12, localint_12, cdindex_12, first_12,
                                cond_dif_12, cdid_12, obs_w_12, p_12, N_12, M_12,
                                basellh_12, pdif_12, rounderr;
@@ -179,9 +189,6 @@ function full_model(x0, distpara0,
 
     maxtemp_12 = maximum(llhβ_12, dims = 2)
     llhadj_12  = exp.(llhβ_12 .- repeat(maxtemp_12,1,Y))
-
-    ## Calculation for 09 offline data
-    basellhb = pdf.(Gamma(olm, ol_θ), p_bp) * 2 * rounderr
 
     getbmean(γ_l) = -sum(obscalnewtest2015([0.; βσ4[[6, 7, 8]]; abs(γ_l[1]);
                                             βσ4[[11, 12]]; λ1; λ2; βcond;
@@ -229,11 +236,13 @@ function full_model(x0, distpara0,
     end
 
     VERBOSE && println("Optimizing Pt. I (1/3)")
+
     res = optimize(integγ0, βσ4[1:4])
     distpara1, f1 = res.minimizer, res.minimum
 
     VERBOSE && println("Optimizing Pt. II (2/3)")
-    res = optimize(getbmean, βσ5[5:6])
+
+    res = optimize(getbmean, distpara0[5:6])
     distpara2, f2 = res.minimizer, res.minimum
 
     VERBOSE && println("Finished optimizing! (3/3)")
@@ -266,6 +275,7 @@ function full_model(x0, distpara0,
 
     if WFcal
         VERBOSE && println("Beginning welfare calculations... (1/2)")
+
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
         WF_09       = zeros(N_09, 3)
@@ -285,7 +295,7 @@ function full_model(x0, distpara0,
             WF_09[ind_k,1]  = pi_09[ind_k,:]   * RPpost
             WF_09[ind_k,2]  = CSns_09[ind_k,:] * RPpost
             WF_09[ind_k,3]  = CSs_09[ind_k,:]  * RPpost
-            obs_w       = obs_w_09[ind_k,1] ./ sum(obs_w_09[ind_k,1])
+            obs_w           = obs_w_09[ind_k,1] ./ sum(obs_w_09[ind_k,1])
             AveWF_09[k,1:3] = obs_w' * WF_09[ind_k,1:3]
             y_max           = argmax(llhadj_09[k,:])
 
@@ -316,8 +326,8 @@ function full_model(x0, distpara0,
 
         fWF["BestVals_09"] = hcat(cdid_09, numlist_09, p_09, pdif_09, BestVals_09)
         fWF["BestVals_12"] = hcat(cdid_12, numlist_12, p_12, pdif_12, BestVals_12)
-        fWF["BestValsbp"]  = hcat(bp["cdid"], bp["numlist"], bp["p"],
-                                  repeat([0.0, 0.0, 1.0, 1.0]', Int(bp["N"]), 1),
+        fWF["BestValsbp"]  = hcat(d_of_09[:cdid], d_of_09[:numlist], d_of_09[:p],
+                                  repeat([0.0, 0.0, 1.0, 1.0]', N_bp, 1),
                                   lipb, basellhb, γ0_bp, γ1_bp, γ2_bp, Dm_bp, D0_bp, WF_bp)
         fWF["AveWF_09"] = AveWF_09
         fWF["AveWF12"]  = AveWF_12

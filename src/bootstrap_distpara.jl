@@ -67,18 +67,6 @@ data09    = vars["data09nopop"]
 bp        = vars["bpnopop"]
 bootindex = Int.(vars["bootindex"])
 
-# bmktsize09 = bootindex
-# bfirst09   = bootindex
-# bcdindex09 = bootindex
-#
-# bmktsize12 = bootindex
-# bfirst12   = bootindex
-# bcdindex12 = bootindex
-#
-# bmktsizebp = bootindex
-# bfirstbp   = bootindex
-# bcdindexbp = bootindex
-
 boot = DataFrame()
 if run_mode == :EVAL
     # Mode 1 (optimize) can be run on several servers simultaneously to save time;
@@ -171,7 +159,7 @@ for i = 1:N_bs
     bfirstbp   = bp["first"][bs_ind]
     bcdindexbp = bp["cdindex"][bs_ind]
     bendbp     = cumsum(bmktsizebp)
-    bstartbp   = vcat(1, bendbp[1:end-1] .+ 1)
+    bstartbp   = [1; bendbp[1:end-1] .+ 1]
 
     bbp = Dict{String,Any}()
     bbp["cdid"] = collect(1:236)  # bp.cdid[bs_ind]

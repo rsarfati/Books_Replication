@@ -14,35 +14,27 @@ Based on the file <fullmodelllhWFAug22newtest2015.m>.
 """
 function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     γ0vec = [quantile.(Gamma(0.5, 20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
-                	δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
+                    δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
                     WFcal = false, rounderr = 0.025, parallel = true,
                     VERBOSE = true) where {V <: Vector{Float64}, D<:Dict{Symbol, Vector{<:Number}}}
-
-    # βσ5 = [γ0shape γ0mean09 γ0mean12 δ_σ
-    #        γimeanbp βlocal alpha-1 β γishape  γimean09
-    #        γimean12  eta-1 r olp c λ1 λ2 βcond βpop
-    #        olm ol_θ naturaldisappear]
 
     # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
     #        alpha-1 β γishape  γimean09 γimean12  eta-1 r
     #        olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
 
-    βσ5 = [distpara0; #6
-           x0[1];
-           x0[2]/(1+x0[1]);
-           x0[3];
-           x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
-           x0[5]*10*x0[7]/10/8^(-x0[6]-1);
-           x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];
-           0;
-           0;
-           x0[12:13];
-           x0[14]]
-    # 22 long
+    βσ4 = [ distpara0[1:5];
+            x0[1];
+            x0[2]/(1+x0[1]);
+            x0[3];
+            x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
+            x0[5]*10*x0[7]/10/8^(-x0[6]-1);
+            x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];
+            0;
+            0;
+            distpara0[6];
+            x0[12:13]]
 
     naturaldisappear = x0[14]
-
-    βσ4 = βσ5[[1:5; 7:19; 6; 20; 21]]
 
     λ1    = βσ4[15]
     λ2    = βσ4[16]

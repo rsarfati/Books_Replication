@@ -48,7 +48,7 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 	x00 = deepcopy(x0)
 
 	# TODO: investigate why these columns are being deleted
-	x0 = x0[[1:2; 4:6; 8:end]]
+	#x0 = x0[[1:2; 4:6; 8:end]]
 
 	if only_likelihoods
     	return get_likelihoods(x0, θ_init[7:20], distpara0, data[:on_12],

@@ -2,8 +2,8 @@
 # the data.
 function estimate_model(; vint::String = "0", only_likelihoods::Bool = false, parallel::Bool = true,
  			θ_init::Vector{T} = [0.32135, 5.6459, 14.855, 1.1614, 0.6486,
-								 1.9196, 14.771,
-								  -2.4895, 1, 0.44004,#==#
+								 1.9196, 14.771, -2.4895,
+								 1, 0.44004, #==#
 								 0.32415, 0.87235, 0.5, 0.25921,#==# -9.1217,
 				  	       		 80.267, -13.647, 1.7296, 8.8188, 0.92622,
 								 4.283, 4.9097, 0, 7.8609, 7.739,
@@ -22,6 +22,7 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false, pa
 	objectivefun(x) = objective(x, θ_init[7:20], distpara0, data12, data09, bp; parallel=parallel)
 
 	x00 = deepcopy(x0)
+	
 	# TODO: investigate why these columns are being deleted
 	x0 = x0[[1:2; 4:6; 8:end]]
 

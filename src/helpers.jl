@@ -42,8 +42,8 @@ function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
         return D0, dD0, d2D0
     end
 end
-function demand_shopper(α::T, β::T, β_1::T, p::V, cdid::Vector{Int64}, cond::V, obs_w::V;
-                        allout::Bool = false) where {T<:Float64,V<:Vector{T}}
+function demand_shopper(α::T, β::T, β_1::T, p::V, cdid::Vector{Int64}, cond::V,
+                        obs_w::V; allout::Bool = false) where {T<:Float64, V<:Vector{T}}
     N    = length(cdid)
     expU = exp.(p .* -α .+ cond .* β_1)
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
@@ -177,17 +177,17 @@ function obscalnewtest2015(βσ3::V, numlist::V, localint::V, cdindex::U, d_firs
     γ_dist = Gamma.(m, γscale)
 
     if demandcal == 1
-        demandlh   = (disap .> 0) .- (2 .* disap .- 1) .* exp.(-0.166666667 .* (γ0.*D0 .+ (γ2 .+ γ1)./2 .* Dm)) .* nat_disap
+        demandlh   = (disap .> 0) .- (2 .* disap .- 1) .*
+                        exp.(-0.166666667 .* (γ0 .* D0 .+ (γ2 .+ γ1) ./ 2 .* Dm)) .* nat_disap
         demandlhol = (disap .> 0) .- (2 .* disap .- 1) .*
                         # Probability of nondisappear due to shopper demand
-                        exp.(-0.166666667.*(γ0.*D0)) .*
+                        exp.(-0.166666667 .* (γ0 .* D0)) .*
                         # Next line due to nonshopper demand (taken expectation wrt to γi)
                         (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* nat_disap
-
+                        
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) .* demandlh .^ 3
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood
     else
-
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1)
         lip_ol = basellh # Price likelihood
     end
@@ -364,9 +364,9 @@ X 10 => gamma_i shape parameter   (== γ_ns_shape)
   12 => demand at p=10 2009 online
 . 13 => E[gamma_i] 2012 online     == γ_ns_on_12  => 3
   14 => demand at p=10 2012 online
-? 15 => E[gamma_i] 2009 offline    == γ_ns_of_09_std
+. 15 => E[gamma_i] 2009 offline    == γ_ns_of_09_std
   16 => demand at p=10 2009 offline
-? 17 => betalocal (* γ_s_of_09_std) == γ_ns_of_09_loc
+. 17 => betalocal(*γ_ns_of_09_std) == γ_ns_of_09_loc
 . 18 => lamda1                     == γ_s_pop     => 10
 . 19 => lamda2                     == γ_ns_pop    => 5
 X 20 => betacond

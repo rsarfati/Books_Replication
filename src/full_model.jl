@@ -1,8 +1,22 @@
-# Based on file <fullmodelllhWFAug22newtest2015.m>
-function full_model(x0, distpara0, data12, data09, bp;
+"""
+```
+function full_model(x0, distpara0,
+                    data12, data09, bp;
                     γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100),
                 	δ_vec = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20),
                     WFcal = false, rounderr = 0.025, parallel = true, VERBOSE = true)
+```
+Evaluates model at a given x0 and distpara0, given online data from 2009 and
+2012 (data09, data12), and offline 2009 data (bp).
+
+Based on the file <fullmodelllhWFAug22newtest2015.m>.
+"""
+function full_model(x0, distpara0,
+                    data12, data09, bp;
+                    γ0vec = [quantile.(Gamma(0.5, 20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
+                	δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
+                    WFcal = false, rounderr = 0.025, parallel = true, VERBOSE = true)
+
     # βσ5 = [γ0shape γ0mean09 γ0mean12 δ_σ
     #        γimeanbp βlocal alpha-1 β γishape  γimean09
     #        γimean12  eta-1 r olp c λ1 λ2 βcond βpop
@@ -11,9 +25,18 @@ function full_model(x0, distpara0, data12, data09, bp;
     # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
     #        alpha-1 β γishape  γimean09 γimean12  eta-1 r
     #        olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
-    βσ5 = [distpara0; x0[1]; x0[2]/(1+x0[1]); x0[3]; x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
-           x0[5]*10*x0[7]/10/8^(-x0[6]-1); x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1]; 0; 0;
-           x0[12:13]; x0[14]]
+
+    βσ5 = [distpara0;
+           x0[1];
+           x0[2]/(1+x0[1]);
+           x0[3];
+           x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
+           x0[5]*10*x0[7]/10/8^(-x0[6]-1);
+           x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];
+           0;
+           0;
+           x0[12:13];
+           x0[14]]
 
     naturaldisappear = βσ5[22]
 
@@ -266,9 +289,12 @@ function full_model(x0, distpara0, data12, data09, bp;
             AveWF_09[k,1:3] = obs_w' * WF_09[ind_k,1:3]
             y_max           = argmax(llhadj_09[k,:])
 
-            BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :], llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
-                exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max], γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
-                Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max], CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
+            BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :],
+                llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
+                exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max],
+                γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
+                Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max],
+                CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
 
             RPpost = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
 
@@ -280,10 +306,12 @@ function full_model(x0, distpara0, data12, data09, bp;
             AveWF_12[k,1:3] = obs_w' * WF_12[ind_k, 1:3]
 
             y_max = argmax(llhadj_12[k,:])
-            BestVals_12[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:], llhβ_12[k,y_max] ./ length(ind_k))', length(ind_k), 1),
+            BestVals_12[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:],
+                llhβ_12[k,y_max] ./ length(ind_k))', length(ind_k), 1),
                 exp.(lip_12[ind_k, y_max]), basellh_12[ind_k,1],
                 γ0_12[ind_k,y_max], γ1_12[ind_k,y_max], γ2_12[ind_k,y_max],
-                Dm_12[ind_k,y_max], D0_12[ind_k,y_max], pi_12[ind_k,y_max], CSns_12[ind_k,y_max], CSs_12[ind_k,y_max])
+                Dm_12[ind_k,y_max], D0_12[ind_k,y_max], pi_12[ind_k,y_max],
+                CSns_12[ind_k,y_max], CSs_12[ind_k,y_max])
         end
 
         fWF["BestVals_09"] = hcat(cdid_09, numlist_09, p_09, pdif_09, BestVals_09)

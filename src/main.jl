@@ -7,16 +7,6 @@ path = dirname(@__FILE__)
 !isdir("$path/tables")      && run(`mkdir $path/tables/`)
 !isdir("$path/output_data") && run(`mkdir $path/output_data/`)
 
-# ***************************************************************************************
-# Code for "Match Quality, Search, and the Internet Market for Used Books" (2021)
-# by Glenn and Sara Fisher Ellison
-# ...
-# This Julia implementation (Aug 2021 - June 2022) is by Reca Sarfati (sarfati@mit.edu),
-# which is based on MATLAB code from Masao Fukui, Hongkai Zhang, & [others]
-#
-# Users should CTRL-F for all TODO flags in this script to adjust settings for personal use.
-# ***************************************************************************************
-
 ## TODO: Specify script parameters
 vint     = "2022-06-27"
 n_procs  = 100   # No. workers to request from cluster

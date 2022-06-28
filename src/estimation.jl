@@ -84,14 +84,11 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 		     	   iterations = Int(1e5), show_trace = true, store_trace = true))
 	x, fval = res.minimizer, res.minimum
 
-	# Splice up the estimates
-	θ_out = build_θ(x, )
-
-	CSV.write("$OUTPUT/bootstrap_estimates_$(vint).csv", Tables.table(θ))
+	CSV.write("$OUTPUT/bootstrap_estimates_$(vint).csv", Tables.table(build_θ(x)))
 	return θ
 end
 
-function build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T}, 
+function build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T},
 				 fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
 	N = length(fix_ind) + length(free_ind)
 	x = zeros(N)

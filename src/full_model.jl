@@ -1,5 +1,8 @@
 # Based on file <fullmodelllhWFAug22newtest2015.m>
-function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = false, rounderr = 0.025, parallel=true)
+function full_model(x0, distpara0, data12, data09, bp;
+                    γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100),
+                	δ_vec = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20),
+                    WFcal = false, rounderr = 0.025, parallel = true, VERBOSE = true)
     # βσ5 = [γ0shape γ0mean09 γ0mean12 δ_σ
     #        γimeanbp βlocal alpha-1 β γishape  γimean09
     #        γimean12  eta-1 r olp c λ1 λ2 βcond βpop
@@ -25,54 +28,80 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
 
     #TODO: ngrid very seldom necessary, needlessly memory intensive
     temp1, temp2 = ndgrid(γ0vec, δ_vec)
-    γ0_δ_vec = hcat(vec(temp1), vec(temp2))
+    γ0_δ_vec     = hcat(vec(temp1), vec(temp2))
 
     Y    = length(temp1)
     M_09 = Int(data09["M"])
     N_09 = Int(data09["N"])
     M_12 = Int(data12["M"])
     N_12 = Int(data12["N"])
+    M_bp = Int(bp["M"])
+    N_bp = Int(bp["N"])
 
+    numlist_09   = vecF64(data09["numlist"])
+    localint_09  = vecF64(data09["localint"])
+    cdindex_09   = vecI64(data09["cdindex"])
     first_09     = vecI64(data09["first"])
+    cond_dif_09  = vecF64(data09["conditiondif"])
+    cdid_09      = vecI64(data09["cdid"])
     p_09         = vecF64(data09["p"])
     pdif_09      = vecF64(data09["pdif"])
-    numlist_09   = vecI64(data09["numlist"])
-    cdindex_09   = vecI64(data09["cdindex"])
-    cdid_09      = vecI64(data09["cdid"])
+    obs_w_09     = vecF64(data09["obsweight"])
 
-    cdid_12      = vecI64(data12["cdid"])
+    numlist_12   = vecF64(data12["numlist"])
+    localint_12  = vecF64(data12["localint"])
+    cdindex_12   = vecI64(data12["cdindex"])
     first_12     = vecI64(data12["first"])
+    cond_dif_12  = vecF64(data12["conditiondif"])
+    cdid_12      = vecI64(data12["cdid"])
     p_12         = vecF64(data12["p"])
     pdif_12      = vecF64(data12["pdif"])
-    numlist_12   = vecI64(data12["numlist"])
-    cdindex_12   = vecI64(data12["cdindex"])
-    obsweight_09 = vecF64(data09["obsweight"])
-    obsweight_12 = vecF64(data12["obsweight"])
+    obs_w_12     = vecF64(data12["obsweight"])
 
-    basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
+    disap        = vecF64(data12["disappear"])
 
-    bp_p = vecF64(bp["p"])
+    numlist_bp   = vecF64(bp["numlist"])
+    localint_bp  = vecF64(bp["localint"])
+    cdindex_bp   = vecI64(bp["cdindex"])
+    first_bp     = vecI64(bp["first"])
+    cond_dif_bp  = vecF64(bp["conditiondif"])
+    cdid_bp      = vecI64(bp["cdid"])
+    p_bp         = vecF64(bp["p"])
+    obs_w_bp     = vecF64(bp["obsweight"])
 
     # Calculation for 09 data
-    ltot_09 = zeros(M_09)
-    llhβ_09 = zeros(M_09, Y)  # Record the log likelihood at a fixed β for a title
+    ltot_09    = zeros(M_09)
+    llhβ_09    = zeros(M_09, Y)  # Record log likelihood at a fixed β for a title
+    basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
-    # TODO: this gets run a LOT, present run time is...
-    # 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time) per call
-    println("Iterating for γ0...")
+    ## Calculation for 2012 data
+    ltot_12    = zeros(M_12)
+    llhβ_12    = zeros(M_12, Y)  # Record log likelihood at a fixed β for a title
+    basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
+
+    # OPTIMIZE: 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time) per call
+    VERBOSE && println("Iterating for γ0... (1/2)")
     out_09 = if parallel
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
                               βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
-                             data09, basellh_09, pdif_09, rounderr;
+                             #data09,
+                             numlist_09, localint_09, cdindex_09, first_09,
+                             cond_dif_09, cdid_09, obs_w_09, p_09, N_09, M_09,
+                             basellh_09, pdif_09, rounderr;
                              demandcal = false, WFcal = WFcal)
        end
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
                                 βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
-                               data09, basellh_09, pdif_09, rounderr;
+                               #data09,
+                               numlist_09, localint_09, cdindex_09, first_09,
+                               cond_dif_09, cdid_09, obs_w_09, p_09, N_09, M_09,
+                               basellh_09, pdif_09, rounderr;
                                demandcal = false, WFcal = WFcal) for i=1:Y]...)
     end
+    VERBOSE && println("Completed Iteration for γ0. (2/2)")
+
     lip_09  = out_09[0*N_09+1:1*N_09,:] # likelihood of each observation at each β
     γ2_09   = out_09[1*N_09+1:2*N_09,:]
     γ1_09   = out_09[2*N_09+1:3*N_09,:]
@@ -89,25 +118,27 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     maxtemp_09 = maximum(llhβ_09, dims=2)
     llhadj_09  = exp.(llhβ_09 - repeat(maxtemp_09, 1, Y))
 
-    ## Calculation for 2012 data
-    ltot_12    = zeros(M_12)
-    llhβ_12    = zeros(M_12, Y)  # record the log likelihood at a fixed β for a title
-    basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
-
-    println("Iterating for βs...")
+    VERBOSE && println("Iterating for βs... (1/2)")
     out_12 = if parallel
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
                               βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear],
-                             data12, basellh_12, pdif_12, rounderr;
-                             demandcal = true, WFcal = WFcal)
+                             #data12,
+                             numlist_12, localint_12, cdindex_12, first_12,
+                             cond_dif_12, cdid_12, obs_w_12, p_12, N_12, M_12,
+                             basellh_12, pdif_12, rounderr;
+                             demandcal = true, WFcal = WFcal, disap=disap)
        end
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 10, 11, 12]]; λ1; λ2;
                                 βcond; βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; naturaldisappear],
-                               data12, basellh_12, pdif_12, rounderr;
-                               demandcal = true, WFcal = WFcal) for i=1:Y]...)
+                               #data12,
+                               numlist_12, localint_12, cdindex_12, first_12,
+                               cond_dif_12, cdid_12, obs_w_12, p_12, N_12, M_12,
+                               basellh_12, pdif_12, rounderr;
+                               demandcal = true, WFcal = WFcal, disap=disap) for i=1:Y]...)
     end
+    VERBOSE && println("Completed Iteration for βs. (2/2)")
 
     lip_12  = out_12[0*N_12+1:1*N_12,:]
     γ2_12   = out_12[1*N_12+1:2*N_12,:]
@@ -127,16 +158,19 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     llhadj_12  = exp.(llhβ_12 .- repeat(maxtemp_12,1,Y))
 
     ## Calculation for 09 offline data
-    basellhb = pdf.(Gamma(olm, ol_θ), bp_p) * 2 * rounderr
+    basellhb = pdf.(Gamma(olm, ol_θ), p_bp) * 2 * rounderr
 
     getbmean(γ_l) = -sum(obscalnewtest2015([0.; βσ4[[6, 7, 8]]; abs(γ_l[1]);
                                             βσ4[[11, 12]]; λ1; λ2; βcond;
                                             βpop; γ_l[2]; βσ4[13]; 1.; 1.; 1.],
-                                            bp, basellhb, bp_p,
+                                            #bp,
+                                            numlist_bp, localint_bp, cdindex_bp, first_bp,
+                                            cond_dif_bp, cdid_bp, obs_w_bp, p_bp, N_bp, M_bp,
+                                            basellhb, p_bp,
                                             rounderr; demandcal = false,
                                             WFcal = false)[1:length(basellhb),:])
 
-    function integγ0(γinput; return_all = false)
+    function integγ0(γinput::Vector{Float64}; return_all = false)
         γ0shape = γinput[1]
         γ0_θ_09 = γinput[2] / γinput[1]
         γ0_θ_12 = γinput[3] / γinput[1]
@@ -171,25 +205,32 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         return -(sum(ltot_09) + sum(ltot_12))
     end
 
+    VERBOSE && println("Optimizing Pt. I (1/3)")
     res = optimize(integγ0, βσ4[1:4])
     distpara1, f1 = res.minimizer, res.minimum
 
+    VERBOSE && println("Optimizing Pt. II (2/3)")
     res = optimize(getbmean, βσ5[5:6])
     distpara2, f2 = res.minimizer, res.minimum
 
+    VERBOSE && println("Finished optimizing! (3/3)")
+
     out_bp = obscalnewtest2015([0; βσ4[[6, 7, 8]]; abs(distpara2[1]); βσ4[[11, 12]];
                                λ1; λ2; βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
-                               bp, basellhb, bp_p, rounderr; demandcal = false,
+                               #bp,
+                               numlist_bp, localint_bp, cdindex_bp, first_bp,
+                               cond_dif_bp, cdid_bp, obs_w_bp, p_bp, N_bp, M_bp,
+                               basellhb, p_bp, rounderr; demandcal = false,
                                WFcal = WFcal)
-    N_bp  = length(bp_p)
-    WF_bp = zeros(N_bp, 3)
 
-    lipb    = out_bp[0*N_bp+1:1*N_bp,:]
-    γ2_bp   = out_bp[1*N_bp+1:2*N_bp,:]
-    γ1_bp   = out_bp[2*N_bp+1:3*N_bp,:]
-    γ0_bp   = out_bp[3*N_bp+1:4*N_bp,:]
-    D0_bp   = out_bp[4*N_bp+1:5*N_bp,:]
-    Dm_bp   = out_bp[5*N_bp+1:6*N_bp,:]
+    lipb  = out_bp[0*N_bp+1:1*N_bp,:]
+    γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
+    γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
+    γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
+    D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
+    Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
+
+    WF_bp = zeros(N_bp, 3)
     WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
     WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
     WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
@@ -201,6 +242,7 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
     fother = Dict{String,Any}()
 
     if WFcal
+        VERBOSE && println("Beginning welfare calculations... (1/2)")
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
         WF_09       = zeros(N_09, 3)
@@ -220,8 +262,8 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
             WF_09[ind_k,1]  = pi_09[ind_k,:]   * RPpost
             WF_09[ind_k,2]  = CSns_09[ind_k,:] * RPpost
             WF_09[ind_k,3]  = CSs_09[ind_k,:]  * RPpost
-            obsweight       = obsweight_09[ind_k,1] ./ sum(obsweight_09[ind_k,1])
-            AveWF_09[k,1:3] = obsweight' * WF_09[ind_k,1:3]
+            obs_w       = obs_w_09[ind_k,1] ./ sum(obs_w_09[ind_k,1])
+            AveWF_09[k,1:3] = obs_w' * WF_09[ind_k,1:3]
             y_max           = argmax(llhadj_09[k,:])
 
             BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :], llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
@@ -234,8 +276,8 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
             WF_12[ind_k,1]  = pi_12[ind_k,:]  * RPpost
             WF_12[ind_k,2]  = CSns_12[ind_k,:]* RPpost
             WF_12[ind_k,3]  = CSs_12[ind_k,:] * RPpost
-            obsweight       = obsweight_12[ind_k,1] ./ sum(obsweight_12[ind_k,1])
-            AveWF_12[k,1:3] = obsweight' * WF_12[ind_k, 1:3]
+            obs_w           = obs_w_12[ind_k,1] ./ sum(obs_w_12[ind_k,1])
+            AveWF_12[k,1:3] = obs_w' * WF_12[ind_k, 1:3]
 
             y_max = argmax(llhadj_12[k,:])
             BestVals_12[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:], llhβ_12[k,y_max] ./ length(ind_k))', length(ind_k), 1),
@@ -254,22 +296,23 @@ function full_model(x0, distpara0, γ0vec, δ_vec, data12, data09, bp; WFcal = f
         fWF["WF_09"]    = WF_09
         fWF["WF12"]     = WF_12
         fWF["WFbp"]     = WF_bp
+
+        VERBOSE && println("Finished welfare calculations. (2/2)")
     end
 
     fother["lip12"]    = lip_12
     fother["llhβ12"]   = llhβ_12
-    fother["lip_09"]   = lip_09
-    fother["llhβ_09"]  = llhβ_09
-    fother["γ0_δ_vec"] = γ0_δ_vec
-    fother["imp_09"]   = imp_09
     fother["imp_12"]   = imp_12
-    fother["ltot_09"]  = ltot_09
     fother["ltot12"]   = ltot_12
-    fother["imp_09"]   = imp_09
-
-    fother["γ1_09"]    = γ1_09
     fother["γ112"]     = γ1_12
 
+    fother["lip_09"]   = lip_09
+    fother["llhβ_09"]  = llhβ_09
+    fother["imp_09"]   = imp_09
+    fother["ltot_09"]  = ltot_09
+    fother["γ1_09"]    = γ1_09
+
+    fother["γ0_δ_vec"] = γ0_δ_vec
     fother["lipb"]     = lipb
     fother["γ1bp"]     = γ1_bp
 

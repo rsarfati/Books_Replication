@@ -23,10 +23,10 @@ n_procs  = 100   # No. workers to request from cluster
 N_bs     = 200   # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel      = false   # Distribute work across multiple processes?
+parallel      = false  # Distribute work across multiple processes?
 run_tests     = false  # Test code matches MATLAB (for developers)
 output_lik    = true  # Do you want to simply fetch the likelihood of a set of parameters?
-estimation    = false   # Estimate model
+estimation    = false  # Estimate model
 run_bootstrap = false  # Run bootstrap for SEs?
 run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 
@@ -47,7 +47,7 @@ end
 @everywhere include("$path/estimation.jl")
 
 # Test function output (good idea if you've been modifying code)
-!run_tests && include("$path/../test/helpers.jl")
+run_tests && include("$path/../test/helpers.jl")
 
 # Only solve for likelihoods
 if output_lik
@@ -56,8 +56,8 @@ if output_lik
 end
 
 # Estimate model from known parameters
-!estimation    && estimate_model()
+estimation    && estimate_model()
 # Run bootstrap script
-!run_bootstrap && include("$path/bootstrap_distpara.jl")
+run_bootstrap && include("$path/bootstrap_distpara.jl")
 # Release workers
-!parallel      && rmprocs(workers())
+parallel      && rmprocs(workers())

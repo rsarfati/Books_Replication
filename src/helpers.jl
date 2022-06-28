@@ -120,18 +120,9 @@ function obscalnewtest2015(βσ3::V, numlist::V, localint::V, cdindex::U, d_firs
                            cond_dif::V, cdid::U, obs_w::V, p::V, N::S, M::S,
                            #data,
                            basellh::V, p0::V, ϵ::T; demandcal::Bool = false,
+                           disap::V=Vector{Float64}(),
                            WFcal::Bool = false) where {S<:Int64, T<:Float64,
                                                        U<:Vector{S}, V<:Vector{T}}
-    # numlist  = vecF64(data["numlist"])
-    # localint = vecF64(data["localint"])
-    # cdindex  = vecI64(data["cdindex"])
-    # d_first  = vecI64(data["first"])
-    # cond_dif = vecF64(data["conditiondif"])
-    # cdid     = vecI64(data["cdid"])
-    # obs_w    = vecF64(data["obsweight"])
-    # p        = vecF64(data["p"])
-    # N        = Int(data["N"])
-    # M        = Int(data["M"])
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
     γ0       = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))
@@ -186,25 +177,27 @@ function obscalnewtest2015(βσ3::V, numlist::V, localint::V, cdindex::U, d_firs
     γ_dist = Gamma.(m, γscale)
 
     if demandcal == 1
-        disap      = data["disappear"]
         demandlh   = (disap .> 0) .- (2 .* disap .- 1) .* exp.(-0.166666667 .* (γ0.*D0 .+ (γ2 .+ γ1)./2 .* Dm)) .* nat_disap
-        demandlhol = (disap .> 0) .- (2 .* disap .- 1) .*  # Next line starts probability of nondisappear due to shopper demand
-                        exp.(-0.166666667.*(γ0.*D0)) .* # Next line is due to nonshopper demand (taken expectation wrt to γi)
+        demandlhol = (disap .> 0) .- (2 .* disap .- 1) .*
+                        # Probability of nondisappear due to shopper demand
+                        exp.(-0.166666667.*(γ0.*D0)) .*
+                        # Next line due to nonshopper demand (taken expectation wrt to γi)
                         (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* nat_disap
 
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) .* demandlh .^ 3
-        lip_ol = basellh .* demandlhol .^ 3 # Price likelihood. Next line starts disappear likelihood
+        lip_ol = basellh .* demandlhol .^ 3 # Price likelihood
     else
 
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1)
-        lip_ol = basellh # Price likelihood. Next line starts disappear likelihood.
+        lip_ol = basellh # Price likelihood
     end
 
+    # Disappear likelihood
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
     olppost = vec(olp .* lip_ol ./ liptemp)
     lip     = log.(liptemp)
-    pi_v, CSns, CSs = zeros(N), zeros(N), zeros(N)
 
+    pi_v, CSns, CSs = zeros(N), zeros(N), zeros(N)
     if WFcal
         pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0, p0,
                                         p, N, M, cdindex, d_first, vcat(α, β, η, r))
@@ -236,9 +229,7 @@ function welfaresimple(γ1::Vector{T}, γ2::Vector{T}, γscale::Vector{T}, γ0::
     CSns_o  = (1/(η-1)) .* γ1ave  .* Dm .* p ./ (r .+ γ1ave  .* Dm + γ0 .* D0)
     CSns_ol = (1/(η-1)) .* γscale .* Dm .* p ./ (r .+ γscale .* Dm + γ0 .* D0)
     CSns    = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
-
-    CSgain    = zeros(N, 1)
-    CSgain_OG = zeros(N, 1)
+    CSgain  = zeros(N)
 
     mktsize = cdindex .- d_first .+ 1
 
@@ -315,9 +306,9 @@ function output_statistics(; boot_out = "$path/data/bootstrap_welfare.csv", vint
         b_boot[i,12] = (est[10] .* est[9] ./ 10) .^ (est[12] .+ 1) # (demand at p=10 2009 online)
         b_boot[i,13] =  est[11] .* est[9] # γ_ns_on_12
         b_boot[i,14] = (est[11] .* est[9] ./ 10) .^ (est[12] .+ 1) # (demand at p=10 2012 online)
-        b_boot[i,15] = est[5]                                      # (E[gamma_i] 2009 offline)
+        b_boot[i,15] = est[5]             # γ_ns_of_09_std
         b_boot[i,16] = (est[5] ./ 10) .^ (est[12] .+ 1)            # (demand at p=10 2009 offline)
-        b_boot[i,17] = est[6]                                      # (βlocal)
+        b_boot[i,17] = est[6] .*  est[5]  # γ_ns_of_09_loc (I CHANGED THIS to βlocal * gamma, used to be βlocal)
         b_boot[i,18] = est[16]            # γ_s_pop
         b_boot[i,19] = est[17]            # γ_ns_pop
         b_boot[i,20] = est[18] # (NOT USED: betacond)
@@ -360,8 +351,8 @@ end
 """
 Mapping of parameter vector to table names + locations:
 . 1 => gamma0 shape parameter      == γ_s_shape   => 11
-. 2 => E[gamma_0] 2009 online      == γ_s_on_09   => 3
-. 3 => E[gamma_0] 2012 online      == γ_s_on_12   => 4
+. 2 => E[gamma_0] 2009 online      == γ_s_on_09   => 8
+. 3 => E[gamma_0] 2012 online      == γ_s_on_12   => 9
 . 4 => alpha-1                     == α           => 12
 . 5 => beta                        == Δ_p_out     => 13
 X 6 => r                          (== r)
@@ -369,13 +360,13 @@ X 6 => r                          (== r)
 . 8 => sigma_delta                 == σ_δ         => 7
 . 9 => eta-1                       == η           => 6
 X 10 => gamma_i shape parameter   (== γ_ns_shape)
-. 11 => E[gamma_i] 2009 online     == γ_ns_on_09  => 8
+. 11 => E[gamma_i] 2009 online     == γ_ns_on_09  => 2
   12 => demand at p=10 2009 online
-. 13 => E[gamma_i] 2012 online     == γ_ns_on_12  => 9
+. 13 => E[gamma_i] 2012 online     == γ_ns_on_12  => 3
   14 => demand at p=10 2012 online
-? 15 => E[gamma_i] 2009 offline
+? 15 => E[gamma_i] 2009 offline    == γ_ns_of_09_std
   16 => demand at p=10 2009 offline
-? 17 => betalocal
+? 17 => betalocal (* γ_s_of_09_std) == γ_ns_of_09_loc
 . 18 => lamda1                     == γ_s_pop     => 10
 . 19 => lamda2                     == γ_ns_pop    => 5
 X 20 => betacond
@@ -423,7 +414,8 @@ function make_table_results(b_boot::Matrix{Float64}; table_title = "estimates.te
 
     boot_ind = Dict([:γ_s_shape => 1, :γ_s_on_09 => 2, :γ_s_on_12 => 3, :α => 4, :Δ_p_out => 5, # :r => 6,
                      :c => 7, :σ_δ => 8, :η => 9, # :γ_s_shape => 10,
-                     :γ_ns_on_09 => 11, :γ_ns_on_12 => 13, :γ_ns_of_09 => 15, #12, 14, 16 are demand at p=10
+                     :γ_ns_on_09 => 11, :γ_ns_on_12 => 13,
+                     :γ_ns_of_09_std => 15, :γ_ns_of_09_loc => 17, #12, 14, 16 are demand at p=10
                      :γ_s_pop => 18, :γ_ns_pop => 19, # :βcond => 20, :βpop => 21
                      :R_p => 22, :s_R => 23, :μ_R => 24, :R_q => 25])
 
@@ -447,14 +439,13 @@ function make_table_results(b_boot::Matrix{Float64}; table_title = "estimates.te
         end
         write(io, table_rows[i][2] * " & ")
 
-        # TODO: temporary catch bc I can't find these variables...
-        if !(i==1 || i==2)
-            k = boot_ind[θ_i]
-            boot_μ =  (θ_i == :η)       ? 1 + boot_mean[k] :
-                     ((θ_i == :Δ_p_out) ?    -boot_mean[k] :
-                                              boot_mean[k])
-            @printf(io, " %0.2f (%0.2f)", boot_μ, boot_std[k])
-        end
+        #if !(i==1 || i==2)
+        k = boot_ind[θ_i]
+        boot_μ =  (θ_i == :η)       ? 1 + boot_mean[k] :
+                #((θ_i == :Δ_p_out) ?    -boot_mean[k] :
+                                      boot_mean[k]#)
+        @printf(io, " %0.2f (%0.2f)", boot_μ, boot_std[k])
+        #end
         include_paper ? @printf(io, " & %s", table_rows[i][3]) : nothing
         write(io, "\\\\ \n ")
     end

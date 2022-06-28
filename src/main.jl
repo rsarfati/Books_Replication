@@ -1,5 +1,5 @@
 using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
-using JLD2, MAT, Optim, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
+using JLD2, MAT, Optim, OrderedCollections, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
 
 # Build output folders if don't exist
 path = dirname(@__FILE__)
@@ -24,7 +24,7 @@ run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 if parallel
     addprocs(n_procs)
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions
-    @everywhere using FileIO, FixedEffectModels, JLD2, MAT, Optim, Printf
+    @everywhere using FileIO, FixedEffectModels, JLD2, MAT, Optim, OrderedCollections, Printf
     @everywhere using Random, RegressionTables, Roots, SparseArrays, Statistics
     @everywhere path = dirname(@__FILE__)
     println("Added $(length(workers())) worker processes!")

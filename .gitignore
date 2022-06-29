@@ -9,5 +9,6 @@
 .DS_Store
 Manifest.toml
 
+output/
 reference/
 Masao/*.csv

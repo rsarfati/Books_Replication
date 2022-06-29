@@ -2,20 +2,24 @@ using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectMod
 using JLD2, MAT, Optim, OrderedCollections, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
 
 # Build output folders if don't exist
-path = dirname(@__FILE__)
-!isdir("$path/plots")       && run(`mkdir $path/plots/`)
-!isdir("$path/tables")      && run(`mkdir $path/tables/`)
-!isdir("$path/output_data") && run(`mkdir $path/output_data/`)
+global path   = dirname(@__FILE__)
+global OUTPUT = "$path/../output"
+global INPUT  = "$path/../input"
+
+!isdir("$OUTPUT")        && run(`mkdir $OUTPUT`)
+!isdir("$OUTPUT/plots")  && run(`mkdir $path/plots/`)
+!isdir("$OUTPUT/tables") && run(`mkdir $path/tables/`)
+!isdir("$OUTOUT/data")   && run(`mkdir $path/data/`)
 
 ## TODO: Specify script parameters
 vint     = "2022-06-27"
-n_procs  = 100   # No. workers to request from cluster
-N_bs     = 200   # No. bootstrap iterations
+n_procs  = 100  # No. workers to request from cluster
+N_bs     = 200  # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
 parallel      = false  # Distribute work across multiple processes?
 run_tests     = false  # Test code matches MATLAB (for developers)
-output_lik    = true  # Do you want to simply fetch the likelihood of a set of parameters?
+eval_only     = true  # Do you want to simply fetch the likelihood of a set of parameters?
 estimation    = false  # Estimate model
 run_bootstrap = false  # Run bootstrap for SEs?
 run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
@@ -26,7 +30,9 @@ if parallel
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions
     @everywhere using FileIO, FixedEffectModels, JLD2, MAT, Optim, OrderedCollections, Printf
     @everywhere using Random, RegressionTables, Roots, SparseArrays, Statistics
-    @everywhere path = dirname(@__FILE__)
+    @everywhere global path = dirname(@__FILE__)
+    @everywhere global OUTPUT = "$path/../output"
+    @everywhere global INPUT  = "$path/../input"
     println("Added $(length(workers())) worker processes!")
 end
 
@@ -40,14 +46,17 @@ end
 run_tests && include("$path/../test/helpers.jl")
 
 # Only solve for likelihoods
-if output_lik
-    f, f1, f2 = estimate_model(only_likelihoods = true, parallel = parallel)
-    @save "likelihoods.jld2" f f1 f2
+if eval_only
+    f, distpara, fother, fWF, f1, f2 = estimate_model(eval_only = true, parallel = parallel)
+    @save "$OUTPUT/data/likelihoods_$(vint).jld2" f, distpara, fother, fWF, f1, f2
+    @show f, f1, f2
 end
 
 # Estimate model from known parameters
 estimation    && estimate_model()
+
 # Run bootstrap script
 run_bootstrap && include("$path/bootstrap_distpara.jl")
+
 # Release workers
 parallel      && rmprocs(workers())

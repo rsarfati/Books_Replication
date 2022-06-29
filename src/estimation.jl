@@ -1,28 +1,28 @@
 # Does a single estimation, starting from true parameter values estimated from
 # the data.
-function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
+function estimate_model(; vint::String = "0", only_evaluate::Bool = false,
 			parallel::Bool = true,
- 			θ_init::Vector{T} = [14.771,  #1  α
-								 -2.4895, #2  Δ_p_out
-								 1,       #3  γ_ns_shape     *** FIXED
-								 0.44004, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
-								 0.32415, #5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-								 0.87235, #6  η - 1          *** I am infering there is meant to be a -1 transformation
-								 0.5,     #7  r * 10         *** FIXED
-								 0.25921, #8  R_p
-								 -9.1217, #9  c * 10
-				  	       		 80.267,  #10 γ_s_pop * 100
-								 -13.647, #11 γ_ns_pop * 10
-								 1.7296,  #12 s_R
-								 8.8188,  #13 μ_R / s_R
-								 0.92622, #14 1 - R_q
-								 4.283,   #15 γ_s_shape
-								 4.9097,  #16 γ_s_on_09
-								 0,       #17 γ_s_on_12
-								 7.8609,  #18 σ_δ
-								 7.739,   #19 γ_ns_of_09_std
-								 0.011111 #20 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
-								 ],
+ 			θ_init::Dict{Symbol,T} = OrderedDict(
+			#=1=#	:α          => 14.771,  #1  α
+			#=2=#	:Δ_p_out    => -2.4895, #2  Δ_p_out
+			#=3=#	:γ_ns_shape => 1,       #3  γ_ns_shape *** FIXED
+			#=4=#	:γ_ns_on_09 => 0.44004, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
+			#=5=#	:γ_ns_on_12 => 0.32415, #5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
+			#=6=#	:η          => 0.87235, #6  η - 1   *** I am infering there is meant to be a -1 transformation
+			#=7=#	:r          => 0.5,     #7  r * 10  *** FIXED
+			#=8=#	:R_p        => 0.25921, #8  R_p
+			#=9=#	:c          => -9.1217, #9  c * 10
+			#=10=#	:γ_s_pop    => 80.267,  #10 γ_s_pop * 100
+			#=11=#	:γ_ns_pop   => -13.647, #11 γ_ns_pop * 10
+			#=12=#	:s_R        => 1.7296,  #12 s_R
+			#=13=#	:μ_R        => 8.8188,  #13 μ_R / s_R
+			#=14=#	:R_q        => 0.92622, #14 1 - R_q
+			#=15=#	:γ_s_shape  => 4.283,   #15 γ_s_shape
+			#=16=#	:γ_s_on_09  => 4.9097,  #16 γ_s_on_09
+			#=17=#	:γ_s_on_12  => 0,       #17 γ_s_on_12
+			#=18=#	:σ_δ        => 7.8609,  #18 σ_δ
+			#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
+			#=20=#	:βlocal         => 0.011111), #20 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
 			θ_fix = OrderedDict{Symbol,Float64}(:r => 0.5, :γ_ns_shape => 1)) where {T<:Float64}
 
 	# File path constants
@@ -59,9 +59,9 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 
 	# If you only want to evaluate the model at a given parameter vector, runs this
 	x0 = deepcopy(θ_init)
-	if only_likelihoods
+	if only_evaluate
     	return obj_fun(x0[free_ind], distpara0, data[:on_12], data[:on_09],
-					   data[:of_09]; parallel = parallel, allout=true)
+					   data[:of_09]; parallel = parallel, allout = true)
 	end
 
 	# Optimize the objective function
@@ -69,8 +69,9 @@ function estimate_model(; vint::String = "0", only_likelihoods::Bool = false,
 	res = optimize(obj_fun, x0[free_ind], Optim.Options(f_calls_limit = Int(1e5),
 		     	   iterations = Int(1e5), show_trace = true, store_trace = true))
 	x, fval = res.minimizer, res.minimum
+	θ = build_θ(x)
 
-	CSV.write("$OUTPUT/bootstrap_estimates_$(vint).csv", Tables.table(build_θ(x)))
+	CSV.write("$OUTPUT/estimation_results_$(vint).csv", Tables.table(θ))
 	return θ
 end
 

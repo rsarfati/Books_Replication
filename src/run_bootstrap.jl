@@ -36,14 +36,26 @@ function run_bootstrap(; data::Dict = Dict(),
 	if run_mode == :EVAL
 	    # Mode 1 (optimize) can be run on several servers simultaneously to save time;
 	    # use  `unique` to remove bootstrap runs duplicated on multiple servers.
-	    boot = unique(CSV.read("$path/data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
+	    boot = unique(CSV.read("$path/data/bootstrap_estimates.csv", DataFrame,
+					  header=false))[:,2:end]
 	end
 
     for i=1:N_bs
+		println("Bootstrap iteration: $i")
 		bs_ind = bootindex[i,:]
-		
+
+
+
     end
 
+
+
+	# Make everything pretty
+	b_boot = output_statistics(; boot_out = "$path/output_data/bootstrap_welfare_$(vint).csv",
+	                           vint = "2022-06-26", write_out = true)[1]
+	make_table_results(b_boot; table_title = "estimates_$(vint)_mode_$(String(run_mode)).tex")
+
+	return b_boot
 end
 
 
@@ -112,7 +124,6 @@ for i = 1:N_bs
     bstart12 = [1; bend12[1:end-1] .+ 1]
 
     for j = 1:length(bfirst12)
-
         j_rng_12  = Int.(bstart12[j]:bend12[j])
         ij_rng_12 = Int.(bfirst12[j]:bcdindex12[j])
 
@@ -129,7 +140,7 @@ for i = 1:N_bs
     bdata12["N"]       = length(bdata12["p"])
     bdata12["M"]       = length(bdata12["first"])
 
-    # bp
+    # bp // OFFLINE
     bmktsizebp = bp["mktsize"][bs_ind]
     bfirstbp   = bp["first"][bs_ind]
     bcdindexbp = bp["cdindex"][bs_ind]
@@ -174,6 +185,3 @@ for i = 1:N_bs
         CSV.write("$path/output_data/bootstrap_welfare_$(vint).csv", result_w)
     end
 end
-b_boot = output_statistics(; boot_out = "$path/output_data/bootstrap_welfare_$(vint).csv",
-                           vint = "2022-06-26", write_out = true)[1]
-make_table_results(b_boot; table_title = "estimates_20220626_mode_$(String(run_mode)).tex")

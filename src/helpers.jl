@@ -19,6 +19,29 @@ end
 
 """
 ```
+build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T},
+				 fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
+```
+This reconstitutes the full parameter vector by slotting the free and fixed
+parameters back into their original indices.
+
+# Motivation
+The reason we extract the fixed parameters from the vector pre-optimization is
+for performance: depending on the optimization algorithm, if the optimizer
+erroneously believes the space to optimize over is +`N_fix` dimensions larger,
+efficiency of exploration may sharply decline.
+"""
+function build_θ(θ_free_v::Vector{S}, θ_fix_v::Vector{S}, free_i::Vector{T},
+				 fix_i::Vector{T}) where {S<:Float64,T<:Int64}
+	N_θ = length(fix_i) + length(free_i)
+	θ   = zeros(N_θ)
+	θ[free_i] .= θ_free_v
+	θ[fix_i]  .= θ_fix_v
+	return θ
+end
+
+"""
+```
 demand_shopper(α::T, β::T, p::V, cdid::V, obs_w::V;
                testing::Bool=false) where {T<:Float64, V<:Vector{Float64}}
 ```

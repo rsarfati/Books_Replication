@@ -11,19 +11,14 @@ specified by user.
 
 # Keywords:
 - `vint::String`: Specify the estimation vintage. (For storage sanity.)
-
 - `eval_only::Bool`: Evaluate the likelihood of model for given parameter vector
 	`θ_init.` Does *not* run MLE.
-
 - `parallel::Bool`: when true, runs parts of likelihood evaluation in parallel.
-
 - `θ_init::OrderedDict{Symbol,Float64}`: When `eval_only=true`, evaluates
 	likelihood of given `θ_init`. When `eval_only=false`, runs maximum
 	likelihood estimation with `θ_init` as starting parameter vector. Note that
 	these values are *transformations* of the parameters in question.
-
 - `θ_fix::Dict{Symbol,Float64}`: Maps fixed parameters to calibrated values.
-
 - `θ_{lb,ub}::Dict{Symbol,Float64}`: Maps parameters to lower and upper bounds,
 	respectively. Bounds on fixed (calibrated) parameters are ignored. (That is,
 	if `θ_fix` values are in conflict with `θ_{lb,ub}`, the former takes
@@ -59,7 +54,7 @@ function estimate_model(; vint::String = "", eval_only = false, parallel = true,
 	@load "$INPUT/data_to_run.jld2" data
 	@load "$INPUT/distpara0.jld2"   distpara0
 
-	# In case not optimizing; just solve + evaluate likelihood of model at θ_init
+	# In case not optimizing; just evaluate model at θ_init & return!
 	if eval_only
     	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09],
 				   data[:of_09]; parallel = parallel, allout = true)
@@ -87,7 +82,7 @@ function estimate_model(; vint::String = "", eval_only = false, parallel = true,
 	build_θ(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
 	obj_fun(x::Vector{Float64}) = obj(build_θ(x), distpara0, data[:on_12],
 									  data[:on_09], data[:of_09];
-									  parallel = parallel)
+									  parallel = parallel)[1]
 
 	# Construct vectors of lower and upper bounds for optimization routine
 	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
@@ -97,7 +92,7 @@ function estimate_model(; vint::String = "", eval_only = false, parallel = true,
 	# Runs optimization of objective function, then reconstitutes optimal
 	# parameter vector so it again includes fixed/calibrated parameters.
 	res = optimize(obj_fun, θ_val[free_ind], lb[free_ind], ub[free_ind],
-				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
+				   Optim.Options(f_calls_limit=Int(1e5), iterations=Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = build_θ(res.minimizer), res.minimum
 
@@ -110,55 +105,30 @@ end
 
 """
 ```
-build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T},
-				 fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
-```
-This reconstitutes the full parameter vector by slotting the free and fixed
-parameters back into their original indices.
-
-# Motivation
-The reason we extract the fixed parameters from the vector pre-optimization is
-for performance: depending on the optimization algorithm, if the optimizer
-erroneously believes the space to optimize over is +`N_fix` dimensions larger,
-efficiency of exploration may sharply decline.
-"""
-function build_θ(θ_free_v::Vector{S}, θ_fix_v::Vector{S}, free_i::Vector{T},
-				 fix_i::Vector{T}) where {S<:Float64,T<:Int64}
-	N_θ = length(fix_i) + length(free_i)
-	θ   = zeros(N_θ)
-	θ[free_i] .= θ_free_v
-	θ[fix_i]  .= θ_fix_v
-	return θ
-end
-
-"""
-```
-obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; parallel::Bool=true,
-	allout = false) where {V<:Vector{Float64}, W<:Vector{Int64},
-  						   D<:Dict{Symbol,Vector{<:Number}}}
+obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
+	parallel::Bool=true) where {V<:Vector{Float64}, W<:Vector{Int64},
+  						        D<:Dict{Symbol,Vector{<:Number}}}
 ```
 Evaluates the model and returns the likelihood. If `allout` = false, function
 will return the likelihood, alone.
 
 # Note on Errors
-If an error is thrown, we check first if it is a domain error (corresponds
-to trying to take the log/sqrt of a negative number). In such a
-circumstance, one can conclude the combination of parameters is infeasible
-under the model, and thus return that the given `θ` is "infinitely unlikely."
+If an error is thrown, first check if it's a domain error (e.g. trying to take
+log/sqrt of negative number). Said error implies combination of parameters is
+infeasible (assuming model), so one can conclude `θ` is "infinitely unlikely."
 
-If the error is *not* a domain error, something is wrong with the code! So we
-pass it on to the console and let the user investigate the cause. :)
+If *not* a domain error, something is wrong with the code! Throw it to the
+console and let the user investigate the cause. :)
 """
-function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; parallel = true,
-			 allout = false) where {V<:Vector{Float64}, W<:Vector{Int64},
-									D<:Dict{Symbol,Vector{<:Number}}}
+function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
+			 parallel = true) where {V<:Vector{Float64}, W<:Vector{Int64},
+									 D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
 		full_model(θ, distpara0, data12, data09, bp; parallel = parallel)
 	catch err
 		if typeof(err)<:DomainError
 			println("Domain error in optimization!")
 			print(err)
-			Inf
 		elseif typeof(err)<:InterruptException
 			println("To user spamming CTRL-C/D: I hear your call.")
 			throw(err)
@@ -166,8 +136,8 @@ function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; parallel = true,
 			println("Mystery flavor!")
 			print(err)
 			throw(err)
-			Inf
 		end
+		Inf
 	end
-	return allout ? out :  out[1]
+	return out
 end

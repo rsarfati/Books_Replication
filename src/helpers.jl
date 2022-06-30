@@ -7,6 +7,9 @@ vecF64(x::Any) = Vector{Float64}(vec(x))
 vecI64(x::Any) = Vector{Int64}(vec(x))
 vecC64(x::Any) = Vector{ComplexF64}(vec(x))
 
+vals(d::Dict)        = [d[x] for x in keys(d)]
+vals(d::OrderedDict) = [d[x] for x in keys(d)]
+
 function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T<:Float64}
   m, n = length(v1), length(v2)
   v1   = reshape(v1, m, 1)
@@ -184,7 +187,7 @@ function obscalnewtest2015(βσ3::V, numlist::V, localint::V, cdindex::U, d_firs
                         exp.(-0.166666667 .* (γ0 .* D0)) .*
                         # Next line due to nonshopper demand (taken expectation wrt to γi)
                         (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* nat_disap
-                        
+
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) - cdf(γ_dist[i], γ1[i]) for i=1:length(γ_dist)], 1) .* demandlh .^ 3
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood
     else

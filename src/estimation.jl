@@ -9,11 +9,13 @@ estimate_model(; vint::String = "", eval_only = false, parallel = true,
 Estimates model given full dataset, starting from initial parameter values, as
 specified by user.
 
-# Keywords:
-- `vint::String`: Specify the estimation vintage. (For storage sanity.)
-- `eval_only::Bool`: Evaluate the likelihood of model for given parameter vector
-	`θ_init.` Does *not* run MLE.
-- `parallel::Bool`: when true, runs parts of likelihood evaluation in parallel.
+# Data specification
+- `data::Dict`: Provide data sample one would like to estimate model with
+	respect to. When left blank, loads full dataset!
+- `distpara0::Vector{Float64}`: Provide input `distpara0`, otherwise read in
+	default vector.
+
+# Parameter specification
 - `θ_init::OrderedDict{Symbol,Float64}`: When `eval_only=true`, evaluates
 	likelihood of given `θ_init`. When `eval_only=false`, runs maximum
 	likelihood estimation with `θ_init` as starting parameter vector. Note that
@@ -23,38 +25,51 @@ specified by user.
 	respectively. Bounds on fixed (calibrated) parameters are ignored. (That is,
 	if `θ_fix` values are in conflict with `θ_{lb,ub}`, the former takes
 	precedence.)
+
+# Options
+- `vint::String`: Specify the estimation vintage. (For storage sanity.)
+- `eval_only::Bool`: Evaluate the likelihood of model for given parameter vector
+	`θ_init.` Does *not* run MLE.
+- `parallel::Bool`: when true, runs parts of likelihood evaluation in parallel.
 """
-function estimate_model(; vint::String = "", eval_only = false, parallel = true,
- 			θ_init::OrderedDict{Symbol,Float64} = OrderedDict(
-			#=1=#	:α          	=> 14.771,  #1  α
-			#=2=#	:Δ_p_out    	=> -2.4895, #2  Δ_p_out
-			#=3=#	:γ_ns_shape 	=> 1.0,     #3  γ_ns_shape *** FIXED
-			#=4=#	:γ_ns_on_09 	=> 0.44004, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
-			#=5=#	:γ_ns_on_12 	=> 0.32415, #5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-			#=6=#	:η          	=> 0.87235, #6  η - 1   *** I am infering there is meant to be a -1 transformation
-			#=7=#	:r          	=> 0.5,     #7  r * 10  *** FIXED
-			#=8=#	:R_p        	=> 0.25921, #8  R_p
-			#=9=#	:c          	=> -9.1217, #9  c * 10
-			#=10=#	:γ_s_pop    	=> 80.267,  #10 γ_s_pop * 100
-			#=11=#	:γ_ns_pop   	=> -13.647, #11 γ_ns_pop * 10
-			#=12=#	:s_R        	=> 1.7296,  #12 s_R
-			#=13=#	:μ_R        	=> 8.8188,  #13 μ_R / s_R
-			#=14=#	:R_q        	=> 0.92622, #14 1 - R_q
-			#=15=#	:γ_s_shape  	=> 4.283,   #15 γ_s_shape
-			#=16=#	:γ_s_on_09  	=> 4.9097,  #16 γ_s_on_09
-			#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
-			#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
-			#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
-			#=20=#	:βlocal         => 0.011111), #20 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
-			θ_fix = Dict{Symbol,Float64}(:r => 0.5, :γ_ns_shape => 1),
-			θ_lb  = Dict{Symbol,Float64}([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
-			θ_ub  = Dict{Symbol,Float64}(:R_q => 1.))
+function estimate_model(; # Data specification
+						  data::Dict = Dict(),
+						  distpara0::Vector{Float64} = Vector{Float64}(),
+						  # Parameter specification
+ 					  	  θ_init::OrderedDict{Symbol,Float64} = OrderedDict(
+							#=1=#	:α          	=> 14.771,  #1  α
+							#=2=#	:Δ_p_out    	=> -2.4895, #2  Δ_p_out
+							#=3=#	:γ_ns_shape 	=> 1.0,     #3  γ_ns_shape *** FIXED
+							#=4=#	:γ_ns_on_09 	=> 0.44004, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
+							#=5=#	:γ_ns_on_12 	=> 0.32415, #5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
+							#=6=#	:η          	=> 0.87235, #6  η - 1   *** I am infering there is meant to be a -1 transformation
+							#=7=#	:r          	=> 0.5,     #7  r * 10  *** FIXED
+							#=8=#	:R_p        	=> 0.25921, #8  R_p
+							#=9=#	:c          	=> -9.1217, #9  c * 10
+							#=10=#	:γ_s_pop    	=> 80.267,  #10 γ_s_pop * 100
+							#=11=#	:γ_ns_pop   	=> -13.647, #11 γ_ns_pop * 10
+							#=12=#	:s_R        	=> 1.7296,  #12 s_R
+							#=13=#	:μ_R        	=> 8.8188,  #13 μ_R / s_R
+							#=14=#	:R_q        	=> 0.92622, #14 1 - R_q
+							#=15=#	:γ_s_shape  	=> 4.283,   #15 γ_s_shape
+							#=16=#	:γ_s_on_09  	=> 4.9097,  #16 γ_s_on_09
+							#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
+							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
+							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
+							#=20=#	:βlocal         => 0.011111), #20 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
+						  θ_fix = Dict(:r => 0.5, :γ_ns_shape => 1),
+						  θ_lb  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
+						  θ_ub  = Dict(:R_q => 1.),
+						  # Options
+						  vint::String    = "",
+						  eval_only::Bool = false,
+						  parallel::Bool  = true)
 
-	# Load data
-	@load "$INPUT/data_to_run.jld2" data
-	@load "$INPUT/distpara0.jld2"   distpara0
+	# Load data if not provided
+	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
+	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 
-	# In case not optimizing; just evaluate model at θ_init & return!
+	# Simply evaluate model at θ_init & return!
 	if eval_only
     	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09],
 				   data[:of_09]; parallel = parallel, allout = true)

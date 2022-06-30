@@ -16,24 +16,38 @@ true_estimates = [0.32135,	5.6459,	14.855,	 1.1614,  0.6486,   1.9196,	 14.771,
                   4.9097,	0,      7.8609,	 7.739,	  0.011111, 6.8386,  6.5027,
                   0.028621]
 
-## Load data
-# Mat file created by Masao contains original data, random index for bootstrap.
-vars = matread("$path/data/DataToRun_pop09_boot.mat")
+function run_bootstrap(; data::Dict = Dict(),
+						 distpara0::Vector{Float64} = Vector{Float64}(),
+						 N_bs::Int64 = 200, run_mode::Symbol = :EVAL)
+    # Load bootstrap indices
+    vars = matread("$path/data/DataToRun_pop09_boot.mat")
+    bootindex = Int.(vars["bootindex"])
 
-## Data Renaming and Setup Pre-Bootstrap
-γ0vec     = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
-δ_vec     = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
-data12    = vars["data12nopop"]
-data09    = vars["data09nopop"]
-bp        = vars["bpnopop"]
-bootindex = Int.(vars["bootindex"])
+	# Load data
+    isempty(data)      && @load "$INPUT/data_to_run.jld2" data
+	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 
-boot = DataFrame()
-if run_mode == :EVAL
-    # Mode 1 (optimize) can be run on several servers simultaneously to save time;
-    # use  `unique` to remove bootstrap runs duplicated on multiple servers.
-    boot = unique(CSV.read("$path/data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
+	# Construct these, IDK
+	γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100)
+	δ_vec = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20)
+
+
+	boot = DataFrame()
+	if run_mode == :EVAL
+	    # Mode 1 (optimize) can be run on several servers simultaneously to save time;
+	    # use  `unique` to remove bootstrap runs duplicated on multiple servers.
+	    boot = unique(CSV.read("$path/data/bootstrap_estimates.csv", DataFrame, header=false))[:,2:end]
+	end
+
+    for i=1:N_bs
+		bs_ind = bootindex[i,:]
+		
+    end
+
 end
+
+
+
 
 ## A validation mode:
 # if one wants to reproduce the true data estimates or validate the

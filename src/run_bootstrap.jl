@@ -68,7 +68,7 @@ function run_bootstrap(; data::Dict = Dict(),
 		bs_ind = bootindex[i,:]
 
 		# TODO: indexing!
-
+		data_i = index_data(data, bs_ind)
 
 
 		estimate_model(data = data_i, distpara0 = distpara0,
@@ -77,7 +77,7 @@ function run_bootstrap(; data::Dict = Dict(),
 					   parallel = parallel, save_output = false)
 
 		if !eval_only
-			CSV.write("$path/output/data/bs_estimates_$(vint)_run=$i.csv", Tables.table([i; θ_i]))
+			CSV.write("$OUTPUT/data/bs_estimates_$(vint)_run=$i.csv", Tables.table([i; θ_i]))
 		end
 	end
 
@@ -102,162 +102,55 @@ end
 index_data(d_in::Dict{Symbol, Dict{Symbol,Vector{<:Number}}}, ind::Vector{Int64})
 ```
 Index into data dictionary for a given set of bootstrapped indices `ind`.
+Returns bootstrapped data in a dictionary of the same necessary input format.
 """
-function index_data(d_in::Dict{Symbol, Dict{Symbol,Vector{<:Number}}}, ind::Vector{Int64})
+function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vector{Int64})
 
 	d = deepcopy(d_in)
+
+	obs_list = Dict{Symbol,Vector{Symbol}}(:of_09 =>
+		 								   [:p, :obsweight, :numlist, :condition,
+										   	:localint, :popular, :conditiondif])
+	obs_list[:on_09] = [obs_list[:of_09]; :pdif; :basecond]
+	obs_list[:on_12] = [obs_list[:on_09]; :disappear]
+
 	for y in keys(d)
 
 		d[y][:mktsize] = d_in[y][:mktsize][ind]
 		b_first        = d_in[y][:first][ind]
 	    b_cdindex      = d_in[y][:cdindex][ind]
 
-		mktsize = Int(    sum(d[y][:mktsize]))
-		b_end   = Int.(cumsum(d[y][:mktsize]))
+		mktsize =    sum(d[y][:mktsize])
+		b_end   = cumsum(d[y][:mktsize])
 		b_start = [1; b_end[1:end-1] .+ 1]
 
-		for k in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
-	              :popular, :pdif, :conditiondif, :basecond]
+		for k in [obs_list[y]; :cdid]
 			d[y][k] = zeros(mktsize)
-
-			d[y][k][ind_to] .= d_in[y][ind_from]
 		end
+
+		if y ∈ [:on_09, :on_12]
+			for j=1:length(ind)
+				ind_to   = b_start[j]:b_end[j]
+				ind_from = b_first[j]:b_cdindex[j]
+
+				d[y][:cdid][ind_to] = fill(j, length(ind_to), 1)
+
+				for k in obs_list[y]
+					d[y][k][ind_to] .= d_in[y][ind_from]
+				end
+			end
+		else
+			d[y][:cdid] = collect(1:236) # TODO: this commented: bp.cdid[bs_ind]
+			for k in obs_list[y]
+				d[y][k] = d_in[y][k][ind]
+			end
+	    end
+
+		d[y][:first]   = b_start
+		d[y][:cdindex] = b_end
 
 		d[y][:N] = length(d[y][:p])
 		d[y][:M] = length(d[y][:first])
 	end
-
-
-
-	# bmktsize09 = Int.(data09["mktsize"][bs_ind])
-    # bfirst09   = Int.(data09["first"][bs_ind])
-    # bcdindex09 = Int.(data09["cdindex"][bs_ind])
-    # mktsize_09 = Int(sum(bmktsize09))
-
-    # bdata09 = Dict{String, Any}()
-    # for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
-    #           :popular, :pdif, :conditiondif, :basecond]
-    #     bdata09[String(x)] = zeros(mktsize_09)
-    # end
-
-    # bend09   = Int.(cumsum(bmktsize09))
-    # bstart09 = vcat(1, bend09[1:end-1] .+ 1)
-
-    for j = 1:length(bfirst09)
-        rng_j_09  = bstart09[j]:bend09[j]
-        rng_ij_09 = bfirst09[j]:bcdindex09[j]
-
-        bdata09["cdid"][rng_j_09] = fill(j, length(rng_j_09), 1)
-        for x in [:p, :obsweight, :numlist, :condition, :localint,
-                  :popular, :pdif, :conditiondif, :basecond]
-            bdata09[String(x)][rng_j_09] .= data09[String(x)][rng_ij_09]
-        end
-    end
-    # bdata09["first"]   = bstart09'
-    # bdata09["cdindex"] = bend09'
-    # bdata09["mktsize"] = bmktsize09'
-    # bdata09["N"] = length(bdata09["p"])
-    # bdata09["M"] = length(bdata09["first"])
 	return d
-end
-
-
-## A validation mode:
-# if one wants to reproduce the true data estimates or validate the
-# estimation method is the same as we used for the true data estimates, the
-# following tricks can be used to reproduce the true data set.
-
-# in mode 1:
-# bootindex(1,:) = 1:236
-# in mode 2, in addition to the line above:
-# boot(1,:) = results2(end, 8:21)
-
-## Run Bootstrap
-for i = 1:N_bs
-    ##  Generate bootstrap data
-    bs_ind = bootindex[i,:]
-
-    #################### 2009 ####################
-    # bmktsize09 = Int.(data09["mktsize"][bs_ind])
-    # bfirst09   = Int.(data09["first"][bs_ind])
-    # bcdindex09 = Int.(data09["cdindex"][bs_ind])
-    # mktsize_09 = Int(sum(bmktsize09))
-
-    # bdata09 = Dict{String, Any}()
-    # for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
-    #           :popular, :pdif, :conditiondif, :basecond]
-    #     bdata09[String(x)] = zeros(mktsize_09)
-    # end
-
-    # bend09   = Int.(cumsum(bmktsize09))
-    # bstart09 = vcat(1, bend09[1:end-1] .+ 1)
-
-    for j = 1:length(bfirst09)
-        rng_j_09  = bstart09[j]:bend09[j]
-        rng_ij_09 = bfirst09[j]:bcdindex09[j]
-
-        bdata09["cdid"][rng_j_09] = fill(j, length(rng_j_09), 1)
-        for x in [:p, :obsweight, :numlist, :condition, :localint,
-                  :popular, :pdif, :conditiondif, :basecond]
-            bdata09[String(x)][rng_j_09] .= data09[String(x)][rng_ij_09]
-        end
-    end
-    # bdata09["first"]   = bstart09'
-    # bdata09["cdindex"] = bend09'
-    # bdata09["mktsize"] = bmktsize09'
-    # bdata09["N"] = length(bdata09["p"])
-    # bdata09["M"] = length(bdata09["first"])
-
-
-    #################### 2012 ####################
-    # bmktsize12 = data12["mktsize"][bs_ind]
-    # bfirst12   = data12["first"][bs_ind]
-    # bcdindex12 = data12["cdindex"][bs_ind]
-    mktsize_12 = Int(sum(bmktsize12))
-
-    bdata12 = Dict{String, Any}()
-    for x in [:p, :cdid, :obsweight, :numlist, :condition, :localint,
-              :popular, :pdif, :conditiondif, :basecond, :disappear]
-        bdata12[String(x)] = zeros(mktsize_12)
-    end
-
-    bend12   = cumsum(bmktsize12)
-    bstart12 = [1; bend12[1:end-1] .+ 1]
-
-    for j = 1:length(bfirst12)
-        j_rng_12  = Int.(bstart12[j]:bend12[j])
-        ij_rng_12 = Int.(bfirst12[j]:bcdindex12[j])
-
-        bdata12["cdid"][j_rng_12] = fill(j, length(j_rng_12), 1)
-
-        for x in [:p, :obsweight, :numlist, :condition, :localint,
-                  :popular, :pdif, :conditiondif, :basecond, :disappear]
-            bdata12[String(x)][j_rng_12] .= data12[String(x)][ij_rng_12]
-        end
-    end
-    bdata12["first"]   = bstart12'
-    bdata12["cdindex"] = bend12'
-    bdata12["mktsize"] = bmktsize12'
-
-    bdata12["N"]       = length(bdata12["p"])
-    bdata12["M"]       = length(bdata12["first"])
-
-    ##################### 2009 OFFLINE ####################
-    # bmktsizebp = bp["mktsize"][bs_ind]
-    # bfirstbp   = bp["first"][bs_ind]
-    # bcdindexbp = bp["cdindex"][bs_ind]
-
-	bendbp     = cumsum(bmktsizebp)
-    bstartbp   = [1; bendbp[1:end-1] .+ 1]
-
-    bbp = Dict{String,Any}()
-    bbp["cdid"] = collect(1:236)  # bp.cdid[bs_ind]
-    for x in [:p, :obsweight, :numlist, :condition, :localint, :popular, :conditiondif]
-        bbp[String(x)] = bp[String(x)][bs_ind]
-    end
-    bbp["first"]   = bstartbp'
-    bbp["cdindex"] = bendbp'
-    # bbp["mktsize"] = bmktsizebp'
-    # bbp["N"]       = length(bbp["p"])
-    # bbp["M"]       = length(bbp["first"])
 end

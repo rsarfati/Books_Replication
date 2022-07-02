@@ -1,5 +1,5 @@
 using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
-using JLD2, MAT, Optim, OrderedCollections, Printf, Random, RegressionTables, Roots, SparseArrays, Statistics
+using JLD2, MAT, Optim, OrderedCollections, Printf, Random, Roots, SparseArrays, Statistics
 
 # Build output folders if don't exist
 global path   = dirname(@__FILE__)
@@ -9,10 +9,10 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT")        && run(`mkdir $OUTPUT`)
 !isdir("$OUTPUT/plots")  && run(`mkdir $path/plots/`)
 !isdir("$OUTPUT/tables") && run(`mkdir $path/tables/`)
-!isdir("$OUTOUT/data")   && run(`mkdir $path/data/`)
+!isdir("$OUTPUT/data")   && run(`mkdir $path/data/`)
 
 ## TODO: Specify script parameters
-vint     = "2022-06-27"
+vint     = "2022-06-28"
 n_procs  = 100  # No. workers to request from cluster
 N_bs     = 200  # No. bootstrap iterations
 
@@ -27,9 +27,9 @@ run_mode      = :OPTIM # Running bootstrap? Choose :OPTIM or :EVAL
 # Add worker processes, load necessary packages on said workers
 if parallel
     addprocs(n_procs)
-    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions
-    @everywhere using FileIO, FixedEffectModels, JLD2, MAT, Optim, OrderedCollections, Printf
-    @everywhere using Random, RegressionTables, Roots, SparseArrays, Statistics
+    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
+    @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
+    @everywhere using Printf, Random, Roots, SparseArrays, Statistics
     @everywhere global path = dirname(@__FILE__)
     @everywhere global OUTPUT = "$path/../output"
     @everywhere global INPUT  = "$path/../input"
@@ -43,7 +43,7 @@ end
 @everywhere include("$path/estimation.jl")
 
 # Test function output (good idea if you've been modifying code)
-run_tests && include("$path/../test/helpers.jl")
+if run_tests; include("$path/../test/helpers.jl") end
 
 # Only solve for likelihoods
 if eval_only
@@ -53,10 +53,10 @@ if eval_only
 end
 
 # Estimate model from known parameters
-estimation    && estimate_model()
+if estimation; estimate_model() end
 
 # Run bootstrap script
-run_bootstrap && include("$path/bootstrap_distpara.jl")
+if run_bootstrap; include("$path/bootstrap_distpara.jl") end
 
 # Release workers
-parallel      && rmprocs(workers())
+if parallel; rmprocs(workers()) end

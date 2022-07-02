@@ -1,4 +1,7 @@
-import Base.zeros
+import Base.zeros, Base.println
+println(cond::Bool, io::IO, xs...) = if cond; println(io, xs...) end
+println(cond::Bool, xs...)         = if cond; println(xs...) end
+
 zeros(x::Float64)            = zeros(Int(round(x)))
 zeros(x::Float64,y::Int64)   = zeros(Int(round(x)), y)
 zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))

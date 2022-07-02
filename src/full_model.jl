@@ -101,7 +101,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     # OPTIMIZE: INIT 2.255119 seconds (59.73 k allocations: 1.512 GiB, 5.42% gc time) / call
     # WFcal = true:  1.935566 seconds (53.25 k allocations: 1.267 GiB, 10.41% gc time)
     # WFcal = false: 0.004776 seconds (33.38 k allocations: 2.988 MiB)
-    VERBOSE && println("Iterating for γ0... (1/2)")
+    println(VERBOSE, "Iterating for γ0... (1/2)")
     out_09 = if parallel
        @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6, 7, 8, 9, 11, 12]]; λ1; λ2;
@@ -121,7 +121,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                                basellh_09, pdif_09, rounderr;
                                demandcal = false, WFcal = WFcal) for i=1:Y]...)
     end
-    VERBOSE && println("Completed Iteration for γ0. (2/2)")
+    println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
     lip_09  = out_09[0*N_09+1:1*N_09,:] # likelihood of each observation at each β
     γ2_09   = out_09[1*N_09+1:2*N_09,:]
@@ -140,7 +140,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     maxtemp_09 = maximum(llhβ_09, dims=2)
     llhadj_09  = exp.(llhβ_09 - repeat(maxtemp_09, 1, Y))
 
-    VERBOSE && println("Iterating for βs... (1/2)")
+    println(VERBOSE, "Iterating for βs... (1/2)")
 
     out_12 = if parallel
        @distributed (hcat) for i in 1:Y
@@ -163,7 +163,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                                basellh_12, pdif_12, rounderr;
                                demandcal = true, WFcal = WFcal, disap=disap) for i=1:Y]...)
     end
-    VERBOSE && println("Completed Iteration for βs. (2/2)")
+    println(VERBOSE, "Completed Iteration for βs. (2/2)")
 
     lip_12  = out_12[0*N_12+1:1*N_12,:]
     γ2_12   = out_12[1*N_12+1:2*N_12,:]
@@ -227,17 +227,17 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         return -(sum(ltot_09) + sum(ltot_12))
     end
 
-    VERBOSE && println("Optimizing Pt. I (1/3)")
+    println(VERBOSE, "Optimizing Pt. I (1/3)")
 
     res = optimize(integγ0, βσ4[1:4])
     distpara1, f1 = res.minimizer, res.minimum
 
-    VERBOSE && println("Optimizing Pt. II (2/3)")
+    println(VERBOSE, "Optimizing Pt. II (2/3)")
 
     res = optimize(getbmean, distpara0[5:6])
     distpara2, f2 = res.minimizer, res.minimum
 
-    VERBOSE && println("Finished optimizing! (3/3)")
+    println(VERBOSE, "Finished optimizing! (3/3)")
 
     out_bp = obscalnewtest2015([0; βσ4[[6, 7, 8]]; abs(distpara2[1]); βσ4[[11, 12]];
                                λ1; λ2; βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
@@ -266,7 +266,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     fother = Dict{String,Any}()
 
     if WFcal
-        VERBOSE && println("Beginning welfare calculations... (1/2)")
+        println(VERBOSE, "Beginning welfare calculations... (1/2)")
 
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
@@ -327,7 +327,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         fWF["WF12"]     = WF_12
         fWF["WFbp"]     = WF_bp
 
-        VERBOSE && println("Finished welfare calculations. (2/2)")
+        println(VERBOSE, "Finished welfare calculations. (2/2)")
     end
 
     fother["lip12"]    = lip_12

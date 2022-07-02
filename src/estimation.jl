@@ -30,6 +30,7 @@ specified by user.
 - `vint::String`: Specify the estimation vintage. (For storage sanity.)
 - `eval_only::Bool`: Evaluate the likelihood of model for given parameter vector
 	`θ_init.` Does *not* run MLE.
+- `write_output::Bool`: Do you want to save output of this estimation to file?
 - `parallel::Bool`: when true, runs parts of likelihood evaluation in parallel.
 """
 function estimate_model(; # Data specification
@@ -61,7 +62,7 @@ function estimate_model(; # Data specification
 						  θ_lb  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						  θ_ub  = Dict(:R_q => 1.),
 						  # Options
-						  vint::String    = "",
+						  vint::String    = "", write_output::Bool = true,
 						  eval_only::Bool = false,
 						  parallel::Bool  = true)
 
@@ -112,9 +113,10 @@ function estimate_model(; # Data specification
 	θ, llh = build_θ(res.minimizer), res.minimum
 
 	# Save output (writing CSV for legacy compatibility)
-	@save     "$OUTPUT/data/estimation_results_$(vint).jld2" θ, llh
-	CSV.write("$OUTPUT/data/estimation_results_$(vint).csv", Tables.table(θ))
-
+	if write_ouput
+		@save     "$OUTPUT/data/estimation_results_$(vint).jld2" θ, llh
+		CSV.write("$OUTPUT/data/estimation_results_$(vint).csv", Tables.table(θ))
+	end
 	return θ, llh
 end
 

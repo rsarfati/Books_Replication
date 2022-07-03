@@ -38,11 +38,11 @@ function run_bootstrap(; data::Dict = Dict(),
 						   #=18=#	:σ_δ        	=> 7.8609,
 						   #=19=#	:γ_ns_of_09_std => 7.739,
 						   #=20=#	:βlocal         => 0.011111), # βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
-						 θ_fix = Dict(:r => 0.5, :γ_ns_shape => 1),
+						 θ_fix = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						 θ_lb  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						 θ_ub  = Dict(:R_q => 1.),
 						 N_bs::Int64 = 200, eval_only = false, WFcal = true,
-						 seed = true, VERBOSE = true)
+						 seed = true, parallel=false, VERBOSE = true)
 
     # Seed for consistent output
     if seed; MersenneTwister(1234) end
@@ -67,10 +67,11 @@ function run_bootstrap(; data::Dict = Dict(),
     for i=1:N_bs
 		println(VERBOSE, "Bootstrap iteration: $i")
 		θ_i = estimate_model(data = index_data(data, bootindex[i,:]),
-					   		 distpara0 = distpara0, θ_init = θ_start[i,:],
+					   		 distpara0 = distpara0,
+							 θ_init = OrderedDict(keys(θ_init) .=> θ_start[i,:]),
 					    	 θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
 					   	 	 eval_only = eval_only, parallel = parallel,
-					    	 save_output = false)[1]
+					    	 write_output = false)[1]
 		if !eval_only
 			CSV.write("$OUTPUT/bs_estimates_$(vint)_run=$i.csv", table([i; θ_i]))
 		end
@@ -105,14 +106,14 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 	d = Dict(keys(d_in) .=> repeat([Dict{Symbol,Vector{<:Number}}()],3))
 
 	# Each online/offline x year combination doesn't have same set of obs.
-	obs_list = Dict(:of_09 => [:p, :obsweight, :numlist, :condition,
-							   :localint, :popular, :conditiondif])
+	obs_list = Dict(:of_09 => [:p, :obs_w, :numlist, :condition,
+							   :localint, :popular, :cond_dif])
 	obs_list[:on_09] = [obs_list[:of_09]; :pdif; :basecond]
 	obs_list[:on_12] = [obs_list[:on_09]; :disappear]
 
 	for y in keys(d)
 		d[y][:mktsize] = d_in[y][:mktsize][ind]
-		b_first        = d_in[y][:first][ind]
+		b_first        = d_in[y][:d_first][ind]
 	    b_cdindex      = d_in[y][:cdindex][ind]
 
 		mktsize =    sum(d[y][:mktsize])

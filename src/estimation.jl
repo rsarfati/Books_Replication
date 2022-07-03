@@ -58,7 +58,7 @@ function estimate_model(; # Data specification
 							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
 							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
 							#=20=#	:βlocal         => 0.011111), #20 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
-						  θ_fix = Dict(:r => 0.5, :γ_ns_shape => 1),
+						  θ_fix::OrderedDict{Symbol,Float64} = OrderedDict(:r => Float64(0.5), :γ_ns_shape => Float64(1.0)),
 						  θ_lb  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						  θ_ub  = Dict(:R_q => 1.),
 						  # Options
@@ -66,17 +66,17 @@ function estimate_model(; # Data specification
 						  eval_only::Bool = false,
 						  parallel::Bool  = true)
 
-	# Load data if not provided
+	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
-
-	# Simply evaluate model at θ_init & return!
+	@show typeof(θ_fix)
+	# Simply evaluate likelihood at θ_init & return
 	if eval_only
     	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09],
 				   data[:of_09]; parallel = parallel)
 	end
 
-	# Extract parameter information
+	# Extract information on parameters
 	N_θ   = length(θ_init)
 	θ_sym = keys(θ_init)
 	θ_val = vals(θ_init)
@@ -85,34 +85,40 @@ function estimate_model(; # Data specification
  	θ_ind = Dict(θ_sym .=> 1:N_θ)
 
 	# Input check: cannot fix parameters which are not listed in θ_init
-	for θ_i in vcat(keys(θ_fix), keys(θ_lb), keys(θ_ub))
+	for θ_i in union(keys(θ_fix), keys(θ_lb), keys(θ_ub))
  		@assert θ_i ∈ θ_sym "Input error: fixed/bounded parameter $θ_i unknown."
  	end
 
 	# Extract indices of free and fixed parameters
-	fix_val  = vals(θ_fix)
+	fix_val  = vals(θ_fix)::Vector{Float64}
 	fix_ind  = sort([θ_ind[x] for x in keys(θ_fix)])
 	free_ind = deleteat!(collect(1:N_θ), fix_ind)
 
-	# Function closures
+	# Build function closures for optimizer
 	build_θ(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
 	obj_fun(x::Vector{Float64}) = obj(build_θ(x), distpara0, data[:on_12],
 									  data[:on_09], data[:of_09];
 									  parallel = parallel)[1]
 
+    @show typeof(θ_val)
+
+	@show typeof.([fix_val, free_ind, fix_ind])
+	@show typeof(θ_val[free_ind])
+	@show build_θ(θ_val[free_ind])
+	@show obj_fun(θ_val[free_ind])
 	# Construct vectors of lower and upper bounds for optimization routine
 	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
 	for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
 	for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
 
-	# Runs optimization of objective function, then reconstitutes optimal
-	# parameter vector so it again includes fixed/calibrated parameters.
+	# Optimize objective function, then reconstitute optimal parameter
+	# vector to again include fixed/calibrated parameters.
 	res = optimize(obj_fun, θ_val[free_ind], lb[free_ind], ub[free_ind],
 				   Optim.Options(f_calls_limit=Int(1e5), iterations=Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = build_θ(res.minimizer), res.minimum
 
-	# Save output (writing CSV for legacy compatibility)
+	# Save output (writing to CSV for legacy compatibility)
 	if write_ouput
 		@save     "$OUTPUT/estimation_results_$(vint).jld2" θ, llh
 		CSV.write("$OUTPUT/estimation_results_$(vint).csv", Tables.table(θ))

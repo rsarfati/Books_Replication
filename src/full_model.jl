@@ -52,17 +52,17 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     Y    = length(temp1)
     N_09 = length(d_on_09[:p])
     N_12 = length(d_on_12[:p])
-    N_bp = length(d_of_09[:p])
-    M_09 = length(d_on_09[:first])
-    M_12 = length(d_on_12[:first])
-    M_bp = length(d_of_09[:first])
+    N_bp = length(bp[:p])
+    M_09 = length(d_on_09[:d_first])
+    M_12 = length(d_on_12[:d_first])
+    M_bp = length(bp[:d_first])
 
     # Extract variables used with high frequncy
     cdindex_09 = d_on_09[:cdindex]
-    first_09   = d_on_09[:first]
+    first_09   = d_on_09[:d_first]
     p_09       = d_on_09[:p]
     cdindex_12 = d_on_12[:cdindex]
-    first_12   = d_on_12[:first]
+    first_12   = d_on_12[:d_first]
     p_12       = d_on_12[:p]
     disap      = d_on_12[:disappear]
 
@@ -75,7 +75,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
 
     ## Calculation for 09 offline data
-    basellhb   = pdf.(Gamma(olm, ol_θ), d_of_09[:p]) * 2 * rounderr
+    basellhb   = pdf.(Gamma(olm, ol_θ), bp[:p]) * 2 * rounderr
 
     # OPTIMIZE: INIT 2.255119 s (59.73 k alloc: 1.512 GiB, 5.42% gc time) / call
     # WFcal = true:  1.935566 s (53.25 k alloc: 1.267 GiB, 10.41% gc time)
@@ -280,7 +280,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
         fWF["BestVals_09"] = hcat(d_on_09[:cdid], d_on_09[:numlist], d_on_09[:p], d_on_09[:pdif], BestVals_09)
         fWF["BestVals_12"] = hcat(d_on_12[:cdid], d_on_12[:numlist], d_on_12[:p], d_on_12[:pdif], BestVals_12)
-        fWF["BestValsbp"]  = hcat(d_of_09[:cdid], d_of_09[:numlist], d_of_09[:p],
+        fWF["BestValsbp"]  = hcat(bp[:cdid], bp[:numlist], bp[:p],
                                   repeat([0.0, 0.0, 1.0, 1.0]', N_bp, 1),
                                   lipb, basellhb, γ0_bp, γ1_bp, γ2_bp, Dm_bp, D0_bp, WF_bp)
         fWF["AveWF_09"] = AveWF_09

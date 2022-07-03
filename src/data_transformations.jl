@@ -5,7 +5,7 @@ function process_data()
 Exists to convert + fix data types in the .mat file to a .jld2 file.
 """
 function process_data()
-	vars = matread("$path/data/DataToRun_pop09_boot.mat")
+	vars = matread("$INPUT/DataToRun_pop09_boot.mat")
 	data12 = vars["data12nopop"]
 	data09 = vars["data09nopop"]
 	bp     = vars["bpnopop"]
@@ -17,11 +17,13 @@ function process_data()
 		data[d_k] = Dict{Symbol,Vector{<:Number}}()
 		# Type cast integers
 		for k in ["cdindex","first","cdid","mktsize","popular"]
-	           data[d_k][Symbol(k)] = vecI64(dataset[k])
+            k_sym = (k == "first") ? :d_first : Symbol(k)
+	        data[d_k][k_sym] = vecI64(dataset[k])
 	    end
 		# Type cast floats
 		for k in ["numlist","localint","conditiondif","p","obsweight","condition"]
-	           data[d_k][Symbol(k)] = vecF64(dataset[k])
+            k_sym = (k == "conditiondif") ? :cond_dif : (k == "obsweight") ? :obs_w : Symbol(k)
+	        data[d_k][k_sym] = vecF64(dataset[k])
 	   	end
 
 		if d_k != :of_09
@@ -33,6 +35,6 @@ function process_data()
 			data[d_k][:disappear] = vecF64(dataset["disappear"])
 		end
 	end
-	@save "$path/../data/input/data_to_run.jld2" data
+	@save "$INPUT/data_to_run.jld2" data
 	return data
 end

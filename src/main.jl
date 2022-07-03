@@ -1,9 +1,9 @@
 using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, FixedEffectModels
-using JLD2, MAT, Optim, OrderedCollections, Printf, Random, Roots, SparseArrays, Statistics
+using JLD2, MAT, Optim, OrderedCollections, Printf, Random, Roots, SparseArrays, Statistics, UnPack
 
 # Build output folders if don't exist
 global path   = dirname(@__FILE__)
-global OUTPUT = "$path/../output"
+global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
 
 !isdir("$OUTPUT")        && run(`mkdir $OUTPUT`)
@@ -29,10 +29,12 @@ if parallel
     addprocs(n_procs)
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
     @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
-    @everywhere using Printf, Random, Roots, SparseArrays, Statistics
+    @everywhere using Printf, Random, Roots, SparseArrays, Statistics, UnPack
+
     @everywhere global path = dirname(@__FILE__)
-    @everywhere global OUTPUT = "$path/../output"
+    @everywhere global OUTPUT = "$path/../output/data"
     @everywhere global INPUT  = "$path/../input"
+
     println("Added $(length(workers())) worker processes!")
 end
 
@@ -41,6 +43,7 @@ end
 @everywhere include("$path/helpers.jl")
 @everywhere include("$path/full_model.jl")
 @everywhere include("$path/estimation.jl")
+@everywhere include("$path/bootstrap.jl")
 
 # Test function output (good idea if you've been modifying code)
 if run_tests; include("$path/../test/helpers.jl") end
@@ -48,7 +51,7 @@ if run_tests; include("$path/../test/helpers.jl") end
 # Only solve for likelihoods
 if eval_only
     f, distpara, fother, fWF, f1, f2 = estimate_model(eval_only = true, parallel = parallel)
-    @save "$OUTPUT/data/likelihoods_$(vint).jld2" f, distpara, fother, fWF, f1, f2
+    @save "$OUTPUT/likelihoods_$(vint).jld2" f, distpara, fother, fWF, f1, f2
     @show f, f1, f2
 end
 
@@ -56,7 +59,9 @@ end
 if estimation; estimate_model() end
 
 # Run bootstrap script
-if run_bootstrap; include("$path/bootstrap_distpara.jl") end
+if run_bootstrap
+    run_bootstrap(N_bs = N_bs, parallel = parallel, eval_only = eval_only)
+end
 
 # Release workers
 if parallel; rmprocs(workers()) end

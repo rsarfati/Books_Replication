@@ -7,7 +7,7 @@ run_bootstrap(; data::Dict = Dict(),
 				θ_fix = Dict(), θ_lb  = Dict(), θ_ub  = Dict(),
 				N_bs::Int64 = 200, run_mode::Symbol = :EVAL)
 ```
-# Input: True data, randomly generated title-level indices.
+# Input: True data and randomly-generated title-level indices.
 # Output: bootstrap_welfare.csv
 
 Contructs bootstrap dataset, runs the estimation.
@@ -18,7 +18,7 @@ function run_bootstrap(; data::Dict = Dict(),
 						 distpara0::Vector{Float64} = Vector{Float64}(),
 						 # Parameter specification
 						 θ_init::OrderedDict{Symbol,Float64} = OrderedDict(
-						   #=1=#	:α          	=> 14.771,  # TRANSFORMED?
+						   #=1=#	:α          	=> 14.771,  # TRANSFORMATION
 						   #=2=#	:Δ_p_out    	=> -2.4895,
 						   #=3=#	:γ_ns_shape 	=> 1.0,
 						   #=4=#	:γ_ns_on_09 	=> 0.44004, # γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
@@ -53,6 +53,7 @@ function run_bootstrap(; data::Dict = Dict(),
 	# Load data + starting values for θ and distpara0
     isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
+
 	θ_start = if eval_only
 	    # Optimization can be run on several servers simultaneously to save time;
 	    # we use `unique` to remove bootstrap runs duplicated on multiple servers.
@@ -62,37 +63,31 @@ function run_bootstrap(; data::Dict = Dict(),
 		repeat(vals(θ_init)', N_bs)
 	end
 
-	# Run bootstrap! TODO: parallelization option
+	# Run bootstrap! (TODO: parallelization option)
     for i=1:N_bs
 		println(VERBOSE, "Bootstrap iteration: $i")
-		bs_ind = bootindex[i,:]
-
-		# TODO: indexing!
-		data_i = index_data(data, bs_ind)
-
-
-		estimate_model(data = data_i, distpara0 = distpara0,
-					   θ_init = θ_start[i,:], θ_fix = θ_fix, θ_lb = θ_lb,
-					   θ_ub = θ_ub, eval_only = eval_only,
-					   parallel = parallel, save_output = false)
-
+		θ_i = estimate_model(data = index_data(data, bootindex[i,:]),
+					   		 distpara0 = distpara0, θ_init = θ_start[i,:],
+					    	 θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
+					   	 	 eval_only = eval_only, parallel = parallel,
+					    	 save_output = false)[1]
 		if !eval_only
-			CSV.write("$OUTPUT/data/bs_estimates_$(vint)_run=$i.csv", Tables.table([i; θ_i]))
+			CSV.write("$OUTPUT/bs_estimates_$(vint)_run=$i.csv", table([i; θ_i]))
 		end
 	end
 
-	# Output results from estimation
-	b_boot = output_statistics(; boot_out = "$OUTPUT/data/bootstrap_welfare_$(vint).csv",
+	# Compute and format results from estimation
+	b_boot = output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare_$(vint).csv",
 	                             vint = "2022-06-26", write_out = true)[1]
 	make_table_results(b_boot;
-		table_title = "$OUTPUT/tables/estimates_$(vint)_eval_only=$(eval_only).tex")
+		table_title = "$OUTPUT/../tables/estimates_$(vint)_eval_only=$(eval_only).tex")
 
 	if WFcal
 		wel09    = mean(fWF["AveWF09"])
 		wel12    = mean(fWF["AveWF12"])
 		weloff   = mean(fWF["WFbp"])
 		result_w = [i; xinitial; newdistpara; wel09; wel12; weloff]
-		CSV.write("$OUTPUT/data/bs_welfare_$(vint).csv", result_w)
+		CSV.write("$OUTPUT/bs_welfare_$(vint).csv", result_w)
 	end
 	return b_boot
 end
@@ -106,16 +101,16 @@ Returns bootstrapped data in a dictionary of the same necessary input format.
 """
 function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vector{Int64})
 
-	d = deepcopy(d_in)
+	# Initialize an empty dictionary
+	d = Dict(keys(d_in) .=> repeat([Dict{Symbol,Vector{<:Number}}()],3))
 
-	obs_list = Dict{Symbol,Vector{Symbol}}(:of_09 =>
-		 								   [:p, :obsweight, :numlist, :condition,
-										   	:localint, :popular, :conditiondif])
+	# Each online/offline x year combination doesn't have same set of obs.
+	obs_list = Dict(:of_09 => [:p, :obsweight, :numlist, :condition,
+							   :localint, :popular, :conditiondif])
 	obs_list[:on_09] = [obs_list[:of_09]; :pdif; :basecond]
 	obs_list[:on_12] = [obs_list[:on_09]; :disappear]
 
 	for y in keys(d)
-
 		d[y][:mktsize] = d_in[y][:mktsize][ind]
 		b_first        = d_in[y][:first][ind]
 	    b_cdindex      = d_in[y][:cdindex][ind]
@@ -136,21 +131,17 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 				d[y][:cdid][ind_to] = fill(j, length(ind_to), 1)
 
 				for k in obs_list[y]
-					d[y][k][ind_to] .= d_in[y][ind_from]
+					d[y][k][ind_to] .= d_in[y][k][ind_from]
 				end
 			end
 		else
-			d[y][:cdid] = collect(1:236) # TODO: this commented: bp.cdid[bs_ind]
+			d[y][:cdid] = collect(1:236) # TODO: was commented bp.cdid[bs_ind]
 			for k in obs_list[y]
 				d[y][k] = d_in[y][k][ind]
 			end
 	    end
-
 		d[y][:first]   = b_start
 		d[y][:cdindex] = b_end
-
-		d[y][:N] = length(d[y][:p])
-		d[y][:M] = length(d[y][:first])
 	end
 	return d
 end

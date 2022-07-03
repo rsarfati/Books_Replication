@@ -73,7 +73,7 @@ function estimate_model(; # Data specification
 	# Simply evaluate model at θ_init & return!
 	if eval_only
     	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09],
-				   data[:of_09]; parallel = parallel, allout = true)
+				   data[:of_09]; parallel = parallel)
 	end
 
 	# Extract parameter information
@@ -85,7 +85,7 @@ function estimate_model(; # Data specification
  	θ_ind = Dict(θ_sym .=> 1:N_θ)
 
 	# Input check: cannot fix parameters which are not listed in θ_init
-	for θ_i in [keys(θ_fix); keys(θ_lb); keys(θ_ub)]
+	for θ_i in vcat(keys(θ_fix), keys(θ_lb), keys(θ_ub))
  		@assert θ_i ∈ θ_sym "Input error: fixed/bounded parameter $θ_i unknown."
  	end
 
@@ -114,8 +114,8 @@ function estimate_model(; # Data specification
 
 	# Save output (writing CSV for legacy compatibility)
 	if write_ouput
-		@save     "$OUTPUT/data/estimation_results_$(vint).jld2" θ, llh
-		CSV.write("$OUTPUT/data/estimation_results_$(vint).csv", Tables.table(θ))
+		@save     "$OUTPUT/estimation_results_$(vint).jld2" θ, llh
+		CSV.write("$OUTPUT/estimation_results_$(vint).csv", Tables.table(θ))
 	end
 	return θ, llh
 end

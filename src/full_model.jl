@@ -22,7 +22,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
     #        alpha-1 β γishape  γimean09 γimean12  eta-1 r
     #        olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
-
     βσ4 = [ distpara0[1:5];
             x0[1];
             x0[2]/(1+x0[1]);

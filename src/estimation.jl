@@ -35,9 +35,9 @@ specified by user.
 """
 function estimate_model(; # Data specification
 						  data::Dict = Dict(),
-						  distpara0::Vector{Float64} = Vector{Float64}(),
+						  distpara0::Vector{T} = Vector{Float64}(),
 						  # Parameter specification
- 					  	  θ_init::OrderedDict{Symbol,Float64} = OrderedDict(
+ 					  	  θ_init::OrderedDict{Symbol,T} = OrderedDict(
 							#=1=#	:α          	=> 14.771,  #1  α
 							#=2=#	:Δ_p_out    	=> -2.4895, #2  Δ_p_out
 							#=3=#	:γ_ns_shape 	=> 1.0,     #3  γ_ns_shape *** FIXED
@@ -57,23 +57,23 @@ function estimate_model(; # Data specification
 							#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
 							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
 							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
-							#=20=#	:βlocal         => 0.011111), #20 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
-						  θ_fix::OrderedDict{Symbol,Float64} = OrderedDict(:r => Float64(0.5), :γ_ns_shape => Float64(1.0)),
-						  θ_lb  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
-						  θ_ub  = Dict(:R_q => 1.),
+							#=20=#	:βlocal        =>0.011111), #20 βlocal (=γ_ns_of_09_loc / γ_ns_of_09_std)
+						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
+						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
+						  θ_ub::Dict{Symbol,T}  = Dict(:R_q => 1.),
 						  # Options
 						  vint::String    = "", write_output::Bool = true,
 						  eval_only::Bool = false,
-						  parallel::Bool  = true)
+						  parallel::Bool  = true) where T<:Float64
 
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
-	@show typeof(θ_fix)
+
 	# Simply evaluate likelihood at θ_init & return
 	if eval_only
-    	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09],
-				   data[:of_09]; parallel = parallel)
+    	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
+				   parallel = parallel)
 	end
 
 	# Extract information on parameters
@@ -95,17 +95,15 @@ function estimate_model(; # Data specification
 	free_ind = deleteat!(collect(1:N_θ), fix_ind)
 
 	# Build function closures for optimizer
-	build_θ(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
-	obj_fun(x::Vector{Float64}) = obj(build_θ(x), distpara0, data[:on_12],
-									  data[:on_09], data[:of_09];
-									  parallel = parallel)[1]
+	θ_full(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
+	function obj_fun(x::Vector{Float64})
+		@show θ_full(x)
+		out = obj(build_θ(x, fix_val, free_ind, fix_ind),#θ_full(x),
+				distpara0, data[:on_12],
+				  data[:on_09], data[:of_09]; parallel = parallel)
+		return out[1]
+	end
 
-    @show typeof(θ_val)
-
-	@show typeof.([fix_val, free_ind, fix_ind])
-	@show typeof(θ_val[free_ind])
-	@show build_θ(θ_val[free_ind])
-	@show obj_fun(θ_val[free_ind])
 	# Construct vectors of lower and upper bounds for optimization routine
 	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
 	for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
@@ -113,14 +111,14 @@ function estimate_model(; # Data specification
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	res = optimize(obj_fun, θ_val[free_ind], lb[free_ind], ub[free_ind],
-				   Optim.Options(f_calls_limit=Int(1e5), iterations=Int(1e5),
-		     	   show_trace = true, store_trace = true))
-	θ, llh = build_θ(res.minimizer), res.minimum
+	res = optimize(obj_fun, lb[free_ind], ub[free_ind], θ_val[free_ind], Fminbox(),
+				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
+		     	   show_trace = true, store_trace = true) )
+	θ, llh = θ_full(res.minimizer), res.minimum
 
 	# Save output (writing to CSV for legacy compatibility)
 	if write_ouput
-		@save     "$OUTPUT/estimation_results_$(vint).jld2" θ, llh
+		@save     "$OUTPUT/estimation_results_$(vint).jld2" θ llh
 		CSV.write("$OUTPUT/estimation_results_$(vint).csv", Tables.table(θ))
 	end
 	return θ, llh
@@ -160,7 +158,7 @@ function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
 			print(err)
 			throw(err)
 		end
-		Inf
+		Inf, Inf, Inf
 	end
 	return out
 end

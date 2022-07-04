@@ -11,7 +11,6 @@ vecI64(x::Any) = Vector{Int64}(vec(x))
 vecC64(x::Any) = Vector{ComplexF64}(vec(x))
 
 function vals(d::Dict{Symbol,Float64})
-	@show "made it2", T
 	return [d[x] for x in keys(d)]::Vector{Float64}
 end
 vals(d::OrderedDict{Symbol,T}) where T<:Number = [d[x] for x in keys(d)]::Vector{T}
@@ -137,7 +136,8 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
                            WFcal::Bool = false) where {S<:Int64, T<:Float64,
                                                        U<:Vector{S}, V<:Vector{T}}
 
-    @unpack numlist, d_first, p, pdif = d
+    @unpack numlist, d_first, p = d
+	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
     γ0     = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))

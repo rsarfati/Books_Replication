@@ -98,8 +98,7 @@ function estimate_model(; # Data specification
 	θ_full(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
 	function obj_fun(x::Vector{Float64})
 		@show θ_full(x)
-		out = obj(build_θ(x, fix_val, free_ind, fix_ind),#θ_full(x),
-				distpara0, data[:on_12],
+		out = obj(θ_full(x), distpara0, data[:on_12],
 				  data[:on_09], data[:of_09]; parallel = parallel)
 		return out[1]
 	end

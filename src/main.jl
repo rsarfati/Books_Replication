@@ -22,8 +22,8 @@ N_bs    = 1 # No. bootstrap iterations
 parallel   = false	# Distribute work across multiple processes?
 run_tests  = false	# Test code matches MATLAB (for developers)
 eval_only  = false	# Do you want to simply fetch the likelihood of a set of parameters?
-estimation = true	# Estimate model
-bootstrap  = false	# Run bootstrap for SEs?
+estimation = false	# Estimate model
+bootstrap  = true	# Run bootstrap for SEs?
 run_mode   = :OPTIM	# Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers

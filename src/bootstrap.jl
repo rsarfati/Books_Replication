@@ -66,12 +66,12 @@ function run_bootstrap(; data::Dict = Dict(),
 	# Run bootstrap! (TODO: parallelization option)
     for i=1:N_bs
 		println(VERBOSE, "Bootstrap iteration: $i")
-		θ_i = estimate_model(data = index_data(data, bootindex[i,:]),
-					   		 distpara0 = distpara0,
-							 θ_init = OrderedDict(keys(θ_init) .=> θ_start[i,:]),
-					    	 θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
-					   	 	 eval_only = eval_only, parallel = parallel,
-					    	 write_output = false)[1]
+		θ_i, _ = estimate_model(data = index_data(data, bootindex[i,:]),
+					   		    distpara0 = distpara0,
+							    θ_init = OrderedDict(keys(θ_init) .=> θ_start[i,:]),
+					    	    θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
+					   	 	    eval_only = eval_only, parallel = parallel,
+					    	    write_output = false)
 		if !eval_only
 			CSV.write("$OUTPUT/bs_estimates_$(vint)_run=$i.csv", table([i; θ_i]))
 		end
@@ -103,7 +103,9 @@ Returns bootstrapped data in a dictionary of the same necessary input format.
 function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vector{Int64})
 
 	# Initialize an empty dictionary
-	d = Dict(keys(d_in) .=> repeat([Dict{Symbol,Vector{<:Number}}()],3))
+	d = Dict(keys(d_in) .=> [Dict{Symbol,Vector{<:Number}}(),
+							 Dict{Symbol,Vector{<:Number}}(),
+							 Dict{Symbol,Vector{<:Number}}()])
 
 	# Each online/offline x year combination doesn't have same set of obs.
 	obs_list = Dict(:of_09 => [:p, :obs_w, :numlist, :condition,
@@ -111,7 +113,7 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 	obs_list[:on_09] = [obs_list[:of_09]; :pdif; :basecond]
 	obs_list[:on_12] = [obs_list[:on_09]; :disappear]
 
-	for y in keys(d)
+	for y in keys(d_in)
 		d[y][:mktsize] = d_in[y][:mktsize][ind]
 		b_first        = d_in[y][:d_first][ind]
 	    b_cdindex      = d_in[y][:cdindex][ind]
@@ -121,7 +123,7 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 		b_start = [1; b_end[1:end-1] .+ 1]
 
 		for k in [obs_list[y]; :cdid]
-			d[y][k] = zeros(mktsize)
+			d[y][k] = zeros(eltype(d_in[y][k]), mktsize)
 		end
 
 		if y ∈ [:on_09, :on_12]
@@ -129,8 +131,7 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 				ind_to   = b_start[j]:b_end[j]
 				ind_from = b_first[j]:b_cdindex[j]
 
-				d[y][:cdid][ind_to] = fill(j, length(ind_to), 1)
-
+				d[y][:cdid][ind_to] = fill(j, length(ind_to))
 				for k in obs_list[y]
 					d[y][k][ind_to] .= d_in[y][k][ind_from]
 				end
@@ -141,8 +142,8 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 				d[y][k] = d_in[y][k][ind]
 			end
 	    end
-		d[y][:first]   = b_start
-		d[y][:cdindex] = b_end
+		d[y][:d_first] = deepcopy(b_start)
+		d[y][:cdindex] = deepcopy(b_end)
 	end
 	return d
 end

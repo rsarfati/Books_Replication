@@ -1,4 +1,4 @@
-using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
+using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, ForwardDiff
 using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
 using Printf, Random, Roots, SparseArrays, Statistics, UnPack
 println("Packages loaded!")
@@ -8,11 +8,10 @@ global path   = dirname(@__FILE__)
 global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
 
-!isdir("$path/../output/")        && run(`mkdir $path/../output/`)
-!isdir("$OUTPUT/")  && run(`mkdir $OUTPUT/`)
-!isdir("$OUTPUT/plots")  && run(`mkdir $OUTPUT/plots/`)
-!isdir("$OUTPUT/tables") && run(`mkdir $OUTPUT/tables/`)
-!isdir("$OUTPUT/data")   && run(`mkdir $OUTPUT/data/`)
+!isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
+!isdir("$OUTPUT/")  		&& run(`mkdir $OUTPUT/`)
+!isdir("$OUTPUT/../plots")  && run(`mkdir $OUTPUT/../plots/`)
+!isdir("$OUTPUT/../tables") && run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
 vint    = "2022-07-04"
@@ -20,18 +19,20 @@ N_procs = 2 # No. workers to request from cluster
 N_bs    = 50 # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel   = true	# Distribute work across multiple processes?
+parallel   = false	# Distribute work across multiple processes?a
 run_tests  = false	# Test code matches MATLAB (for developers)
 eval_only  = false	# Do you want to simply fetch the likelihood of a set of parameters?
-estimation = false	# Estimate model
-bootstrap  = true	# Run bootstrap for SEs?
+estimation = true	# Estimate model
+bootstrap  = false	# Run bootstrap for SEs?
 run_mode   = :OPTIM	# Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers
 if parallel
-	println("(1/2) Adding processes...")
+	println("(Removing existing worker processes)")
+	rmprocs(workers())
+	println("(1/2) Adding workers processes...")
     addprocs(N_procs)
-    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
+    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO, ForwardDiff
     @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
     @everywhere using Printf, Random, Roots, SparseArrays, Statistics, UnPack
 

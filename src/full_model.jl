@@ -15,7 +15,9 @@ Based on the file <fullmodelllhWFAug22newtest2015.m>.
 function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     γ0vec = [quantile.(Gamma(0.5, 20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
                     δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
-                    WFcal = false, rounderr = 0.025, parallel = true,
+                    rounderr = 0.025,
+                    # Options
+                    WFcal = false, parallel = true,
                     VERBOSE = true) where {V <: Vector{Float64},
                                            D <: Dict{Symbol,Vector{<:Number}}}
 
@@ -49,12 +51,8 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     # Define length constants
     Y    = length(temp1)
-    N_09 = length(d_on_09[:p])
-    N_12 = length(d_on_12[:p])
-    N_bp = length(bp[:p])
-    M_09 = length(d_on_09[:d_first])
-    M_12 = length(d_on_12[:d_first])
-    M_bp = length(bp[:d_first])
+    N_09, N_12, N_bp = length.([x[:p] for x in [d_on_09, d_on_12, bp]])
+    M_09, M_12, M_bp = length.([x[:d_first] for x in [d_on_09, d_on_12, bp]])
 
     # Extract variables used with high frequncy
     cdindex_09 = d_on_09[:cdindex]
@@ -203,8 +201,8 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     println(VERBOSE, "Finished optimizing! (3/3)")
 
-    out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12];
-                               λ1; λ2; βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
+    out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
+                                βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
                                bp, N_bp, M_bp, basellhb, rounderr;
                                demandcal = false, WFcal = WFcal)
 

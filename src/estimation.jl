@@ -57,7 +57,7 @@ function estimate_model(; # Data specification
 							#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
 							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
 							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
-							#=20=#	:βlocal        =>0.011111), #20 βlocal (=γ_ns_of_09_loc / γ_ns_of_09_std)
+							#=20=#	:βlocal       => 0.011111), #20 βlocal (=γ_ns_of_09_loc / γ_ns_of_09_std)
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict(:R_q => 1.),
@@ -129,16 +129,9 @@ obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
 	parallel::Bool=true) where {V<:Vector{Float64}, W<:Vector{Int64},
   						        D<:Dict{Symbol,Vector{<:Number}}}
 ```
-Evaluates the model and returns the likelihood. If `allout` = false, function
-will return the likelihood, alone.
-
-# Note on Errors
-If an error is thrown, first check if it's a domain error (e.g. trying to take
-log/sqrt of negative number). Said error implies combination of parameters is
-infeasible (assuming model), so one can conclude `θ` is "infinitely unlikely."
-
-If *not* a domain error, something is wrong with the code! Throw it to the
-console and let the user investigate the cause. :)
+Evaluates model and returns likelihood. Catches errors implying combination
+of parameters is infeasible under model (e.g. domain error arising from taking
+log/sqrt of negative number), and returns "infinitely unlikely."
 """
 function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
 			 parallel = true) where {V<:Vector{Float64}, W<:Vector{Int64},

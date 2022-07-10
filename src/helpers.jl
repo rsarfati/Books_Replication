@@ -10,12 +10,12 @@ vecF64(x::Any) = Vector{Float64}(vec(x))
 vecI64(x::Any) = Vector{Int64}(vec(x))
 vecC64(x::Any) = Vector{ComplexF64}(vec(x))
 
-function vals(d::Dict{Symbol,<:Number})
-	return [d[x] for x in keys(d)]::Vector{<:Number}
+function vals(d::Dict{Symbol,Float64})
+	return [d[x] for x in keys(d)]::Vector{Float64}
 end
 vals(d::OrderedDict{Symbol,T}) where T<:Number = [d[x] for x in keys(d)]::Vector{T}
 
-function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T<:Real}
+function ndgrid(v1::AbstractVector{T}, v2::AbstractVector{T}) where {T<:Float64}
   m, n = length(v1), length(v2)
   v1   = reshape(v1, m, 1)
   v2   = reshape(v2, 1, n)
@@ -24,8 +24,8 @@ end
 
 """
 ```
-build_θ(θ_free_val::Vector{<:S}, θ_fix_val::Vector{<:S}, free_ind::Vector{T},
-				 fix_ind::Vector{T}) where {S<:Number, T<:Int64}
+build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T},
+				 fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
 ```
 This reconstitutes the full parameter vector by slotting the free and fixed
 parameters back into their original indices.
@@ -36,10 +36,10 @@ for performance: depending on the optimization algorithm, if the optimizer
 erroneously believes the space to optimize over is +`N_fix` dimensions larger,
 efficiency of exploration may sharply decline.
 """
-function build_θ(θ_free_v::Vector{<:S}, θ_fix_v::Vector{<:S}, free_i::Vector{T},
-				 fix_i::Vector{T}) where {S<:Number, T<:Int64}
+function build_θ(θ_free_v::Vector{S}, θ_fix_v::Vector{S}, free_i::Vector{T},
+				 fix_i::Vector{T}) where {S<:Float64, T<:Int64}
 	N_θ = length(fix_i) + length(free_i)
-	θ   = zeros(Real, N_θ)
+	θ   = zeros(N_θ)
 	θ[free_i] .= θ_free_v
 	θ[fix_i]  .= θ_fix_v
 	return θ
@@ -48,16 +48,15 @@ end
 """
 ```
 demand_shopper(α::T, β::T, p::V, cdid::V, obs_w::V;
-               testing::Bool=false) where {T<:Number, V<:Vector{T}}
+               testing::Bool=false) where {T<:Float64, V<:Vector{Float64}}
 ```
 Solve for the demand of shoppers, along with 1st & 2nd order derivatives.
 
 Note utility for outside good -> price that is the lowest (leave condition out).
 """
-function demand_shopper(α::Number, β::Number, p::Vector{<:Number}, cdid::Vector{Int64},
-					    obs_w::Vector{<:Number};
-                        β_1::T = 0.0, cond::Vector{<:Number} = zeros(Real,length(cdid)),
-						allout::Bool = false) where {T<:Number}
+function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
+                        β_1::T = 0.0, cond::V = V(undef, length(cdid)),
+						allout::Bool = false) where {T<:Float64, V<:Vector{T}}
 	N    = length(cdid)
     expU = exp.(p .* -α .+ cond .* β_1)
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
@@ -79,13 +78,14 @@ end
 """
 ```
 solve_γ(p_in::V, D0::V, dD0::V, d2D0::V, δ::T, η::T, γ0::V, r::T, ϵ::T;
-        allout = false) where {T<:Number, V<:Vector{T}}
+        allout = false) where {T<:Float64, V<:Vector{Float64}}
 ```
 Wrapper for solving for the γ rationalizing price choice.
 """
-function solve_γ(p::Vector{<:Number}, D0::Vector{<:Number}, dD0::Vector{<:Number}, d2D0::Vector{<:Number},
-                 δ::Number, η::Number, γ0::Vector{<:Number}, r::Number, ϵ::Number;
-                 allout= false)
+function solve_γ(p::Union{U,V}, D0::Union{U,V}, dD0::Union{U,V}, d2D0::Union{U,V},
+                 δ::T, η::T, γ0::Union{U,V}, r::T, ϵ::T;
+                 allout= false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
+
     Dm   = δ .* (p .^ (-η))
     dDm  = δ .* (-η) .* (p .^ (-η-1))
     d2Dm = δ .* (η) .* (η+1) .* (p .^ (-η-2))
@@ -104,13 +104,13 @@ end
 """
 ```
 solve_γ(Dm::V, D0::Union{V,T}, dDm::V, dD0::Union{V,T}, γ0::Union{V,T}, p::Vector{T},
-        r::T; allout::Bool = false) where {T<:Number, V<:Vector{<:T}}
+        r::T; allout::Bool = false) where {T<:Float64, V<:Vector{Float64}}
 ```
 Solve for Poisson rate γ rationalizing a store i's title k price choice. [p 37]
 """
-function solve_γ(Dm::Union{Number,Vector{<:Number}}, D0::Union{Number,Vector{<:Number}}, dDm::Union{Number,Vector{<:Number}},
-                 dD0::Union{Number,Vector{<:Number}}, γ0::Union{Number,Vector{<:Number}}, p::Union{Number,Vector{<:Number}}, r::T;
-                 allout = false) where {T<:Number}
+function solve_γ(Dm::Union{T,U,V}, D0::Union{T,U,V}, dDm::Union{T,U,V},
+                 dD0::Union{T,U,V}, γ0::Union{T,U,V}, p::Union{T,U,V}, r::T;
+                 allout = false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
     A  = Dm .^ 2.0
     B  = r .* ((p .* dDm) .+ Dm) .+ (2.0 .* Dm .* γ0 .* D0)
@@ -130,11 +130,11 @@ obscalnewtest2015(βσ3, data, basellh, demandcal, p0, ϵ, WFcal)
 Corresponds to Masao/obscalnewtest2015.m. Works!
 """
 function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
-                           N::S, M::S, basellh::Vector{<:Number}, ϵ::T;
+                           N::S, M::S, basellh::V, ϵ::T;
   						   demandcal::Bool = false,
-                           disap::Vector{<:Number} = Vector{Number}(),
-                           WFcal::Bool = false) where {S<:Int64, T<:Number,
-                                                       U<:Vector{<:S}, V<:Vector{<:T}}
+                           disap::V = Vector{Float64}(),
+                           WFcal::Bool = false) where {S<:Int64, T<:Float64,
+                                                       U<:Vector{S}, V<:Vector{T}}
 
     @unpack numlist, d_first, p = d
 	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
@@ -230,9 +230,9 @@ welfaresimple(γ1, γ2, γscale, γ0, olppost, Dm, D0, pdif, data, scalarparas)
 Corresponds to /Masao/welfaresimple.m. Works!
 """
 function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0::V,
-                       pdif::V, p::V, N::S, M::S, cdindex::Vector{<:S},
-                       d_first::Vector{<:S}, scalarparas::V;
-					   N_draw = 10000) where {S<:Int64, V<:Vector{<:Number}}
+                       pdif::V, p::V, N::S, M::S, cdindex::Vector{S},
+                       d_first::Vector{S}, scalarparas::V;
+					   N_draw = 10000) where {S<:Int64, V<:Vector{Float64}}
     α = scalarparas[1]
     β = scalarparas[2]
     η = scalarparas[3]
@@ -254,9 +254,9 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
     for k = 1:M
         ind_k    = d_first[k]:cdindex[k]
 
-        best_p   = Vector{<:Number}(undef, N_draw)
-        best_ind = Vector{<:Number}(undef, N_draw)
-        β_p      = Vector{<:Number}(undef, N_draw)
+        best_p   = Vector{Float64}(undef, N_draw)
+        best_ind = Vector{Float64}(undef, N_draw)
+        β_p      = Vector{Float64}(undef, N_draw)
 
         gumb_draw  = rand(Gumbel(0,1), mktsize[k] + 1, N_draw)
 

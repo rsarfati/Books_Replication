@@ -95,8 +95,8 @@ function estimate_model(; # Data specification
 	free_ind = deleteat!(collect(1:N_θ), fix_ind)
 
 	# Build function closures for optimizer
-	θ_full(x::Vector{<:Number}) = build_θ(x, fix_val, free_ind, fix_ind)
-	function obj_fun(x::Vector{<:Number})
+	θ_full(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
+	function obj_fun(x::Vector{Float64})
 		@show θ_full(x)
 		out = obj(θ_full(x), distpara0, data[:on_12],
 				  data[:on_09], data[:of_09]; parallel = parallel)
@@ -110,12 +110,8 @@ function estimate_model(; # Data specification
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	g! = ForwardDiff.gradient(obj_fun, θ_val[free_ind])
-	od = OnceDifferentiable(obj_fun, g!, θ_val[free_ind])
-
-	res = optimize(od, θ_val[free_ind], lb[free_ind], ub[free_ind],
-				   Fminbox{GradientDescent}(),
-				   Optim.Options(f_calls_limit = Int(1e5),# iterations = Int(1e5),
+	res = optimize(obj_fun, lb[free_ind], ub[free_ind], θ_val[free_ind], Fminbox(),
+				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum
 
@@ -144,8 +140,8 @@ infeasible (assuming model), so one can conclude `θ` is "infinitely unlikely."
 If *not* a domain error, something is wrong with the code! Throw it to the
 console and let the user investigate the cause. :)
 """
-function obj(θ::Vector{<:Number}, distpara0::Vector{<:Number}, data12::D, data09::D, bp::D;
-			 parallel = true) where {W<:Vector{Int64},
+function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
+			 parallel = true) where {V<:Vector{Float64}, W<:Vector{Int64},
 									 D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
 		full_model(θ, distpara0, data12, data09, bp; parallel = parallel)
@@ -154,7 +150,7 @@ function obj(θ::Vector{<:Number}, distpara0::Vector{<:Number}, data12::D, data0
 			println("Domain error in optimization!")
 			print(err)
 		elseif typeof(err)<:InterruptException
-			println("To the user spamming CTRL-C/D: I hear your call.")
+			println("To user spamming CTRL-C/D: I hear your call.")
 			throw(err)
 		else
 			println("Mystery flavor!")

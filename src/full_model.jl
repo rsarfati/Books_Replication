@@ -12,11 +12,11 @@ and offline 2009 data (bp).
 
 Based on the file <fullmodelllhWFAug22newtest2015.m>.
 """
-function full_model(x0::Vector{<:Number}, distpara0::Vector{<:Number}, d_on_12::D, d_on_09::D, bp::D;
+function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     γ0vec = [quantile.(Gamma(0.5, 20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
                     δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
                     WFcal = false, rounderr = 0.025, parallel = true,
-                    VERBOSE = true) where {V <: Vector{<:Number},
+                    VERBOSE = true) where {V <: Vector{Float64},
                                            D <: Dict{Symbol,Vector{<:Number}}}
 
     # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
@@ -66,11 +66,11 @@ function full_model(x0::Vector{<:Number}, distpara0::Vector{<:Number}, d_on_12::
     disap      = d_on_12[:disappear]
 
     # Calculation for 09 data
-    ltot_09, llhβ_09 = zeros(Real,M_09), zeros(Real,M_09, Y)
+    ltot_09, llhβ_09 = zeros(M_09), zeros(M_09, Y)
     basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
     ## Calculation for 2012 data
-    ltot_12, llhβ_12 = zeros(Real,M_12), zeros(Real,M_12, Y)
+    ltot_12, llhβ_12 = zeros(M_12), zeros(M_12, Y)
     basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
 
     ## Calculation for 09 offline data
@@ -215,7 +215,7 @@ function full_model(x0::Vector{<:Number}, distpara0::Vector{<:Number}, d_on_12::
     D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
     Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
 
-    WF_bp = zeros(Real,N_bp, 3)
+    WF_bp = zeros(N_bp, 3)
     WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
     WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
     WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
@@ -231,14 +231,14 @@ function full_model(x0::Vector{<:Number}, distpara0::Vector{<:Number}, d_on_12::
 
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
-        WF_09       = zeros(Real,N_09, 3)
-        WF_12       = zeros(Real,N_12, 3)
+        WF_09       = zeros(N_09, 3)
+        WF_12       = zeros(N_12, 3)
 
-        AveWF_09    = zeros(Real,M_09, 3)
-        AveWF_12    = zeros(Real,M_12, 3)
+        AveWF_09    = zeros(M_09, 3)
+        AveWF_12    = zeros(M_12, 3)
 
-        BestVals_09 = zeros(Real,N_09,13)
-        BestVals_12 = zeros(Real,N_12,13)
+        BestVals_09 = zeros(N_09,13)
+        BestVals_12 = zeros(N_12,13)
 
         for k = 1:M_09
             RPpost = llhadj_09[k,:]' .* vec(imp_09) ./ exp.(ltot_09[k] - maxtemp_09[k])

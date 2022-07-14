@@ -116,7 +116,7 @@ function estimate_model(; # Data specification
 	θ, llh = θ_full(res.minimizer), res.minimum
 
 	# Save output (writing to CSV for legacy compatibility)
-	if write_ouput
+	if write_output
 		@save     "$OUTPUT/estimation_results_$(vint).jld2" θ llh
 		CSV.write("$OUTPUT/estimation_results_$(vint).csv", Tables.table(θ))
 	end

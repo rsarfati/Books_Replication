@@ -13,7 +13,7 @@ and offline 2009 data (bp).
 Based on the file <fullmodelllhWFAug22newtest2015.m>.
 """
 function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
-                    γ0vec = [quantile.(Gamma(0.5, 20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
+                    γ0vec = [quantile.(Gamma(0.5,20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
                     δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
                     rounderr = 0.025,
                     # Options
@@ -50,7 +50,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     γ0_δ_vec     = hcat(vec(temp1), vec(temp2))
 
     # Define length constants
-    Y    = length(temp1)
+    Y = length(temp1)
     N_09, N_12, N_bp = length.([x[:p] for x in [d_on_09, d_on_12, bp]])
     M_09, M_12, M_bp = length.([x[:d_first] for x in [d_on_09, d_on_12, bp]])
 

@@ -14,16 +14,16 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2022-07-10"
-N_procs = 200	# No. workers to request from cluster
+vint    = "2022-07-14"
+N_procs = 100	# No. workers to request from cluster
 N_bs    = 50 	# No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
 parallel   = true	# Distribute work across multiple processes?
 run_tests  = false	# Test code matches MATLAB (for developers)
 eval_only  = false	# Do you want to simply fetch the likelihood of a set of parameters?
-estimation = false	# Estimate model
-bootstrap  = true	# Run bootstrap for SEs?
+estimation = true	# Estimate model
+bootstrap  = false	# Run bootstrap for SEs?
 run_mode   = :OPTIM	# Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers

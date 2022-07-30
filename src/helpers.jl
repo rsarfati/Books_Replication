@@ -214,7 +214,8 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
     # Disappear likelihood
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
     olppost = vec(olp .* lip_ol ./ liptemp)
-    lip     = log.(Complex.(liptemp))
+	liptemp[liptemp .< 0.0] .= 0.0
+    lip     = log.(liptemp)
 
 	pi_v, CSns, CSs = WFcal ? welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm,
                                 D0, pdif, p, N, M, d[:cdindex], d_first,

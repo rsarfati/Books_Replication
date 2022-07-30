@@ -214,7 +214,7 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
     # Disappear likelihood
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
     olppost = vec(olp .* lip_ol ./ liptemp)
-    lip     = log.(liptemp)
+    lip     = log.(Complex.(liptemp))
 
 	pi_v, CSns, CSs = WFcal ? welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm,
                                 D0, pdif, p, N, M, d[:cdindex], d_first,
@@ -299,18 +299,18 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
     b_boot = zeros(N_bs, 25)
 
     for i = 1:N_bs
-        xx  =  Vector(boot[i, :])      # 1:14 -> boot_out[:, 2:15]
-        est = [Vector(distpara[i, :]); # 1:6  -> boot_out[:, 16:21]
-               xx[1];                 # 7
-               xx[2] / (1 + xx[1]);   # 8
-               xx[3];                 # 9
-               xx[4] * 10 * xx[7] / 10 / 9.5 ^ (-xx[6] - 1); # 10
-               xx[5] * 10 * xx[7] / 10 / 8.0 ^ (-xx[6] - 1); # 11
-               xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];      # 12:17
-               0;         # 18
-               0;         # 19
-               xx[12:13]; # 20:21
-               xx[14]]    # 22
+        xx  =  Vector(boot[i, :])		# 1:14 -> boot_out[:, 2:15]
+        est = [Vector(distpara[i, :]);	# 1:6  -> boot_out[:, 16:21]
+               xx[1];					# 7
+               xx[2] / (1 + xx[1]);		# 8
+               xx[3];					# 9
+               xx[4] * 10 * xx[7] / 10 / 9.5 ^ (-xx[6] - 1);	# 10
+               xx[5] * 10 * xx[7] / 10 / 8.0 ^ (-xx[6] - 1);	# 11
+               xx[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];			# 12:17
+               0;						# 18
+               0;						# 19
+               xx[12:13];				# 20:21
+               xx[14]]					# 22
 
         b_boot[i, 1] = est[1]  # γ_s_shape
         b_boot[i, 2] = est[2]  # γ_s_on_09
@@ -338,6 +338,7 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
         b_boot[i,24] = est[20] .* est[21] # μ_R
         b_boot[i,25] = 1.0 - est[22]      # R_q
     end
+	# TODO: These statistics are computed but not returned anywhere
     betasigma_std_boot = [     std(b_boot[:,j])        for j=1:25]
     betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
     betasigma_boot_5   = [quantile(b_boot[:,j], 0.05)  for j=1:25]
@@ -351,7 +352,6 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
     boot_welfare = unique(boot_welfare)
     boot_welfare = boot_welfare[:, (end-8):end]
 
-    # TODO: find every use of quantile and verify it wasn't meant to be CDF
     welfare_std_boot = [     std(boot_welfare[:,j])        for j=1:9]
     welfare_boot_25  = [quantile(boot_welfare[:,j], 0.025) for j=1:9]
     welfare_boot_5   = [quantile(boot_welfare[:,j], 0.05)  for j=1:9]

@@ -14,7 +14,7 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2022-07-14"
+vint    = "2022-07-29"
 N_procs = 100	# No. workers to request from cluster
 N_bs    = 50 	# No. bootstrap iterations
 

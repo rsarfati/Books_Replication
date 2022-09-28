@@ -25,7 +25,7 @@ end
 """
 ```
 build_θ(θ_free_val::Vector{S}, θ_fix_val::Vector{S}, free_ind::Vector{T},
-				 fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
+		fix_ind::Vector{T}) where {S<:Float64, T<:Int64}
 ```
 This reconstitutes the full parameter vector by slotting the free and fixed
 parameters back into their original indices.
@@ -84,7 +84,7 @@ Wrapper for solving for the γ rationalizing price choice.
 """
 function solve_γ(p::Union{U,V}, D0::Union{U,V}, dD0::Union{U,V}, d2D0::Union{U,V},
                  δ::T, η::T, γ0::Union{U,V}, r::T, ϵ::T;
-                 allout= false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
+                 allout=false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
     Dm   = δ .* (p .^ (-η))
     dDm  = δ .* (-η) .* (p .^ (-η-1))
@@ -149,7 +149,7 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
     βcond  = βσ3[10]
     olp    = βσ3[13]
     δ      = βσ3[14]
-    #η_c     = βσ3[end] # non-shopper condition elasticity of demand
+    #η_c   = βσ3[end] # non-shopper condition elasticity of demand
     γscale = βσ3[5] ./ m .* (numlist .^ βσ3[9] ./ mean(numlist .^ βσ3[9])) .*
                    exp.(βσ3[12] .* d[:localint])
     nat_disap = βσ3[16]
@@ -214,12 +214,13 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
     # Disappear likelihood
     liptemp = (1 - olp) .* lip_o + olp .* lip_ol
     olppost = vec(olp .* lip_ol ./ liptemp)
-	liptemp[liptemp .< 0.0] .= 0.0
-    lip     = log.(liptemp)
 
-	pi_v, CSns, CSs = WFcal ? welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm,
-                                D0, pdif, p, N, M, d[:cdindex], d_first,
-								vcat(α, β, η, r)) : zeros(N), zeros(N), zeros(N)
+	liptemp[liptemp .< 0.0] .= 0.0
+    lip = log.(liptemp)
+
+	pi_v, CSns, CSs = WFcal ? welfaresimple(γ1, γ2, γscale .* m, γ0, olppost,
+                                 Dm, D0, pdif, p, N, M, d[:cdindex], d_first,
+								 [α; β; η; r]) : zeros(N), zeros(N), zeros(N)
 
     return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs]
 end
@@ -339,6 +340,7 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
         b_boot[i,24] = est[20] .* est[21] # μ_R
         b_boot[i,25] = 1.0 - est[22]      # R_q
     end
+	
 	# TODO: These statistics are computed but not returned anywhere
     betasigma_std_boot = [     std(b_boot[:,j])        for j=1:25]
     betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]
@@ -348,7 +350,7 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
     betasigma_boot_95  = [quantile(b_boot[:,j], 0.95)  for j=1:25]
     betasigma_boot_975 = [quantile(b_boot[:,j], 0.975) for j=1:25]
 
-    # Bootstrap Welfare Statistics
+    # Bootstrap welfare statistics
     boot_welfare = CSV.read(boot_out, DataFrame, header=false)
     boot_welfare = unique(boot_welfare)
     boot_welfare = boot_welfare[:, (end-8):end]
@@ -361,7 +363,7 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
     welfare_boot_95  = [quantile(boot_welfare[:,j], 0.95)  for j=1:9]
     welfare_boot_975 = [quantile(boot_welfare[:,j], 0.975) for j=1:9]
 
-    # Column definitions are same as rows in Summary201609.xlsx.
+    # Note: column definitions are same as rows in Summary201609.xlsx
     if write_out
         CSV.write("$OUTPUT/bootstrap_estimates_$(vint).csv",         Tables.table(b_boot))
         CSV.write("$OUTPUT/bootstrap_welfare_estimates_$(vint).csv", boot_welfare)

@@ -57,7 +57,9 @@ function estimate_model(; # Data specification
 							#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
 							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
 							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
-							#=20=#	:βlocal       => 0.011111), #20 βlocal (=γ_ns_of_09_loc / γ_ns_of_09_std)
+							#=20=#	:βlocal			=> 0.01111),#, #20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std)
+							##=21=#	:η_cond		    => 0.2,
+							##=22=#	:α_cond			=> 0.2),
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict(:R_q => 1.),
@@ -97,20 +99,26 @@ function estimate_model(; # Data specification
 	# Build function closures for optimizer
 	θ_full(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
 	function obj_fun(x::Vector{Float64})
-		@show θ_full(x)
+		θ = θ_full(x)
+		@show θ
+		# Parameter is "infinitely unlikely" if out of bounds
+		for l in θ_lb; θ[θ_ind[l[1]]] < l[2] ? return Inf : nothing end
+		for u in θ_ub; θ[θ_ind[u[1]]] > u[2] ? return Inf : nothing end
+
 		out = obj(θ_full(x), distpara0, data[:on_12],
 				  data[:on_09], data[:of_09]; parallel = parallel)
 		return out[1]
 	end
 
 	# Construct vectors of lower and upper bounds for optimization routine
-	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
-	for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
-	for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
+	# lb, ub = repeat.([[-Inf], [Inf]], N_θ)
+	# for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
+	# for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	res = optimize(obj_fun, lb[free_ind], ub[free_ind], θ_val[free_ind], Fminbox(),
+	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
+				   θ_val[free_ind], #Fminbox(),
 				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum
@@ -143,7 +151,7 @@ function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
 			println("Domain error in optimization!")
 			print(err)
 		elseif typeof(err)<:InterruptException
-			println("To user spamming CTRL-C/D: I hear your call.")
+			println("\n... To the user spamming CTRL-C/D: I hear your call.")
 			throw(err)
 		else
 			println("Mystery flavor!")

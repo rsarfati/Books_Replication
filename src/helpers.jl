@@ -10,7 +10,7 @@ vecF64(x::Any) = Vector{Float64}(vec(x))
 vecI64(x::Any) = Vector{Int64}(vec(x))
 vecC64(x::Any) = Vector{ComplexF64}(vec(x))
 
-nan_to_0(v) = map(x -> isnan(x) ? zero(x) : x, v)
+nan_to_zero(v) = map(x -> isnan(x) ? zero(x) : x, v)
 
 function vals(d::Dict{Symbol,Float64})
 	return [d[x] for x in keys(d)]::Vector{Float64}

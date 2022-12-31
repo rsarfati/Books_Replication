@@ -186,8 +186,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         if return_all
             return imp_09, imp_12, ltot_09, ltot_12
         end
-        println("ltot_09: ", sum(isnan.(ltot_09)))
-        println("ltot_12: ", sum(isnan.(ltot_12)))
         return -(sum(nan_to_zero(ltot_09)) + sum(nan_to_zero(ltot_12)))
     end
 

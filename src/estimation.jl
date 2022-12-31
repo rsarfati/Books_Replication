@@ -57,9 +57,9 @@ function estimate_model(; # Data specification
 							#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
 							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
 							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
-							#=20=#	:βlocal			=> 0.01111),#, #20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std)
-							##=21=#	:η_cond		    => 0.2,
-							##=22=#	:α_cond			=> 0.2),
+							#=20=#	:βlocal			=> 0.01111, #20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std)
+							#=21=#	:η_c		    => 0.2,
+							#=22=#	:α_c			=> 0.2),
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict(:R_q => 1.),
@@ -100,10 +100,9 @@ function estimate_model(; # Data specification
 	θ_full(x::Vector{Float64}) = build_θ(x, fix_val, free_ind, fix_ind)
 	function obj_fun(x::Vector{Float64})
 		θ = θ_full(x)
-		@show θ
 		# Parameter is "infinitely unlikely" if out of bounds
-		for l in θ_lb; θ[θ_ind[l[1]]] < l[2] ? return Inf : nothing end
-		for u in θ_ub; θ[θ_ind[u[1]]] > u[2] ? return Inf : nothing end
+		for l in θ_lb; if θ[θ_ind[l[1]]] < l[2]; return Inf end end
+		for u in θ_ub; if θ[θ_ind[u[1]]] > u[2]; return Inf end end
 
 		out = obj(θ_full(x), distpara0, data[:on_12],
 				  data[:on_09], data[:of_09]; parallel = parallel)

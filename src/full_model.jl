@@ -51,7 +51,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     # Define length constants
     Y = length(temp1)
-    N_09, N_12, N_bp = length.([x[:p] for x in [d_on_09, d_on_12, bp]])
+    N_09, N_12, N_bp = length.([x[:p]       for x in [d_on_09, d_on_12, bp]])
     M_09, M_12, M_bp = length.([x[:d_first] for x in [d_on_09, d_on_12, bp]])
 
     # Extract variables used with high frequncy

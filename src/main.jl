@@ -14,9 +14,10 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2022-10-04"
-N_procs = 2	 # No. workers to request from cluster
-N_bs    = 10 # No. bootstrap iterations
+vint    = "2022-12-04"
+spec    = :normal 	# Options are :normal, :condition, :cond_list
+N_procs = 2	 		# No. workers to request from cluster
+N_bs    = 10 		# No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
 parallel   = false	# Distribute work across multiple processes?
@@ -34,7 +35,7 @@ if parallel
     @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
     @everywhere using Printf, Random, Roots, SparseArrays, Statistics, UnPack
 
-    @everywhere global path = dirname(@__FILE__)
+    @everywhere global path   = dirname(@__FILE__)
     @everywhere global OUTPUT = "$path/../output/data"
     @everywhere global INPUT  = "$path/../input"
 

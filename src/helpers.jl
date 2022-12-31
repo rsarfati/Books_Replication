@@ -149,10 +149,13 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
     βcond  = βσ3[10]
     olp    = βσ3[13]
     δ      = βσ3[14]
-    #η_c   = βσ3[end] # non-shopper condition elasticity of demand
+
     γscale = βσ3[5] ./ m .* (numlist .^ βσ3[9] ./ mean(numlist .^ βσ3[9])) .*
                    exp.(βσ3[12] .* d[:localint])
     nat_disap = βσ3[16]
+
+	α_c   = βσ3[end]   # shopper condition elasticity of demand
+	η_c   = βσ3[end-1] # non-shopper condition elasticity of demand
 
     # Solve for demand + its 1st & 2nd order derivatives
     D0, dD0, d2D0 = demand_shopper(α, β, pdif .- βcond .* d[:cond_dif] ./ α,
@@ -340,7 +343,7 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
         b_boot[i,24] = est[20] .* est[21] # μ_R
         b_boot[i,25] = 1.0 - est[22]      # R_q
     end
-	
+
 	# TODO: These statistics are computed but not returned anywhere
     betasigma_std_boot = [     std(b_boot[:,j])        for j=1:25]
     betasigma_boot_25  = [quantile(b_boot[:,j], 0.025) for j=1:25]

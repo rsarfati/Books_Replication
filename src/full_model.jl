@@ -218,6 +218,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
     WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
 
+    println(VERBOSE, "f1: $f1, f2: $f2")
     f = f1 + f2
     distpara = [distpara1; distpara2]
 

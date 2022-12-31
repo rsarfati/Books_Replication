@@ -9,18 +9,18 @@ global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
 
 !isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
-!isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
+!isdir("$OUTPUT/")		&& run(`mkdir $OUTPUT/`)
 !isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2022-12-04"
+vint    = "2022-12-31"
 spec    = :normal 	# Options are :normal, :condition, :cond_list
-N_procs = 2	 		# No. workers to request from cluster
-N_bs    = 10 		# No. bootstrap iterations
+N_procs = 100	 	# No. workers to request from cluster
+N_bs    = 50 		# No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel   = false	# Distribute work across multiple processes?
+parallel   = true	# Distribute work across multiple processes?
 run_tests  = false	# Test code matches MATLAB (for developers)
 eval_only  = false	# Are you merely fetching the likelihood of a set of parameters?
 estimation = true	# Estimate model

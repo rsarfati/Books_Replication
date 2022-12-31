@@ -105,19 +105,21 @@ function estimate_model(; # Data specification
 		for u in θ_ub; if θ[θ_ind[u[1]]] > u[2]; return Inf end end
 
 		out = obj(θ_full(x), distpara0, data[:on_12],
-				  data[:on_09], data[:of_09]; parallel = parallel)
+			  data[:on_09], data[:of_09]; parallel = parallel)
+            println(VERBOSE, "θ: $θ")
+            println(VERBOSE, "LLH: $(out[1])")
 		return out[1]
 	end
 
 	# Construct vectors of lower and upper bounds for optimization routine
-	# lb, ub = repeat.([[-Inf], [Inf]], N_θ)
-	# for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
-	# for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
+	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
+	for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
+	for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
-				   θ_val[free_ind], #Fminbox(),
+	res = optimize(obj_fun, lb[free_ind], ub[free_ind],
+				   θ_val[free_ind], Fminbox(),
 				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum

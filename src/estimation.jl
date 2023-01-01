@@ -39,22 +39,22 @@ function estimate_model(; # Data specification
 						  # Parameter specification
  					  	  θ_init::OrderedDict{Symbol,T} = OrderedDict(
 							#=1=#	:α          	=> 14.771,  #1  α
-							#=2=#	:Δ_p_out    	=> -2.4895, #2  Δ_p_out
+							#=2=#	:Δ_p_out    	=> 0.16,#-2.4895, #2  Δ_p_out
 							#=3=#	:γ_ns_shape 	=> 1.0,     #3  γ_ns_shape *** FIXED
 							#=4=#	:γ_ns_on_09 	=> 0.44004, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
 							#=5=#	:γ_ns_on_12 	=> 0.32415, #5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
 							#=6=#	:η          	=> 0.87235, #6  η - 1   *** I am infering there is meant to be a -1 transformation
 							#=7=#	:r          	=> 0.5,     #7  r * 10  *** FIXED
 							#=8=#	:R_p        	=> 0.25921, #8  R_p
-							#=9=#	:c          	=> -9.1217, #9  c * 10
-							#=10=#	:γ_s_pop    	=> 80.267,  #10 γ_s_pop * 100
+							#=9=#	:c          	=> -4.9,#-9.1217, #9  c * 10
+							#=10=#	:γ_s_pop    	=> 75.0,#80.267,  #10 γ_s_pop * 100
 							#=11=#	:γ_ns_pop   	=> -13.647, #11 γ_ns_pop * 10
-							#=12=#	:s_R        	=> 1.7296,  #12 s_R
+							#=12=#	:s_R        	=> 2.10,#1.7296,  #12 s_R
 							#=13=#	:μ_R        	=> 8.8188,  #13 μ_R / s_R
 							#=14=#	:R_q        	=> 0.92622, #14 1 - R_q
-							#=15=#	:γ_s_shape  	=> 4.283,   #15 γ_s_shape
-							#=16=#	:γ_s_on_09  	=> 4.9097,  #16 γ_s_on_09
-							#=17=#	:γ_s_on_12  	=> 0.0,     #17 γ_s_on_12
+							#=15=#	:γ_s_shape  	=> 0.44,#4.283,   #15 γ_s_shape
+							#=16=#	:γ_s_on_09  	=> 6.21,#4.9097,  #16 γ_s_on_09
+							#=17=#	:γ_s_on_12  	=> 17.61,#0.0,     #17 γ_s_on_12
 							#=18=#	:σ_δ        	=> 7.8609,  #18 σ_δ
 							#=19=#	:γ_ns_of_09_std => 7.739,   #19 γ_ns_of_09_std
 							#=20=#	:βlocal			=> 0.01111, #20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std)
@@ -103,23 +103,24 @@ function estimate_model(; # Data specification
 		# Parameter is "infinitely unlikely" if out of bounds
 		for l in θ_lb; if θ[θ_ind[l[1]]] < l[2]; return Inf end end
 		for u in θ_ub; if θ[θ_ind[u[1]]] > u[2]; return Inf end end
+		println("Parameters in-bounds, θ: $θ")
 
 		out = obj(θ_full(x), distpara0, data[:on_12],
 			  data[:on_09], data[:of_09]; parallel = parallel)
-            println("θ: $θ")
-            println("LLH: $(out[1])")
+
+    	println("LLH: $(out[1])")
 		return out[1]
 	end
 
 	# Construct vectors of lower and upper bounds for optimization routine
-	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
-	for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
-	for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
+	#lb, ub = repeat.([[-Inf], [Inf]], N_θ)
+	#for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
+	#for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	res = optimize(obj_fun, lb[free_ind], ub[free_ind],
-				   θ_val[free_ind], Fminbox(),
+	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
+				   θ_val[free_ind], #Fminbox(),
 				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum

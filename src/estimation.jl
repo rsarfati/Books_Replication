@@ -61,7 +61,7 @@ function estimate_model(; # Data specification
 							#=21=#	:η_c		    => 0.2,
 							#=22=#	:α_c			=> 0.2),
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
-						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
+						  θ_lb::Dict{Symbol,T}  = Dict([:Δ_p_out, :γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict(:R_q => 1.),
 						  # Options
 						  vint::String    = "", write_output::Bool = true,

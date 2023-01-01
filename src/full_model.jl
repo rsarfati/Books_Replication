@@ -193,6 +193,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     res = optimize(integγ0, βσ4[1:4])
     distpara1, f1 = res.minimizer, res.minimum
+    f1 = ((f1 ≈ 0.0) ? Inf : f1)
 
     println(VERBOSE, "Optimizing Pt. II (2/3)")
 

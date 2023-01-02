@@ -113,9 +113,9 @@ function estimate_model(; # Data specification
 	end
 
 	# Construct vectors of lower and upper bounds for optimization routine
-	#lb, ub = repeat.([[-Inf], [Inf]], N_θ)
-	#for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
-	#for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
+	lb, ub = repeat.([[-Inf], [Inf]], N_θ)
+	for l in θ_lb;	lb[θ_ind[l[1]]] = l[2] end
+	for u in θ_ub;	ub[θ_ind[u[1]]] = u[2] end
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.

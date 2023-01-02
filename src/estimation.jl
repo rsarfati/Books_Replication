@@ -38,7 +38,7 @@ function estimate_model(; # Data specification
 						  distpara0::Vector{T} = Vector{Float64}(),
 						  # Parameter specification
  					  	  θ_init::OrderedDict{Symbol,T} = OrderedDict(
-							#=1=#	:α          	=> 17.002,#14.771,  #1  α
+							#=1=#	:α          	=> 17.00189,#14.771,  #1  α
 							#=2=#	:Δ_p_out    	=> 0.1099,#-2.4895, #2  Δ_p_out
 							#=3=#	:γ_ns_shape 	=> 1.0,     #3  γ_ns_shape *** FIXED
 							#=4=#	:γ_ns_on_09 	=> 0.4429, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)

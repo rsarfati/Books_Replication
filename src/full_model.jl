@@ -94,15 +94,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     end
     println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
-    lip_09  = out_09[0*N_09+1:1*N_09,:] # likelihood of each obs at each β
-    γ2_09   = out_09[1*N_09+1:2*N_09,:]
-    γ1_09   = out_09[2*N_09+1:3*N_09,:]
-    γ0_09   = out_09[3*N_09+1:4*N_09,:]
-    D0_09   = out_09[4*N_09+1:5*N_09,:]
-    Dm_09   = out_09[5*N_09+1:6*N_09,:]
-    pi_09   = out_09[6*N_09+1:7*N_09,:]
-    CSns_09 = out_09[7*N_09+1:8*N_09,:]
-    CSs_09  = out_09[8*N_09+1:9*N_09,:]
+    lip_09  = out_09[1:N_09,:] # likelihood of each obs at each β
 
     for k = 1:M_09
         # Record log likelihood at a fixed β for a title
@@ -130,15 +122,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     end
     println(VERBOSE, "Completed Iteration for βs. (2/2)")
 
-    lip_12  = out_12[0*N_12+1:1*N_12,:]
-    γ2_12   = out_12[1*N_12+1:2*N_12,:]
-    γ1_12   = out_12[2*N_12+1:3*N_12,:]
-    γ0_12   = out_12[3*N_12+1:4*N_12,:]
-    D0_12   = out_12[4*N_12+1:5*N_12,:]
-    Dm_12   = out_12[5*N_12+1:6*N_12,:]
-    pi_12   = out_12[6*N_12+1:7*N_12,:]
-    CSns_12 = out_12[7*N_12+1:8*N_12,:]
-    CSs_12  = out_12[8*N_12+1:9*N_12,:]
+    lip_12  = out_12[1:N_12,:]
 
     for k=1:M_12
         llhβ_12[k,:] .= sum(lip_12[first_12[k]:cdindex_12[k],:])
@@ -201,25 +185,8 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     distpara2, f2 = res.minimizer, res.minimum
 
     println(VERBOSE, "Finished optimizing! (3/3)")
-
-    out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
-                                βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
-                               bp, N_bp, M_bp, basellhb, rounderr;
-                               demandcal = false, WFcal = WFcal)
-
-    lipb  = out_bp[0*N_bp+1:1*N_bp,:]
-    γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
-    γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
-    γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
-    D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
-    Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
-
-    WF_bp = zeros(N_bp, 3)
-    WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
-    WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
-    WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
-
     println(VERBOSE, "f1: $f1, f2: $f2")
+
     f = f1 + f2
     distpara = [distpara1; distpara2]
 
@@ -228,6 +195,41 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     if WFcal
         println(VERBOSE, "Beginning welfare calculations... (1/2)")
+
+        out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
+                                    βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
+                                   bp, N_bp, M_bp, basellhb, rounderr;
+                                   demandcal = false, WFcal = WFcal)
+
+        lipb  = out_bp[0*N_bp+1:1*N_bp,:]
+        γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
+        γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
+        γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
+        D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
+        Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
+
+        γ2_09   = out_09[1*N_09+1:2*N_09,:]
+        γ1_09   = out_09[2*N_09+1:3*N_09,:]
+        γ0_09   = out_09[3*N_09+1:4*N_09,:]
+        D0_09   = out_09[4*N_09+1:5*N_09,:]
+        Dm_09   = out_09[5*N_09+1:6*N_09,:]
+        pi_09   = out_09[6*N_09+1:7*N_09,:]
+        CSns_09 = out_09[7*N_09+1:8*N_09,:]
+        CSs_09  = out_09[8*N_09+1:9*N_09,:]
+
+        γ2_12   = out_12[1*N_12+1:2*N_12,:]
+        γ1_12   = out_12[2*N_12+1:3*N_12,:]
+        γ0_12   = out_12[3*N_12+1:4*N_12,:]
+        D0_12   = out_12[4*N_12+1:5*N_12,:]
+        Dm_12   = out_12[5*N_12+1:6*N_12,:]
+        pi_12   = out_12[6*N_12+1:7*N_12,:]
+        CSns_12 = out_12[7*N_12+1:8*N_12,:]
+        CSs_12  = out_12[8*N_12+1:9*N_12,:]
+
+        WF_bp = zeros(N_bp, 3)
+        WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
+        WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
+        WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
 
         imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
 
@@ -288,24 +290,23 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         fWF["WF12"]     = WF_12
         fWF["WFbp"]     = WF_bp
 
+        fother["lip12"]    = lip_12
+        fother["llhβ12"]   = llhβ_12
+        fother["imp_12"]   = imp_12
+        fother["ltot12"]   = ltot_12
+        fother["γ112"]     = γ1_12
+
+        fother["lip_09"]   = lip_09
+        fother["llhβ_09"]  = llhβ_09
+        fother["imp_09"]   = imp_09
+        fother["ltot_09"]  = ltot_09
+        fother["γ1_09"]    = γ1_09
+
+        fother["γ0_δ_vec"] = γ0_δ_vec
+        fother["lipb"]     = lipb
+        fother["γ1bp"]     = γ1_bp
+
         println(VERBOSE, "Finished welfare calculations. (2/2)")
     end
-
-    fother["lip12"]    = lip_12
-    fother["llhβ12"]   = llhβ_12
-    fother["imp_12"]   = imp_12
-    fother["ltot12"]   = ltot_12
-    fother["γ112"]     = γ1_12
-
-    fother["lip_09"]   = lip_09
-    fother["llhβ_09"]  = llhβ_09
-    fother["imp_09"]   = imp_09
-    fother["ltot_09"]  = ltot_09
-    fother["γ1_09"]    = γ1_09
-
-    fother["γ0_δ_vec"] = γ0_δ_vec
-    fother["lipb"]     = lipb
-    fother["γ1bp"]     = γ1_bp
-
     return f, distpara, fother, fWF, f1, f2
 end

@@ -131,6 +131,16 @@ end
 obscalnewtest2015(βσ3, data, basellh, demandcal, p0, ϵ, WFcal)
 ```
 Corresponds to Masao/obscalnewtest2015.m. Works!
+
+Start: (WFcal = false)
+0.005568 seconds (37.75 k allocations: 3.399 MiB)
+0.005290 seconds (33.48 k allocations: 2.851 MiB)
+0.005211 seconds (33.48 k allocations: 2.670 MiB) -> Cut out extra returned
+
+hcat:
+56.179319 seconds (216.44 M allocations: 20.706 GiB, 30.97% gc time, 1.14% compilation time)
+48.379337 seconds (216.41 M allocations: 19.084 GiB, 26.38% gc time, 1.38% compilation time)
+39.416123 seconds (216.40 M allocations: 17.101 GiB, 14.07% gc time, 1.74% compilation time)
 """
 function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
                            N::S, M::S, basellh::V, ϵ::T;
@@ -224,11 +234,14 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
 	liptemp[liptemp .< 0.0] .= 0.0
     lip = log.(liptemp)
 
-	pi_v, CSns, CSs = WFcal ? welfaresimple(γ1, γ2, γscale .* m, γ0, olppost,
-                                 Dm, D0, pdif, p, N, M, d[:cdindex], d_first,
-								 [α; β; η; r]) : zeros(N), zeros(N), zeros(N)
-
-    return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs]
+	if WFcal
+		pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0,
+                                 		pdif, p, N, M, d[:cdindex], d_first,
+								 		[α; β; η; r])
+    	return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs]
+	else
+		return lip
+	end
 end
 
 """

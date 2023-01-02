@@ -62,7 +62,7 @@ function estimate_model(; # Data specification
 							#=22=#	:α_c			=> 0.146),
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						  θ_lb::Dict{Symbol,T}  = Dict([:Δ_p_out, :γ_ns_on_09, :γ_ns_on_12, :R_q, :R_p] .=> 0.),
-						  θ_ub::Dict{Symbol,T}  = Dict([:R_q, :R_p] => 1.),
+						  θ_ub::Dict{Symbol,T}  = Dict([:R_q, :R_p] .=> 1.),
 						  # Options
 						  vint::String    = "", write_output::Bool = true,
 						  eval_only::Bool = false,
@@ -120,7 +120,7 @@ function estimate_model(; # Data specification
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
 	res = optimize(obj_fun, lb[free_ind], ub[free_ind],
-				   θ_val[free_ind], ConjugateGradient(), 
+				   θ_val[free_ind], ConjugateGradient(),
 				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum

@@ -170,7 +170,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         if return_all
             return imp_09, imp_12, ltot_09, ltot_12
         end
-        @show sum(isnan.(ltot_09)), sum(isnan.(ltot_12))
+        @show findall(isnan, ltot_12)
         return -(sum(nan_to_inf(ltot_09)) + sum(nan_to_inf(ltot_12)))
     end
 

@@ -119,8 +119,8 @@ function estimate_model(; # Data specification
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	res = optimize(obj_fun, lb[free_ind], ub[free_ind],
-				   θ_val[free_ind], ConjugateGradient(),
+	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
+				   θ_val[free_ind], ParticleSwarm(lower=lb[free_ind], upper = ub[free_ind], n_particles = 3),
 				   Optim.Options(f_calls_limit = Int(1e5), iterations = Int(1e5),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum

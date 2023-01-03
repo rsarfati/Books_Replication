@@ -72,12 +72,9 @@ function estimate_model(; # Data specification
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
-	isempty(data)      && @everywhere @load "$INPUT/data_to_run.jld2" data
-	isempty(distpara0) && @everywhere @load "$INPUT/distpara0.jld2"   distpara0
+	@everywhere data = @eval $data
+	@everywhere distpara0 = @eval $distpara0
 
-	d_on_09 = data[:on_09]
-	d_on_12 = data[:on_12]
-	bp      = data[:of_09]
 	@everywhere d_on_09 = data[:on_09]
 	@everywhere d_on_12 = data[:on_12]
 	@everywhere bp      = data[:of_09]
@@ -127,8 +124,7 @@ function estimate_model(; # Data specification
 		for u in θ_ub; if θ[θ_ind[u[1]]] > u[2]; return Inf end end
 		println("Parameters in-bounds, θ: $θ")
 
-		out = obj(θ_full(x), distpara0, d_on_12, d_on_09, bp;#data[:on_12],
-			      #data[:on_09], data[:of_09];
+		out = obj(θ_full(x), distpara0, data[:on_12], data[:on_09], data[:of_09];
 				  parallel = parallel)
 
     	println("LLH: $(out[1])")

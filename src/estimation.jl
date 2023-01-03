@@ -73,6 +73,10 @@ function estimate_model(; # Data specification
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 
+	@everywhere d_on_09 = data[:on_09]
+	@everywhere d_on_12 = data[:on_12]
+	@everywhere bp      = data[:of_09]
+
 	# Load specification
 	if spec == :cond
 		θ_init[:η_c] = 0.1602		#=21=#

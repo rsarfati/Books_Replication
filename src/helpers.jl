@@ -158,14 +158,16 @@ hcat:
 48.379337 seconds (216.41 M allocations: 19.084 GiB, 26.38% gc time, 1.38% compilation time)
 39.416123 seconds (216.40 M allocations: 17.101 GiB, 14.07% gc time, 1.74% compilation time)
 """
-function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
+function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
+						   d_sym::Symbol,
                            N::S, M::S, basellh::V, ϵ::T;
   						   demandcal::Bool = false,
                            disap::V = Vector{Float64}(),
                            WFcal::Bool = false) where {S<:Int64, T<:Float64,
                                                        U<:Vector{S}, V<:Vector{T}}
 
-    @unpack numlist, d_first, p = d
+	d = (d_sym == :d_on_09) ? d_on_09 : (d_sym == :d_on_12) ? d_on_12 : bp
+	@unpack numlist, d_first, p = d
 	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]

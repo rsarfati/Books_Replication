@@ -122,8 +122,9 @@ function estimate_model(; # Data specification
 		for u in θ_ub; if θ[θ_ind[u[1]]] > u[2]; return Inf end end
 		println("Parameters in-bounds, θ: $θ")
 
-		out = obj(θ_full(x), distpara0, data[:on_12],
-			      data[:on_09], data[:of_09]; parallel = parallel)
+		out = obj(θ_full(x), distpara0, d_on_12, d_on_09, bp;#data[:on_12],
+			      #data[:on_09], data[:of_09];
+				  parallel = parallel)
 
     	println("LLH: $(out[1])")
 		return out[1]

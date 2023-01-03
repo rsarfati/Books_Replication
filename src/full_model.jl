@@ -170,7 +170,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         if return_all
             return imp_09, imp_12, ltot_09, ltot_12
         end
-        return -(sum(smooth(ltot_09)) + sum(smooth(ltot_12)))
+        return -(sum(smooth!(ltot_09)) + sum(smooth!(ltot_12)))
     end
 
     println(VERBOSE, "Optimizing Pt. I (1/3)")

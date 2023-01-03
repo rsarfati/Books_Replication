@@ -12,7 +12,7 @@ vecC64(x::Any) = Vector{ComplexF64}(vec(x))
 
 nan_to_zero(v) = map(x -> isnan(x) ? zero(x) : x, v)
 nan_to_inf(v)  = map(x -> isnan(x) ? -Inf : x, v)
-function smooth(v::Matrix)
+function smooth!(v::Matrix)
 	for i=1:size(v,1)
 		for j=1:size(v,2)
 			if isnan(v[i,j])
@@ -26,6 +26,7 @@ function smooth(v::Matrix)
 			end
 		end
 	end
+	return v
 end
 
 function vals(d::Dict{Symbol,Float64})

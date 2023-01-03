@@ -106,7 +106,7 @@ function estimate_model(; # Data specification
 		println("Parameters in-bounds, θ: $θ")
 
 		out = obj(θ_full(x), distpara0, data[:on_12],
-			  data[:on_09], data[:of_09]; parallel = parallel)
+			      data[:on_09], data[:of_09]; parallel = parallel)
 
     	println("LLH: $(out[1])")
 		return out[1]

@@ -1,7 +1,7 @@
 clear
 clear global
 close all
-load('DataToRun_pop09.mat')
+load('DataToRun_pop09_boot.mat')
 est = csvread('bootstrap_estimates.csv');
 x0 = mean(est(:,2:end),1);
 

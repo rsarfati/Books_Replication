@@ -130,7 +130,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     maxtemp_12 = maximum(llhβ_12, dims = 2)
     llhadj_12  = exp.(llhβ_12 .- repeat(maxtemp_12,1,Y))
-    @show findall(isnan, lip_12)
+    @show findall(isnan, lip_12), findall(isnan, maxtemp_12), findall(isnan, llhβ_12)
 
     getbmean(γ_l) = -sum(obscalnewtest2015([0.; βσ4[6:8]; abs(γ_l[1]);
                                             βσ4[11:12]; λ1; λ2; βcond;

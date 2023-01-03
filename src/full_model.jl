@@ -122,8 +122,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     end
     println(VERBOSE, "Completed Iteration for βs. (2/2)")
 
-    @show size(out_12)
-
     lip_12 = smooth!(out_12[1:N_12,:])
 
     for k=1:M_12
@@ -173,7 +171,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         if return_all
             return imp_09, imp_12, ltot_09, ltot_12
         end
-        return -(sum(smooth!(ltot_09)) + sum(smooth!(ltot_12)))
+        return -(sum(ltot_09) + sum(ltot_12))
     end
 
     println(VERBOSE, "Optimizing Pt. I (1/3)")

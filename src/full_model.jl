@@ -7,7 +7,7 @@ full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
            VERBOSE = true) where {V <: Vector{Float64}, D<:Dict{Symbol, Vector{<:Number}}}
 ```
 
-Evaluates model at a given x0 and distpara0, given 2009 + 20012 online data (d_on_09, d_on_12),
+Evaluates model at a given x0 and distpara0, given 2009 + 2012 online data (d_on_09, d_on_12),
 and offline 2009 data (bp).
 
 Based on the file <fullmodelllhWFAug22newtest2015.m>.
@@ -17,7 +17,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
                     rounderr = 0.025,
                     # Options
-                    WFcal = false, parallel = true,
+                    spec = :standard, WFcal = false, parallel = true,
                     VERBOSE = true) where {V <: Vector{Float64},
                                            D <: Dict{Symbol,Vector{<:Number}}}
 
@@ -175,7 +175,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     println(VERBOSE, "Optimizing Pt. I (1/3)")
 
-    res = optimize(integγ0, βσ4[1:4])
+    res = optimize(integγ0, 1e-5*ones(4), 50.0*ones(4), βσ4[1:4], Fminbox())
     distpara1, f1 = res.minimizer, res.minimum
 
     println(VERBOSE, "Optimizing Pt. II (2/3)")

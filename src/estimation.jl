@@ -38,44 +38,57 @@ function estimate_model(; # Data specification
 						  distpara0::Vector{T} = Vector{Float64}(),
 						  # Parameter specification
  					  	  θ_init::OrderedDict{Symbol,T} = OrderedDict(
-							#=1=#	:α          	=> 16.5911,#14.771,  #1  α
-							#=2=#	:Δ_p_out    	=> 0.0895,#-2.4895, #2  Δ_p_out
-							#=3=#	:γ_ns_shape 	=> 1.0,     #3  γ_ns_shape *** FIXED
-							#=4=#	:γ_ns_on_09 	=> 0.4682, #4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
-							#=5=#	:γ_ns_on_12 	=> 0.3128, #5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-							#=6=#	:η          	=> 0.9537,#0.87235, #6  η - 1   *** I am infering there is meant to be a -1 transformation
-							#=7=#	:r          	=> 0.5,     #7  r * 10  *** FIXED
-							#=8=#	:R_p        	=> 0.943,#0.25921, #8  R_p
-							#=9=#	:c          	=> -5.106,#-9.1217, #9  c * 10
-							#=10=#	:γ_s_pop    	=> 70.727,#80.267,  #10 γ_s_pop * 100
-							#=11=#	:γ_ns_pop   	=> -5.733, #11 γ_ns_pop * 10
-							#=12=#	:s_R        	=> 1.6833,#1.7296,  #12 s_R
-							#=13=#	:μ_R        	=> 8.1216,  #13 μ_R / s_R
-							#=14=#	:R_q        	=> 0.9022, #14 1 - R_q
-							#=15=#	:γ_s_shape  	=> 0.3598,#4.283,   #15 γ_s_shape
-							#=16=#	:γ_s_on_09  	=> 5.634,#4.9097,  #16 γ_s_on_09
-							#=17=#	:γ_s_on_12  	=> 13.2618,#0.0,     #17 γ_s_on_12
-							#=18=#	:σ_δ        	=> 6.2028,  #18 σ_δ
-							#=19=#	:γ_ns_of_09_std => 6.0689,   #19 γ_ns_of_09_std
-							#=20=#	:βlocal			=> 0.0081, #20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std)
-							#=21=#	:η_c		    => 0.1602,
-							#=22=#	:α_c			=> 0.1652),
+							#=1=#	:α          	=> 16.5911,	#1  α 				[15.77 (1.28)]
+							#=2=#	:Δ_p_out    	=> 0.0895,	#2  Δ_p_out 		[0.16 (0.02)]
+							#=3=#	:γ_ns_shape 	=> 1.0,		#3  γ_ns_shape *** FIXED
+							#=4=#	:γ_ns_on_09 	=> 0.4682,	#4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
+							#=5=#	:γ_ns_on_12 	=> 0.3128,	#5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
+							#=6=#	:η          	=> 0.9537,	#6  η - 1 			[1.87 (0.08)] (Infering -1 transformation)
+							#=7=#	:r          	=> 0.5,     #7  r * 10 *** FIXED
+							#=8=#	:R_p        	=> 0.943,	#8  R_p 			[0.26 (0.02)]
+							#=9=#	:c          	=> -5.106,	#9  c * 10 			[-0.91 (0.07)]*10
+							#=10=#	:γ_s_pop    	=> 70.727,	#10 γ_s_pop * 100 	[0.80 (0.09)]
+							#=11=#	:γ_ns_pop   	=> -5.733,	#11 γ_ns_pop * 10 	[-1.36 (0.19)]
+							#=12=#	:s_R        	=> 1.6833,	#12 s_R 			[1.73 (0.09)]
+							#=13=#	:μ_R        	=> 8.1216,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
+							#=14=#	:R_q        	=> 0.9022,	#14 1 - R_q    -> 1-[0.07 (0.01)]
+							#=15=#	:γ_s_shape  	=> 0.3598,	#15 γ_s_shape 		[0.32 (0.03)]
+							#=16=#	:γ_s_on_09  	=> 5.634,	#16 γ_s_on_09 		[5.65 (1.41)]
+							#=17=#	:γ_s_on_12  	=> 13.2618,	#17 γ_s_on_12 		[14.86 (3.10)]
+							#=18=#	:σ_δ        	=> 6.2028,	#18 σ_δ 			[1.16 (0.05)]
+							#=19=#	:γ_ns_of_09_std => 6.0689,	#19 γ_ns_of_09_std 	[0.65 (0.17)]
+							#=20=#	:βlocal			=> 0.0081	#20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std) [1.25 (0.37) / 0.65 (0.17)]
+							),
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
-						  θ_lb::Dict{Symbol,T}  = Dict([:Δ_p_out, :γ_ns_on_09, :γ_ns_on_12, :R_q, :R_p] .=> 0.),
+						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q, :R_p] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict([:R_q, :R_p] .=> 1.),
+						  # Specification
+						  spec::Symbol = :standard,
 						  # Options
 						  vint::String    = "", write_output::Bool = true,
-						  eval_only::Bool = false,
+						  eval_only::Bool = false, WFcal::Bool = false,
 						  parallel::Bool  = true) where T<:Float64
 
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 
+	# Load specification
+	if spec == :cond
+		θ_init[:η_c] = 0.1602		#=21=#
+		θ_init[:α_c] = 5.0			#=22=#
+	elseif spec == :cond_list
+		θ_init[:η_c] = 0.1602		#=21=#
+		θ_init[:α_c] = 5.0			#=22=#
+		θ_init[:list_first] = 0.2	#=23=#
+	else
+		@assert spec == :standard "Only 3 specifications available at the moment."
+	end
+
 	# Simply evaluate likelihood at θ_init & return
 	if eval_only
     	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
-				   parallel = parallel)
+				   spec = spec, WFcal = WFcal, parallel = parallel)
 	end
 
 	# Extract information on parameters
@@ -143,11 +156,11 @@ Evaluates model and returns likelihood. Catches errors implying combination
 of parameters is infeasible under model (e.g. domain error arising from taking
 log/sqrt of negative number), and returns "infinitely unlikely."
 """
-function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D;
+function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; WFcal = false,
 			 parallel = true) where {V<:Vector{Float64}, W<:Vector{Int64},
 									 D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
-		full_model(θ, distpara0, data12, data09, bp; parallel = parallel)
+		full_model(θ, distpara0, data12, data09, bp; WFcal = WFcal, parallel = parallel)
 	catch err
 		if typeof(err)<:DomainError
 			println("Domain error in optimization!")

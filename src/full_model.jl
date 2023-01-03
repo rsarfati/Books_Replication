@@ -173,7 +173,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             return imp_09, imp_12, ltot_09, ltot_12
         end
 
-        @show sum(isnan.(ltot_12)), sum(isnan.(imp_12)), sum(isnan.(maxtemp_12)), sum(isnan.(llhadj_12))
+        @show sum(isnan.(ltot_09)), sum(isnan.(ltot_12)), sum(isnan.(imp_12)), sum(isnan.(maxtemp_12)), sum(isnan.(llhadj_12))
         return -(sum(ltot_09) + sum(ltot_12))
     end
 

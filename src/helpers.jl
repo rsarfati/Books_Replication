@@ -244,7 +244,7 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
     end
 
     # Disappear likelihood
-    liptemp = (1 - olp) .* lip_o + olp .* lip_ol + 1e-6
+    liptemp = (1 - olp) .* lip_o + olp .* lip_ol .+ 1e-6
     olppost = vec(olp .* lip_ol ./ liptemp)
 
 	liptemp[liptemp .< 0.0] .= 0.0

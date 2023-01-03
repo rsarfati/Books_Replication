@@ -16,12 +16,12 @@ function smooth!(v::Matrix)
 	for i=1:size(v,1)
 		for j=1:size(v,2)
 			if isnan(v[i,j])
-				if i==1
-					v[i,j] = v[i+1,j]
-				elseif i==size(v,1)
-					v[i,j] = v[i-1,j]
+				if j==1
+					v[i,j] = v[i,j+1]
+				elseif j==size(v,2)
+					v[i,j] = v[i,j-1]
 				else
-					v[i,j] = (v[i-1,j] + v[i+1,j])/2
+					v[i,j] = (v[i,j-1] + v[i,j+1])/2.0
 				end
 			end
 		end

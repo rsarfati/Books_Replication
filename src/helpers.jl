@@ -234,6 +234,8 @@ function obscalnewtest2015(βσ3::V, d::Dict{Symbol,Vector{<:Number}},
                         # Nonshopper demand (expectation taken wrt to γi)
                         (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* nat_disap
 
+		@show sum(isnan.(demandlh)), sum(isnan.(demandlhol))
+
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) -
 					   cdf(γ_dist[i], γ1[i]) for i=1:N], 1) .* demandlh .^ 3
         lip_ol = basellh .* demandlhol .^ 3 # Price likelihood

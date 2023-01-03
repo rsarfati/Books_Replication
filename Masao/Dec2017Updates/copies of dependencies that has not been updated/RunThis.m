@@ -2,8 +2,9 @@ clear
 clear global
 close all
 load('DataToRun_pop09.mat')
-est = csvread('estimates.csv');
-x0 = est(end,:);
+est = csvread('bootstrap_estimates.csv');
+x0 = mean(est(:,2:end),1);
+
 gamma0vec = [gaminv(0.005:0.01:0.895,0.5,20) 28:2:60 64:4:100];
 deltavec = [exp(norminv(0.01:0.02:0.91,-2,2)) 3:2:20];
 data12 = data12nopop;

@@ -80,7 +80,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     # WFcal = false: 0.004850 s (33.48 k alloc: 2.991 MiB)
     println(VERBOSE, "Iterating for γ0... (1/2)")
     out_09 = if parallel
-       @distributed (hcat) for i in 1:Y
+       @sync @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
                              βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                              d_on_09, N_09, M_09, basellh_09, rounderr;
@@ -106,7 +106,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     println(VERBOSE, "Iterating for βs... (1/2)")
 
     out_12 = if parallel
-       @distributed (hcat) for i in 1:Y
+       @sync @distributed (hcat) for i in 1:Y
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
                              βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
                              naturaldisappear], d_on_12, N_12, M_12,

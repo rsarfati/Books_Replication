@@ -164,6 +164,8 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         imp_09 = imp1 * imp3'
         imp_12 = imp2 * imp3'
 
+        @show sum(findall(isnan, imp2)), sum(isnan.(maxtemp_12)), sum(isnan.(llhadj_12))
+
         ltot_09 = maxtemp_09 + log.(llhadj_09 * vec(imp_09))
         ltot_12 = maxtemp_12 + log.(llhadj_12 * vec(imp_12))
 

@@ -6,7 +6,7 @@ function [f,distpara,fother,fWF] = fullmodelllhWFAug22newtest2015_single(x0,dist
 % gammaimeanbp  alpha-1 beta gammaishape  gammaimean09 gammaimean12  eta-1 r
 % olp c lamda1 lamda2 betacond betapop betalocal olm oltheta]
 
-WFcal = (nargout==4);
+WFcal = false; %(nargout==4);
 betasigma5 = [ distpara0...
     [x0(1) x0(2)/(1+x0(1)) x0(3) ...
     x0(4)*10*x0(7)/10/9.5^(-x0(6)-1) x0(5)*10*x0(7)/10/8^(-x0(6)-1) ...
@@ -39,6 +39,9 @@ oltheta = betasigma4(21);
 [temp1,temp2] = ndgrid(gamma0vec,deltavec);
 gamma0deltavec = [temp1(:) temp2(:)];
 Y = numel(temp1);
+
+importance09 = [0];
+importance12 = [0];
 %
 % x = [0 exp([-5:0.05:10])./10 1e4 2e4];
 % xhalf = 0.5*(x(1:end-1)+x(2:end));

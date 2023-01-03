@@ -13,7 +13,7 @@ bp = bpnopop;
 
 
 %%
-parpool(20)
+%parpool(20)
 %%
 
 objectivefun = @(x) objective(x,x0,distpara0,gamma0vec,deltavec, data12,data09,bp);

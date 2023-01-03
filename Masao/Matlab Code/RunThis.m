@@ -2,8 +2,10 @@ clear
 clear global
 close all
 load('DataToRun_pop09.mat')
-est = csvread('estimates.csv');
-x0 = est(end,:);
+est = csvread('Bootstrapp_data/bootstrap_estimates.csv');
+%x0 = est(end,:);
+x0 = mean(est(:,2:end),1);
+
 gamma0vec = [gaminv(0.005:0.01:0.895,0.5,20) 28:2:60 64:4:100];
 deltavec = [exp(norminv(0.01:0.02:0.91,-2,2)) 3:2:20];
 data12 = data12nopop;
@@ -12,7 +14,7 @@ bp = bpnopop;
 
 
 %%
-parpool(20)
+%parpool(20)
 %%
 
 objectivefun = @(x) objective(x,x0,distpara0,gamma0vec,deltavec, data12,data09,bp);

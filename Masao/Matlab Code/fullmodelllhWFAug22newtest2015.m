@@ -39,6 +39,10 @@ oltheta = betasigma4(21);
 [temp1,temp2] = ndgrid(gamma0vec,deltavec);
 gamma0deltavec = [temp1(:) temp2(:)];
 Y = numel(temp1);
+
+importance09 = [0];
+importance12 = [0];
+
 %
 % x = [0 exp([-5:0.05:10])./10 1e4 2e4];
 % xhalf = 0.5*(x(1:end-1)+x(2:end));

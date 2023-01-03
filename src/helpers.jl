@@ -81,9 +81,9 @@ function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
     sum2 = sum1[cdid]
 
-    D0   =         expU                                          ./  sum2
-    dD0  =  -α  .* expU .* (sum2 .- expU)                        ./ (sum2 .^ 2)
-    d2D0 = α.^2 .* expU .* (sum2 .- expU) .* (sum2 .- (expU.*2)) ./ (sum2 .^ 3)
+    D0   = @.       expU                                     /  sum2
+    dD0  = @. -α  * expU * (sum2 - expU)                     / (sum2 ^ 2)
+    d2D0 = @. α^2 * expU * (sum2 - expU) * (sum2 - (expU*2)) / (sum2 ^ 3)
 
     replace!.([D0, dD0, d2D0], NaN => 0)
 
@@ -105,13 +105,13 @@ function solve_γ(p::Union{U,V}, D0::Union{U,V}, dD0::Union{U,V}, d2D0::Union{U,
                  δ::T, η::T, γ0::Union{U,V}, r::T, ϵ::T;
                  allout=false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
-    Dm   = δ .* (p .^ (-η))
-    dDm  = δ .* (-η) .* (p .^ (-η-1))
-    d2Dm = δ .* (η) .* (η+1) .* (p .^ (-η-2))
+    Dm   = @. δ * (p ^ (-η))
+    dDm  = @. δ * (-η) * (p ^ (-η-1))
+    d2Dm = @. δ * (η)  * (η+1) * (p ^ (-η-2))
 
     # Adjust for rounding error
-    D0_ϵ  = D0  .+ ϵ .* dD0 .+ 0.5 .* d2D0 .* ϵ^2
-    dD0_ϵ = dD0 .+ ϵ .* d2D0
+    D0_ϵ  = @. D0  + ϵ * dD0 + 0.5 * d2D0 * ϵ^2
+    dD0_ϵ = @. dD0 + ϵ * d2D0
 
     if allout
         return solve_γ(Dm, D0_ϵ, dDm, dD0_ϵ, γ0, p, r), Dm, dDm, d2Dm
@@ -131,11 +131,11 @@ function solve_γ(Dm::Union{T,U,V}, D0::Union{T,U,V}, dDm::Union{T,U,V},
                  dD0::Union{T,U,V}, γ0::Union{T,U,V}, p::Union{T,U,V}, r::T;
                  allout = false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
-    A  = Dm .^ 2.0
-    B  = r .* ((p .* dDm) .+ Dm) .+ (2.0 .* Dm .* γ0 .* D0)
-    C  = (r .* γ0) .* ((p .* dD0) .+  D0) .+ (γ0 .^ 2) .* (D0 .^ 2)
+    A  = @. Dm ^ 2.0
+    B  = @. r * ((p * dDm) + Dm) + (2.0 * Dm * γ0 * D0)
+    C  = @. (r * γ0) * ((p * dD0) +  D0) + (γ0 ^ 2) * (D0 ^ 2)
 
-    γ1 = (-B .+ ((B .^ 2 .- 4 .* A .* C) .+ 0im) .^ (0.5)) ./ (2 .* A)
+    γ1 = @. (-B + ((B ^ 2 - 4 * A * C) + 0im) ^ (0.5)) / (2 * A)
 
     if !allout; return γ1 end
 
@@ -171,9 +171,9 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
-    γ0     = βσ3[1] .* (numlist .^ βσ3[8] ./ mean(numlist .^ βσ3[8]))
+    γ0     = @. βσ3[1] * (numlist ^ βσ3[8] / mean(numlist .^ βσ3[8]))
     α      = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
-    β      = βσ3[3] ./ βσ3[14] ^ βσ3[15]
+    β      = βσ3[3] / βσ3[14] ^ βσ3[15]
     m      = βσ3[4]
     η      = βσ3[6] + 1
     r      = βσ3[7]
@@ -181,8 +181,8 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     olp    = βσ3[13]
     δ      = βσ3[14]
 
-    γscale = βσ3[5] ./ m .* (numlist .^ βσ3[9] ./ mean(numlist .^ βσ3[9])) .*
-                   exp.(βσ3[12] .* d[:localint])
+    γscale = @. βσ3[5] / m * (numlist ^ βσ3[9] / mean(numlist ^ βσ3[9])) *
+                   exp.(βσ3[12] * d[:localint])
     nat_disap = βσ3[16]
 
 	α_c   = βσ3[end]   # shopper condition elasticity of demand
@@ -200,9 +200,9 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     p2 = p .+ ϵ
     γ2, Dm, dDm, d2Dm = solve_γ(p2, D0, dD0, d2D0, δ, η, γ0, r, ϵ; allout=true)
 
-    SOC = r .* p2 .* (γ2 .* d2Dm .+ γ0 .* d2D0) .+ 2 .* (r .+ (γ2 .* Dm) .+
-          γ0 .* (D0 .+ (ϵ .* dD0) .+ 0.5 .* (d2D0 .* ϵ ^ 2))) .*
-          (γ2 .* dDm .+ γ0 .* (dD0 .+ ϵ .* d2D0))
+    SOC = @. r * p2 * (γ2 * d2Dm + γ0 * d2D0) + 2 * (r + (γ2 * Dm) +
+          γ0 * (D0 + (ϵ * dD0) + 0.5 * (d2D0 * ϵ ^ 2))) *
+          (γ2 * dDm + γ0 * (dD0 + ϵ * d2D0))
 
     γ1 = real.(γ1)
     γ2[imag.(γ2) .!= 0] .= 0
@@ -210,8 +210,8 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     γ2[real.(γ2)  .< 0] .= 0
     γ2 = real.(γ2)
 
-    Π_2 = p2 ./ (r ./ (γ2 .* Dm + γ0 .* D0) .+ 1)
-    Π_H = ((r .* (η-1) ./ δ) .^ (-1/η) ./ (1/(η-1)+1)) .* γ2 .^ (1/η)
+    Π_2 = @. p2 / (r / (γ2 * Dm + γ0 * D0) + 1)
+    Π_H = @. ((r * (η-1) / δ) ^ (-1/η) / (1/(η-1)+1)) * γ2 ^ (1/η)
 
     γ3 = solve_γ(Dm, 0.0, dDm, 0.0, 0.0, p2, r)
 
@@ -222,23 +222,23 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     γ1 = real.(γ1)
     γ2 = real.(γ2)
 
-    Dm = δ .* (p .^ (-η))
+    Dm = @. δ * (p ^ (-η))
 
     γ_dist = Gamma.(m, γscale)
 
     if demandcal == 1
-        demandlh   = (disap .> 0) .- (2 .* disap .- 1) .*
-                        exp.(-0.166666667 .* (γ0 .* D0 .+
-						(γ2 .+ γ1) ./ 2 .* Dm)) .* nat_disap
-        demandlhol = (disap .> 0) .- (2 .* disap .- 1) .*
+        demandlh   = @. (disap > 0) - (2 * disap - 1) *
+                        exp(-0.166666667 * (γ0 * D0 +
+						(γ2 + γ1) / 2 * Dm)) * nat_disap
+        demandlhol = @. (disap > 0) - (2 * disap - 1) *
                         # Probability of nondisappear due to shopper demand
-                        exp.(-0.166666667 .* (γ0 .* D0)) .*
+                        exp(-0.166666667 * (γ0 * D0)) *
                         # Nonshopper demand (expectation taken wrt to γi)
-                        (1 .+ γscale .* 0.166666667 .* Dm) .^ -m .* nat_disap
+                        (1 + γscale * 0.166666667 * Dm) ^ -m * nat_disap
 
-        lip_o  = min.([cdf(γ_dist[i], γ2[i]) -
-					   cdf(γ_dist[i], γ1[i]) for i=1:N], 1) .* demandlh .^ 3
-        lip_ol = basellh .* demandlhol .^ 3 # Price likelihood
+        lip_o  = @. min.([cdf(γ_dist[i], γ2[i]) -
+					   cdf(γ_dist[i], γ1[i]) for i=1:N], 1) * demandlh ^ 3
+        lip_ol = @. basellh * demandlhol ^ 3 # Price likelihood
     else
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) -
 					   cdf(γ_dist[i], γ1[i]) for i=1:N], 1)
@@ -246,7 +246,7 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     end
 
     # Disappear likelihood
-    liptemp = (1 - olp) .* lip_o + olp .* lip_ol .+ 1e-10
+    liptemp = @. (1 - olp) * lip_o + olp * lip_ol + 1e-10
     olppost = vec(olp .* lip_ol ./ liptemp)
 
 	liptemp[liptemp .< 0.0] .= 0.0
@@ -279,16 +279,16 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
 
     γ1ave = 0.5 * (γ1 + γ2)
 
-    pi_o  = p .* (γ1ave  .* Dm .+ γ0 .* D0) ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0)
-    pi_ol = p .* (γscale .* Dm .+ γ0 .* D0) ./ (r .+ γscale .* Dm .+ γ0 .* D0)
-    pi_v  = olppost .* pi_ol .+ (1 .- olppost) .* pi_o
+    pi_o  = @. p * (γ1ave  * Dm + γ0 * D0) / (r + γ1ave  * Dm + γ0 * D0)
+    pi_ol = @. p * (γscale * Dm + γ0 * D0) / (r + γscale * Dm + γ0 * D0)
+    pi_v  = @. olppost * pi_ol + (1 - olppost) * pi_o
 
-    CSns_o  = (1/(η-1)) .* γ1ave  .* Dm .* p ./ (r .+ γ1ave  .* Dm + γ0 .* D0)
-    CSns_ol = (1/(η-1)) .* γscale .* Dm .* p ./ (r .+ γscale .* Dm + γ0 .* D0)
-    CSns    = olppost .* CSns_ol .+ (1 .- olppost) .* CSns_o
+    CSns_o  = @. (1/(η-1)) * γ1ave  * Dm * p / (r + γ1ave  * Dm + γ0 * D0)
+    CSns_ol = @. (1/(η-1)) * γscale * Dm * p / (r + γscale * Dm + γ0 * D0)
+    CSns    = @. olppost * CSns_ol + (1 - olppost) * CSns_o
     CSgain  = zeros(N)
 
-    mktsize = cdindex .- d_first .+ 1
+    mktsize = @. cdindex - d_first + 1
 
     for k = 1:M
         ind_k    = d_first[k]:cdindex[k]
@@ -310,9 +310,9 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
                          (sum(temp[1:mktsize[k],1:N_draw] .> 0, dims=2) .+ 1e-5)
     end
 
-    CSs_o  = γ0 .* D0 ./ (r .+ γ1ave  .* Dm .+ γ0 .* D0) .* CSgain
-    CSs_ol = γ0 .* D0 ./ (r .+ γscale .* Dm .+ γ0 .* D0) .* CSgain
-    CSs    = olppost .* CSs_ol + (1 .- olppost) .* CSs_o
+    CSs_o  = @. γ0 * D0 / (r + γ1ave  * Dm + γ0 * D0) * CSgain
+    CSs_ol = @. γ0 * D0 / (r + γscale * Dm + γ0 * D0) * CSgain
+    CSs    = @. olppost * CSs_ol + (1 - olppost) * CSs_o
 
     return pi_v, CSns, CSs
 end

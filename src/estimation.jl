@@ -70,9 +70,14 @@ function estimate_model(; # Data specification
 						  parallel::Bool  = true) where T<:Float64
 
 	# Load data if not provided at function call
+	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
+	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 	isempty(data)      && @everywhere @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @everywhere @load "$INPUT/distpara0.jld2"   distpara0
 
+	d_on_09 = data[:on_09]
+	d_on_12 = data[:on_12]
+	bp      = data[:of_09]
 	@everywhere d_on_09 = data[:on_09]
 	@everywhere d_on_12 = data[:on_12]
 	@everywhere bp      = data[:of_09]

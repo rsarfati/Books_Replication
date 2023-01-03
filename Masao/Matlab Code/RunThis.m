@@ -22,7 +22,7 @@ x00 = x0;
 
 x0([3 7]) = [];
 
-[x,fval] = fminsearch(objectivefun,x0,optimset('MaxFunEvals',1e4,'MaxIter',1e4));
+[x,fval] = fminsearch(objectivefun,x0,optimset('Display','iter','MaxFunEvals',1e4,'MaxIter',1e4));
 
 
 %%

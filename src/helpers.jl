@@ -163,7 +163,7 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
                            N::S, M::S, basellh::V, ϵ::T;
   						   demandcal::Bool = false,
                            disap::V = Vector{Float64}(),
-                           WFcal::Bool = false) where {S<:Int64, T<:Float64,
+                           WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
                                                        U<:Vector{S}, V<:Vector{T}}
 
 	d = (d_sym == :d_on_09) ? d_on_09 : (d_sym == :d_on_12) ? d_on_12 : bp

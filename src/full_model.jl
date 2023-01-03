@@ -178,6 +178,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     res = optimize(integγ0, 1e-5*ones(4), 50.0*ones(4), βσ4[1:4], Fminbox())
     distpara1, f1 = res.minimizer, res.minimum
+    f1 = isnan(f1) ? 3.597e8 : f1
 
     println(VERBOSE, "Optimizing Pt. II (2/3)")
 

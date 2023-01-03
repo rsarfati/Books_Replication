@@ -72,9 +72,8 @@ function estimate_model(; # Data specification
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
-	@everywhere data = @eval $data
+	@everywhere data      = @eval $data
 	@everywhere distpara0 = @eval $distpara0
-
 	@everywhere d_on_09 = data[:on_09]
 	@everywhere d_on_12 = data[:on_12]
 	@everywhere bp      = data[:of_09]

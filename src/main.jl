@@ -14,22 +14,23 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2022-12-31"
+vint    = "2023-01-04_newton"
 spec    = :normal 	# Options are :normal, :condition, :cond_list
-N_procs = 100	 	# No. workers to request from cluster
+N_procs = 30	 	# No. workers to request from cluster
 N_bs    = 50 		# No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel   = true	# Distribute work across multiple processes?
-run_tests  = false	# Test code matches MATLAB (for developers)
-eval_only  = false	# Are you merely fetching the likelihood of a set of parameters?
-estimation = true	# Estimate model
-bootstrap  = false	# Run bootstrap for SEs?
-run_mode   = :OPTIM	# Running bootstrap? Choose :OPTIM or :EVAL
+parallel    = true	# Distribute work across multiple processes?
+run_tests   = false	# Test code matches MATLAB (for developers)
+eval_only   = false	# Are you merely fetching the likelihood of a set of parameters?
+save_output = true
+estimation  = true	# Estimate model
+bootstrap   = false	# Run bootstrap for SEs?
+run_mode    = :OPTIM	# Running bootstrap? Choose :OPTIM or :EVAL
 
 # Add worker processes, load necessary packages on said workers
 if parallel
-	println("(1/2) Adding processes...")
+    println("(1/2) Adding processes...")
     addprocs(N_procs)
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
     @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
@@ -54,13 +55,13 @@ if run_tests; include("$path/../test/helpers.jl") end
 
 # Estimate model from known parameters
 if estimation
-	println("(1/2) Running estimation; eval_only = $(eval_only)")
-    out = estimate_model(eval_only = eval_only, parallel = parallel)
+    println("(1/2) Running estimation; eval_only = $(eval_only)")
+    out = estimate_model(eval_only = eval_only, parallel = parallel, write_output = write_output, vint = vint)
 
-    if eval_only # Only solve for likelihoods
+    if eval_only
         f, distpara, fother, fWF, f1, f2 = out
         @save "$OUTPUT/likelihoods_$(vint).jld2" f distpara fother fWF f1 f2
-        @show f, f1, f2
+        @show f, f1, f2        
     end
 	println("(2/2) Finished running estimation.")
 end

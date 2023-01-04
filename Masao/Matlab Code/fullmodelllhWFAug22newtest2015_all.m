@@ -36,6 +36,10 @@ betapop = betasigma4(18);
 olm = betasigma4(20);
 oltheta = betasigma4(21);
 
+importance09 = [0];
+importance12 = [0];
+
+
 [temp1,temp2] = ndgrid(gamma0vec,deltavec);
 gamma0deltavec = [temp1(:) temp2(:)];
 Y = numel(temp1);

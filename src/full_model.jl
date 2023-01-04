@@ -98,7 +98,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     for k = 1:M_09
         # Record log likelihood at a fixed β for a title
-        llhβ_09[k,:] .= sum(lip_09[first_09[k] : cdindex_09[k],:])
+        llhβ_09[k,:] .= sum(lip_09[first_09[k] : cdindex_09[k],:], dims=1)
     end
     maxtemp_09 = maximum(llhβ_09, dims=2)
     llhadj_09  = exp.(llhβ_09 - repeat(maxtemp_09, 1, Y))

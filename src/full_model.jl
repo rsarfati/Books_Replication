@@ -187,6 +187,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     println(VERBOSE, "Finished optimizing! (3/3)")
     println(VERBOSE, "f1: $f1, f2: $f2")
     println(VERBOSE, "distpara1: $distpara1, distpara2: $distpara2")
+    @show sum(lip_12), maximum(lip_12), sum(lip_09), maximum(lip_09)
 
     f = f1 + f2
     distpara = [distpara1; distpara2]

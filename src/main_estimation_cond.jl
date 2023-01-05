@@ -14,7 +14,7 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2023-01-05"
+vint    = "2023-01-05_GD"
 spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 

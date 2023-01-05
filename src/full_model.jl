@@ -84,13 +84,13 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
            obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
                              βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                              :d_on_09, N_09, M_09, basellh_09, rounderr;
-                             demandcal = false, WFcal = WFcal)
+                             demandcal = false, WFcal = false)
        end
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
                                βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                                :d_on_09, N_09, M_09, basellh_09, rounderr;
-                               demandcal = false, WFcal = WFcal) for i=1:Y]...)
+                               demandcal = false, WFcal = false) for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
@@ -111,14 +111,14 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                              βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
                              naturaldisappear], :d_on_12, N_12, M_12,
                              basellh_12, rounderr;
-                             demandcal = true, WFcal = WFcal, disap = disap)
+                             demandcal = true, WFcal = false, disap = disap)
        end
     else
        hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
                                βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
                                naturaldisappear], :d_on_12, N_12, M_12,
                                basellh_12, rounderr; demandcal = true,
-                               WFcal = WFcal, disap = disap) for i=1:Y]...)
+                               WFcal = false, disap = disap) for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for βs. (2/2)")
 
@@ -187,7 +187,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     println(VERBOSE, "Finished optimizing! (3/3)")
     println(VERBOSE, "f1: $f1, f2: $f2")
     println(VERBOSE, "distpara1: $distpara1, distpara2: $distpara2")
-    @show sum(lip_12), maximum(lip_12), sum(lip_09), maximum(lip_09)
 
     f = f1 + f2
     distpara = [distpara1; distpara2]
@@ -198,116 +197,129 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     if WFcal
         println(VERBOSE, "Beginning welfare calculations... (1/2)")
 
-        out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
-                                    βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
-                                   bp, N_bp, M_bp, basellhb, rounderr;
-                                   demandcal = false, WFcal = WFcal)
+        # out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
+        #                             βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
+        #                            bp, N_bp, M_bp, basellhb, rounderr;
+        #                            demandcal = false, WFcal = WFcal)
+        #
+        # lipb  = out_bp[0*N_bp+1:1*N_bp,:]
+        # γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
+        # γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
+        # γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
+        # D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
+        # Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
+        #
+        # γ2_09   = out_09[1*N_09+1:2*N_09,:]
+        # γ1_09   = out_09[2*N_09+1:3*N_09,:]
+        # γ0_09   = out_09[3*N_09+1:4*N_09,:]
+        # D0_09   = out_09[4*N_09+1:5*N_09,:]
+        # Dm_09   = out_09[5*N_09+1:6*N_09,:]
+        # pi_09   = out_09[6*N_09+1:7*N_09,:]
+        # CSns_09 = out_09[7*N_09+1:8*N_09,:]
+        # CSs_09  = out_09[8*N_09+1:9*N_09,:]
+        #
+        # γ2_12   = out_12[1*N_12+1:2*N_12,:]
+        # γ1_12   = out_12[2*N_12+1:3*N_12,:]
+        # γ0_12   = out_12[3*N_12+1:4*N_12,:]
+        # D0_12   = out_12[4*N_12+1:5*N_12,:]
+        # Dm_12   = out_12[5*N_12+1:6*N_12,:]
+        # pi_12   = out_12[6*N_12+1:7*N_12,:]
+        # CSns_12 = out_12[7*N_12+1:8*N_12,:]
+        # CSs_12  = out_12[8*N_12+1:9*N_12,:]
+        #
+        # WF_bp       = zeros(N_bp, 3)
+        # WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
+        # WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
+        # WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
+        #
+        # imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
+        #
+        # WF_09       = zeros(N_09, 3)
+        # WF_12       = zeros(N_12, 3)
+        #
+        # AveWF_09    = zeros(M_09, 3)
+        # AveWF_12    = zeros(M_12, 3)
+        #
+        # BestVals_09 = zeros(N_09,13)
+        # BestVals_12 = zeros(N_12,13)
 
-        lipb  = out_bp[0*N_bp+1:1*N_bp,:]
-        γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
-        γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
-        γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
-        D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
-        Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
+        RPpost_09 = zeros(M_09, Y)
+        RPpost_12 = zeros(M_12, Y)
 
-        γ2_09   = out_09[1*N_09+1:2*N_09,:]
-        γ1_09   = out_09[2*N_09+1:3*N_09,:]
-        γ0_09   = out_09[3*N_09+1:4*N_09,:]
-        D0_09   = out_09[4*N_09+1:5*N_09,:]
-        Dm_09   = out_09[5*N_09+1:6*N_09,:]
-        pi_09   = out_09[6*N_09+1:7*N_09,:]
-        CSns_09 = out_09[7*N_09+1:8*N_09,:]
-        CSs_09  = out_09[8*N_09+1:9*N_09,:]
-
-        γ2_12   = out_12[1*N_12+1:2*N_12,:]
-        γ1_12   = out_12[2*N_12+1:3*N_12,:]
-        γ0_12   = out_12[3*N_12+1:4*N_12,:]
-        D0_12   = out_12[4*N_12+1:5*N_12,:]
-        Dm_12   = out_12[5*N_12+1:6*N_12,:]
-        pi_12   = out_12[6*N_12+1:7*N_12,:]
-        CSns_12 = out_12[7*N_12+1:8*N_12,:]
-        CSs_12  = out_12[8*N_12+1:9*N_12,:]
-
-        WF_bp = zeros(N_bp, 3)
-        WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
-        WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
-        WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
-
-        imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
-
-        WF_09       = zeros(N_09, 3)
-        WF_12       = zeros(N_12, 3)
-
-        AveWF_09    = zeros(M_09, 3)
-        AveWF_12    = zeros(M_12, 3)
-
-        BestVals_09 = zeros(N_09,13)
-        BestVals_12 = zeros(N_12,13)
-
-        for k = 1:M_09
-            RPpost = llhadj_09[k,:]' .* vec(imp_09) ./ exp.(ltot_09[k] - maxtemp_09[k])
-
-            ind_k  = first_09[k]:cdindex_09[k]
-
-            WF_09[ind_k,1]  = pi_09[ind_k,:]   * RPpost
-            WF_09[ind_k,2]  = CSns_09[ind_k,:] * RPpost
-            WF_09[ind_k,3]  = CSs_09[ind_k,:]  * RPpost
-            obs_w           = d_on_09[:obs_w][ind_k,1] ./ sum(d_on_09[:obs_w][ind_k,1])
-            AveWF_09[k,1:3] = obs_w' * WF_09[ind_k,1:3]
-            y_max           = argmax(llhadj_09[k,:])
-
-            BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :],
-                llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
-                exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max],
-                γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
-                Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max],
-                CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
-
-            RPpost = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
-
-            ind_k           = first_12[k]:cdindex_12[k]
-            WF_12[ind_k,1]  = pi_12[ind_k,:]  * RPpost
-            WF_12[ind_k,2]  = CSns_12[ind_k,:]* RPpost
-            WF_12[ind_k,3]  = CSs_12[ind_k,:] * RPpost
-            obs_w           = d_on_12[:obs_w][ind_k,1] ./ sum(d_on_12[:obs_w][ind_k,1])
-            AveWF_12[k,1:3] = obs_w' * WF_12[ind_k, 1:3]
-
-            y_max = argmax(llhadj_12[k,:])
-            BestVals_12[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:],
-                llhβ_12[k,y_max] ./ length(ind_k))', length(ind_k), 1),
-                exp.(lip_12[ind_k, y_max]), basellh_12[ind_k,1],
-                γ0_12[ind_k,y_max], γ1_12[ind_k,y_max], γ2_12[ind_k,y_max],
-                Dm_12[ind_k,y_max], D0_12[ind_k,y_max], pi_12[ind_k,y_max],
-                CSns_12[ind_k,y_max], CSs_12[ind_k,y_max])
+        for k=1:M_09
+            RPpost_09[k,:] = llhadj_09[k,:] .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
         end
-
-        fWF["BestVals_09"] = hcat(d_on_09[:cdid], d_on_09[:numlist], d_on_09[:p], d_on_09[:pdif], BestVals_09)
-        fWF["BestVals_12"] = hcat(d_on_12[:cdid], d_on_12[:numlist], d_on_12[:p], d_on_12[:pdif], BestVals_12)
-        fWF["BestValsbp"]  = hcat(bp[:cdid], bp[:numlist], bp[:p],
-                                  repeat([0.0, 0.0, 1.0, 1.0]', N_bp, 1),
-                                  lipb, basellhb, γ0_bp, γ1_bp, γ2_bp, Dm_bp, D0_bp, WF_bp)
-        fWF["AveWF_09"] = AveWF_09
-        fWF["AveWF12"]  = AveWF_12
-        fWF["WF_09"]    = WF_09
-        fWF["WF12"]     = WF_12
-        fWF["WFbp"]     = WF_bp
-
-        fother["lip12"]    = lip_12
-        fother["llhβ12"]   = llhβ_12
-        fother["imp_12"]   = imp_12
-        fother["ltot12"]   = ltot_12
-        fother["γ112"]     = γ1_12
-
-        fother["lip_09"]   = lip_09
-        fother["llhβ_09"]  = llhβ_09
-        fother["imp_09"]   = imp_09
-        fother["ltot_09"]  = ltot_09
-        fother["γ1_09"]    = γ1_09
-
-        fother["γ0_δ_vec"] = γ0_δ_vec
-        fother["lipb"]     = lipb
-        fother["γ1bp"]     = γ1_bp
-
+        for k=1:M_12
+            RPpost_12[k,:] = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
+        end
+        if write_output
+            @save "$OUTPUT/posterior_random_price_$(vint).jld2" RPpost_09 RPpost_12
+            CSV.write("$OUTPUT/posterior_random_price_09_$(vint).csv", Tables.table(RPpost_09))
+            CSV.write("$OUTPUT/posterior_random_price_12_$(vint).csv", Tables.table(RPpost_12))
+        end
+        # for k = 1:M_09
+        #     RPpost = llhadj_09[k,:]' * vec(imp_09) / exp(ltot_09[k] - maxtemp_09[k])
+        #
+        #     ind_k  = first_09[k]:cdindex_09[k]
+        #
+        #     WF_09[ind_k,1]  = pi_09[ind_k,:]   * RPpost
+        #     WF_09[ind_k,2]  = CSns_09[ind_k,:] * RPpost
+        #     WF_09[ind_k,3]  = CSs_09[ind_k,:]  * RPpost
+        #     obs_w           = d_on_09[:obs_w][ind_k,1] ./ sum(d_on_09[:obs_w][ind_k,1])
+        #     AveWF_09[k,1:3] = obs_w' * WF_09[ind_k,1:3]
+        #     y_max           = argmax(llhadj_09[k,:])
+        #
+        #     BestVals_09[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max, :],
+        #         llhβ_09[k, y_max] ./ length(ind_k)), 1, length(ind_k))',
+        #         exp.(lip_09[ind_k, y_max]), basellh_09[ind_k,1], γ0_09[ind_k,y_max],
+        #         γ1_09[ind_k,y_max], γ2_09[ind_k,y_max],
+        #         Dm_09[ind_k,y_max], D0_09[ind_k,y_max], pi_09[ind_k,y_max],
+        #         CSns_09[ind_k,y_max], CSs_09[ind_k,y_max])
+        #
+        #     RPpost = llhadj_12[k,:]' * vec(imp_12) / exp(ltot_12[k] - maxtemp_12[k])
+        #
+        #     ind_k           = first_12[k]:cdindex_12[k]
+        #     WF_12[ind_k,1]  = pi_12[ind_k,:]  * RPpost
+        #     WF_12[ind_k,2]  = CSns_12[ind_k,:]* RPpost
+        #     WF_12[ind_k,3]  = CSs_12[ind_k,:] * RPpost
+        #     obs_w           = d_on_12[:obs_w][ind_k,1] ./ sum(d_on_12[:obs_w][ind_k,1])
+        #     AveWF_12[k,1:3] = obs_w' * WF_12[ind_k, 1:3]
+        #
+        #     y_max = argmax(llhadj_12[k,:])
+        #     BestVals_12[ind_k,:] = hcat(repeat(vcat(γ0_δ_vec[y_max,:],
+        #         llhβ_12[k,y_max] ./ length(ind_k))', length(ind_k), 1),
+        #         exp.(lip_12[ind_k, y_max]), basellh_12[ind_k,1],
+        #         γ0_12[ind_k,y_max], γ1_12[ind_k,y_max], γ2_12[ind_k,y_max],
+        #         Dm_12[ind_k,y_max], D0_12[ind_k,y_max], pi_12[ind_k,y_max],
+        #         CSns_12[ind_k,y_max], CSs_12[ind_k,y_max])
+        # end
+        #
+        # fWF["BestVals_09"] = hcat(d_on_09[:cdid], d_on_09[:numlist], d_on_09[:p], d_on_09[:pdif], BestVals_09)
+        # fWF["BestVals_12"] = hcat(d_on_12[:cdid], d_on_12[:numlist], d_on_12[:p], d_on_12[:pdif], BestVals_12)
+        # fWF["BestValsbp"]  = hcat(bp[:cdid], bp[:numlist], bp[:p],
+        #                           repeat([0.0, 0.0, 1.0, 1.0]', N_bp, 1),
+        #                           lipb, basellhb, γ0_bp, γ1_bp, γ2_bp, Dm_bp, D0_bp, WF_bp)
+        # fWF["AveWF_09"] = AveWF_09
+        # fWF["AveWF12"]  = AveWF_12
+        # fWF["WF_09"]    = WF_09
+        # fWF["WF12"]     = WF_12
+        # fWF["WFbp"]     = WF_bp
+        #
+        # fother["lip12"]    = lip_12
+        # fother["llhβ12"]   = llhβ_12
+        # fother["imp_12"]   = imp_12
+        # fother["ltot12"]   = ltot_12
+        # fother["γ112"]     = γ1_12
+        #
+        # fother["lip_09"]   = lip_09
+        # fother["llhβ_09"]  = llhβ_09
+        # fother["imp_09"]   = imp_09
+        # fother["ltot_09"]  = ltot_09
+        # fother["γ1_09"]    = γ1_09
+        #
+        # fother["γ0_δ_vec"] = γ0_δ_vec
+        # fother["lipb"]     = lipb
+        # fother["γ1bp"]     = γ1_bp
         println(VERBOSE, "Finished welfare calculations. (2/2)")
     end
     return f, distpara, fother, fWF, f1, f2

@@ -65,7 +65,7 @@ function estimate_model(; # Data specification
 						  # Specification
 						  spec::Symbol = :standard,
 						  # Options
-						  vint::String    = "", write_output::Bool = true,
+						  vint::String    = "latest", write_output::Bool = true,
 						  eval_only::Bool = false, WFcal::Bool = false,
 						  parallel::Bool  = true) where T<:Float64
 
@@ -74,26 +74,30 @@ function estimate_model(; # Data specification
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 	@everywhere data      = @eval $data
 	@everywhere distpara0 = @eval $distpara0
-	@everywhere d_on_09 = data[:on_09]
-	@everywhere d_on_12 = data[:on_12]
-	@everywhere bp      = data[:of_09]
+	@everywhere d_on_09   = data[:on_09]
+	@everywhere d_on_12   = data[:on_12]
+	@everywhere bp        = data[:of_09]
 
 	# Load specification
 	if spec == :cond
-		θ_init[:η_c] = 0.1602		#=21=#
-		θ_init[:α_c] = 5.0			#=22=#
+		θ_init[:η_c] = 0.1602	  #=21=#
+		θ_init[:α_c] = 5.0		  #=22=#
 	elseif spec == :cond_list
-		θ_init[:η_c] = 0.1602		#=21=#
-		θ_init[:α_c] = 5.0			#=22=#
-		θ_init[:list_first] = 0.2	#=23=#
+		θ_init[:η_c] = 0.1602	  #=21=#
+		θ_init[:α_c] = 5.0	      #=22=#
+		θ_init[:list_first] = 0.2 #=23=#
 	else
 		@assert spec == :standard "Only 3 specifications available at the moment."
 	end
 
 	# Simply evaluate likelihood at θ_init & return
 	if eval_only
-    	return obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
-				   spec = spec, WFcal = WFcal, parallel = parallel)
+    	out = obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
+				  WFcal = WFcal, parallel = parallel)
+		if write_output
+			@save "$OUTPUT/evaluated_results_$(vint).jld2" out
+		end
+		return out
 	end
 
 	# Extract information on parameters
@@ -126,7 +130,7 @@ function estimate_model(; # Data specification
 		out = obj(θ_full(x), distpara0, data[:on_12], data[:on_09], data[:of_09];
 				  parallel = parallel)
 
-    	println("LLH: $(out[1])")
+		println("LLH: $(out[1])")
 		return out[1]
 	end
 
@@ -139,7 +143,7 @@ function estimate_model(; # Data specification
 	# vector to again include fixed/calibrated parameters.
 	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
 				   θ_val[free_ind], Newton(),#NelderMead(),#Fminbox(),#NelderMead(),
-				   Optim.Options(f_calls_limit = Int(1e5),
+				   Optim.Options(f_calls_limit = Int(1e4),
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum
 

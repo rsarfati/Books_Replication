@@ -9,22 +9,23 @@ global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
 
 !isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
-!isdir("$OUTPUT/")		&& run(`mkdir $OUTPUT/`)
+!isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
 !isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2023-01-04_newton"
+vint    = "2023-01-04_rp"
 spec    = :normal 	# Options are :normal, :condition, :cond_list
 N_procs = 30	 	# No. workers to request from cluster
 N_bs    = 50 		# No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel     = true	# Distribute work across multiple processes?
+parallel     = false		# Distribute work across multiple processes?
 run_tests    = false	# Test code matches MATLAB (for developers)
-eval_only    = true	# Are you merely fetching the likelihood of a set of parameters?
-write_output = true
-estimation   = true	# Estimate model
+eval_only    = true		# Are you merely fetching the likelihood of a set of parameters?
+write_output = true		# Saves output to file
+estimation   = false	# Estimate model
+WFcal	     = true		# Grab welfare statistics
 bootstrap    = false	# Run bootstrap for SEs?
 run_mode     = :EVAL	# Running bootstrap? Choose :OPTIM or :EVAL
 
@@ -53,16 +54,11 @@ end
 # Test function output (good idea if you've been modifying code)
 if run_tests; include("$path/../test/helpers.jl") end
 
-# Estimate model from known parameters
-if estimation
-    println("(1/2) Running estimation; eval_only = $(eval_only)")
-    out = estimate_model(eval_only = eval_only, parallel = parallel, write_output = write_output, vint = vint)
-
-    if eval_only
-        f, distpara, fother, fWF, f1, f2 = out
-        @save "$OUTPUT/likelihoods_$(vint).jld2" f distpara fother fWF f1 f2
-        @show f, f1, f2        
-    end
+# Estimate model, starting from known parameters
+if estimation || eval_only
+    println("(1/2) Estimating model; eval_only = $(eval_only)")
+    out = estimate_model(eval_only = eval_only, parallel = parallel,
+						 write_output = write_output, vint = vint, WFcal = WFcal)
 	println("(2/2) Finished running estimation.")
 end
 

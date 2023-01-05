@@ -166,12 +166,12 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
                            WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
                                                        U<:Vector{S}, V<:Vector{T}}
 
-	d = (d_sym == :d_on_09) ? d_on_09 : (d_sym == :d_on_12) ? d_on_12 : bp
+	d::Dict{Symbol,Vector} = (d_sym == :d_on_09) ? d_on_09 : (d_sym == :d_on_12) ? d_on_12 : bp
 	@unpack numlist, d_first, p = d
 	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
 
     # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
-    γ0     = @. βσ3[1] * (numlist ^ βσ3[8] / mean(numlist .^ βσ3[8]))
+    γ0     = @. βσ3[1] * (numlist ^ βσ3[8]) / mean(numlist .^ βσ3[8])
     α      = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
     β      = βσ3[3] / βσ3[14] ^ βσ3[15]
     m      = βσ3[4]
@@ -436,9 +436,9 @@ X 21 => betapop
 . 24 => mean of random price       == μ_R         => 16
 . 25 => Natural Disappear          == R_q         => 18
 
-Welfare 2009  profit
+Welfare 2009 profit
 Welfare 2009 CS nonshopper
-Welfare 2009  CS shopper
+Welfare 2009 CS shopper
 Welfare 2012 profit
 Welfare 2012 CS shopper
 Welfare 2012 CS nonshopper

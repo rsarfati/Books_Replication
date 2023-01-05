@@ -75,18 +75,16 @@ function estimate_model(; # Data specification
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 
 	# Create indicator for having the lowest price / "being listed first"
-	if spec == :cond_list
-		for d in [data[:on_09], data[:on_12], data[:of_09]]
-			d[:has_min_p] = zeros(length(d[:cdid]))
-			# Iterate over 236 titles in each sample
-			for t in unique(d[:cdid])
-				# Find the minimum price among all listings of title t
-				p_min_t = minimum(d[:p][d[:cdid] .== t])
-				# Count how many listings offered title t at said minimum price
-				N_min_p = sum(d[:p][d[:cdid] .== t] .== p_min_t)
-				# For those listings with minimum price, assign indicator
-				d[:has_min_p][(d[:cdid] .== t) .& (d[:p] .== p_min_t)] .= 1 / N_min_p
-			end
+	for d in [data[:on_09], data[:on_12], data[:of_09]]
+		d[:has_min_p] = zeros(length(d[:cdid]))
+		# Iterate over 236 titles in each sample
+		for t in unique(d[:cdid])
+			# Find the minimum price among all listings of title t
+			p_min_t = minimum(d[:p][d[:cdid] .== t])
+			# Count how many listings offered title t at said minimum price
+			N_min_p = sum(d[:p][d[:cdid] .== t] .== p_min_t)
+			# For those listings with minimum price, assign indicator
+			d[:has_min_p][(d[:cdid] .== t) .& (d[:p] .== p_min_t)] .= 1 / N_min_p
 		end
 	end
 

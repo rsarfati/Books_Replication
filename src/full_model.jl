@@ -1,12 +1,11 @@
 """
 ```
 full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
-           γ0vec = vcat(quantile.(Gamma(0.5, 20), 0.005:0.01:0.895), 28:2:60, 64:4:100),
-           δ_vec = vcat(exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)), 3:2:20),
-           WFcal = false, rounderr = 0.025, parallel = true,
+           γ0vec = [quantile.(Gamma(0.5,20), 0.005:0.01:0.895); 28:2:60; 64:4:100],
+           δ_vec = [exp.(quantile.(Normal(-2,2), 0.01:0.02:0.91)); 3:2:20],
+           rounderr = 0.025, spec = :standard, WFcal = false, parallel = true,
            VERBOSE = true) where {V <: Vector{Float64}, D<:Dict{Symbol, Vector{<:Number}}}
 ```
-
 Evaluates model at a given x0 and distpara0, given 2009 + 2012 online data (d_on_09, d_on_12),
 and offline 2009 data (bp).
 
@@ -21,22 +20,20 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     VERBOSE = true) where {V <: Vector{Float64},
                                            D <: Dict{Symbol,Vector{<:Number}}}
 
-    # βσ4 = [γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
-    #        alpha-1 β γishape  γimean09 γimean12  eta-1 r
-    #        olp c λ1 λ2 βcond βpop βlocal olm ol_θ]
-    βσ4 = [ distpara0[1:5];
-            x0[1];
-            x0[2]/(1+x0[1]);
-            x0[3];
-            x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);
-            x0[5] * 10 * x0[7]/10/8^(-x0[6]-1);
-            x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1];
-            0;
-            0;
-            distpara0[6];
-            x0[12:13]]
+    # Unpack parameters, perform scaling transformations
+    βσ4 = [distpara0[1:5];  # 1-5: γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
+           x0[1];           # 6: alpha-1
+           x0[2]/(1+x0[1]); # 7: β
+           x0[3];           # 8: γishape
+           x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);    # 9: γimean09
+           x0[5] * 10 * x0[7]/10/8^(-x0[6]-1);      # 10: γimean12
+           x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1]; # 11-16: eta-1 r olp c λ1 λ2
+           0;            # 17: βcond
+           0;            # 18: βpop
+           distpara0[6]; # 19: βlocal
+           x0[12:13]]    # 20-21: olm ol_θ
 
-    naturaldisappear = x0[14]
+    nat_disap = x0[14]
 
     λ1    = βσ4[15]
     λ2    = βσ4[16]
@@ -44,6 +41,10 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     βpop  = βσ4[18]
     olm   = βσ4[20]
     ol_θ  = βσ4[21]
+
+    α_c        = (spec != :standard)  ? x0[15] : 0.0 # Condition elasticity (shoppers)
+    η_c        = (spec != :standard)  ? x0[16] : 0.0 # Condition coefficient (non-shoppers)
+    list_first = (spec == :cond_list) ? x0[17] : 0.0 # Indicator for "lowest-priced listing"
 
     #TODO: ngrid very seldom necessary, needlessly memory intensive
     temp1, temp2 = ndgrid(γ0vec, δ_vec)
@@ -63,11 +64,11 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     p_12       = d_on_12[:p]
     disap      = d_on_12[:disappear]
 
-    # Calculation for 09 data
+    # Calculation for 09 online data
     ltot_09, llhβ_09 = zeros(M_09), zeros(M_09, Y)
     basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
-    ## Calculation for 2012 data
+    ## Calculation for 2012 online data
     ltot_12, llhβ_12 = zeros(M_12), zeros(M_12, Y)
     basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
 
@@ -81,16 +82,18 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     println(VERBOSE, "Iterating for γ0... (1/2)")
     out_09 = if parallel
        @distributed (hcat) for i in 1:Y
-           obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
-                             βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
-                             :d_on_09, N_09, M_09, basellh_09, rounderr;
-                             demandcal = false, WFcal = false)
+           obs_cal([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
+                    βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
+                    :d_on_09, N_09, M_09, basellh_09, rounderr;
+                    α_c = α_c, η_c = η_c, list_first = list_first,
+                    demandcal = false, WFcal = false)
        end
     else
-       hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
-                               βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
-                               :d_on_09, N_09, M_09, basellh_09, rounderr;
-                               demandcal = false, WFcal = false) for i=1:Y]...)
+       hcat([obs_cal([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
+                      βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
+                     :d_on_09, N_09, M_09, basellh_09, rounderr;
+                     α_c = α_c, η_c = η_c, list_first = list_first,
+                     demandcal = false, WFcal = false) for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
@@ -107,18 +110,19 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
     out_12 = if parallel
        @distributed (hcat) for i in 1:Y
-           obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
-                             βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
-                             naturaldisappear], :d_on_12, N_12, M_12,
-                             basellh_12, rounderr;
-                             demandcal = true, WFcal = false, disap = disap)
+           obs_cal([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
+                    βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; nat_disap],
+                    :d_on_12, N_12, M_12, basellh_12, rounderr;
+                    α_c = α_c, η_c = η_c, list_first = list_first,
+                    demandcal = true, WFcal = false, disap = disap)
        end
     else
-       hcat([obscalnewtest2015([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
-                               βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14];
-                               naturaldisappear], :d_on_12, N_12, M_12,
-                               basellh_12, rounderr; demandcal = true,
-                               WFcal = false, disap = disap) for i=1:Y]...)
+        hcat([obs_cal([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
+                       βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; nat_disap],
+                       :d_on_12, N_12, M_12, basellh_12, rounderr;
+                       α_c = α_c, η_c = η_c, list_first = list_first,
+                       demandcal = true, WFcal = false, disap = disap)
+             for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for βs. (2/2)")
 
@@ -131,12 +135,11 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     maxtemp_12 = maximum(llhβ_12, dims = 2)
     llhadj_12  = exp.(llhβ_12 .- repeat(maxtemp_12,1,Y))
 
-    getbmean(γ_l) = -sum(obscalnewtest2015([0.; βσ4[6:8]; abs(γ_l[1]);
-                                            βσ4[11:12]; λ1; λ2; βcond;
-                                            βpop; γ_l[2]; βσ4[13]; 1.; 1.; 1.],
-                                            :bp, N_bp, M_bp, basellhb, rounderr;
-                                            demandcal = false,
-                                            WFcal = false)[1:length(basellhb),:])
+    getbmean(γ_l) = -sum(obs_cal([0.; βσ4[6:8]; abs(γ_l[1]); βσ4[11:12]; λ1; λ2;
+                                  βcond; βpop; γ_l[2]; βσ4[13]; 1.; 1.; 1.],
+                                 :bp, N_bp, M_bp, basellhb, rounderr;
+                                 α_c = α_c, η_c = η_c, list_first = list_first,
+                                 demandcal = false, WFcal = false)[1:length(basellhb),:])
 
     function integγ0(γinput::Vector{Float64}; return_all = false)
         γ0shape = γinput[1]
@@ -197,9 +200,10 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     if WFcal
         println(VERBOSE, "Beginning welfare calculations... (1/2)")
 
-        # out_bp = obscalnewtest2015([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
+        # out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
         #                             βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
         #                            bp, N_bp, M_bp, basellhb, rounderr;
+        #                             α_c = α_c, η_c = η_c, list_first = list_first,
         #                            demandcal = false, WFcal = WFcal)
         #
         # lipb  = out_bp[0*N_bp+1:1*N_bp,:]

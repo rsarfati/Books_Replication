@@ -15,12 +15,12 @@ global INPUT  = "$path/../input"
 
 ## TODO: Specify script parameters
 vint    = "2023-01-04_rp"
-spec    = :normal 	# Options are :normal, :condition, :cond_list
-N_procs = 30	 	# No. workers to request from cluster
-N_bs    = 50 		# No. bootstrap iterations
+spec    = :condition # Options are :standard, :condition, :cond_list
+N_procs = 30	 	 # No. workers to request from cluster
+N_bs    = 50 		 # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel     = false		# Distribute work across multiple processes?
+parallel     = false	# Distribute work across multiple processes?
 run_tests    = false	# Test code matches MATLAB (for developers)
 eval_only    = true		# Are you merely fetching the likelihood of a set of parameters?
 write_output = true		# Saves output to file
@@ -57,13 +57,16 @@ if run_tests; include("$path/../test/helpers.jl") end
 # Estimate model, starting from known parameters
 if estimation || eval_only
     println("(1/2) Estimating model; eval_only = $(eval_only)")
-    out = estimate_model(eval_only = eval_only, parallel = parallel,
+    out = estimate_model(eval_only = eval_only, spec = spec, parallel = parallel,
 						 write_output = write_output, vint = vint, WFcal = WFcal)
 	println("(2/2) Finished running estimation.")
 end
 
 # Run bootstrap script
-if bootstrap; run_bootstrap(N_bs = N_bs, parallel = parallel, eval_only = eval_only) end
+if bootstrap
+	run_bootstrap(N_bs = N_bs, spec = spec, parallel = parallel,
+				  eval_only = eval_only, vint = vint)
+end
 
 # Release workers
 if parallel; rmprocs(workers()); println("Workers released!") end

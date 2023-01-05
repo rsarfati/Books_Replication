@@ -74,10 +74,11 @@ Solve for the demand of shoppers, along with 1st & 2nd order derivatives.
 Note utility for outside good -> price that is the lowest (leave condition out).
 """
 function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
-                        β_1::T = 0.0, cond::V = V(undef, length(cdid)),
+                        α_c::T = 0.0, cond::V = V(undef, length(cdid)),
+						list_first::T = 0.0, numlist::V = V(undef, length(cdid)),
 						allout::Bool = false) where {T<:Float64, V<:Vector{T}}
 	N    = length(cdid)
-    expU = exp.(p .* -α .+ cond .* β_1)
+    expU = @. exp((p * -α) + (cond * α_c))
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
     sum2 = sum1[cdid]
 
@@ -103,11 +104,12 @@ Wrapper for solving for the γ rationalizing price choice.
 """
 function solve_γ(p::Union{U,V}, D0::Union{U,V}, dD0::Union{U,V}, d2D0::Union{U,V},
                  δ::T, η::T, γ0::Union{U,V}, r::T, ϵ::T;
+				 η_c::T = 0.0, cond::V = V(undef, length(cdid)),
                  allout=false) where {T<:Float64, V<:Vector{T}, U<:Vector{ComplexF64}}
 
-    Dm   = @. δ * (p ^ (-η))
-    dDm  = @. δ * (-η) * (p ^ (-η-1))
-    d2Dm = @. δ * (η)  * (η+1) * (p ^ (-η-2))
+    Dm   = @. δ * (cond ^ (-η_c)) * (p ^ (-η))
+    dDm  = @. δ * (cond ^ (-η_c)) * (p ^ (-η-1)) * (-η)
+    d2Dm = @. δ * (cond ^ (-η_c)) * (p ^ (-η-2)) * (η) * (η+1)
 
     # Adjust for rounding error
     D0_ϵ  = @. D0  + ϵ * dD0 + 0.5 * d2D0 * ϵ^2
@@ -144,7 +146,7 @@ end
 
 """
 ```
-obscalnewtest2015(βσ3, data, basellh, demandcal, p0, ϵ, WFcal)
+obs_cal(βσ3, data, basellh, demandcal, p0, ϵ, WFcal)
 ```
 Corresponds to Masao/obscalnewtest2015.m. Works!
 
@@ -158,15 +160,15 @@ hcat:
 48.379337 seconds (216.41 M allocations: 19.084 GiB, 26.38% gc time, 1.38% compilation time)
 39.416123 seconds (216.40 M allocations: 17.101 GiB, 14.07% gc time, 1.74% compilation time)
 """
-function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
-						   d_sym::Symbol,
-                           N::S, M::S, basellh::V, ϵ::T;
-  						   demandcal::Bool = false,
-                           disap::V = Vector{Float64}(),
-                           WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
-                                                       U<:Vector{S}, V<:Vector{T}}
+function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
+				 d_sym::Symbol, N::S, M::S, basellh::V, ϵ::T;
+				 α_c::T = 0.0, η_c::T = 0.0, list_first::T = 0.0,
+  				 demandcal::Bool = false, disap::V = Vector{Float64}(),
+                 WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
+                                                        U<:Vector{S}, V<:Vector{T}}
 
-	d::Dict{Symbol,Vector} = (d_sym == :d_on_09) ? d_on_09 : (d_sym == :d_on_12) ? d_on_12 : bp
+	d::Dict{Symbol,Vector{<:Number}} = (d_sym == :d_on_09) ? d_on_09 :
+	                                   (d_sym == :d_on_12) ? d_on_12 : bp
 	@unpack numlist, d_first, p = d
 	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
 
@@ -180,25 +182,23 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     βcond  = βσ3[10]
     olp    = βσ3[13]
     δ      = βσ3[14]
-
     γscale = @. βσ3[5] / m * (numlist ^ βσ3[9] / mean(numlist ^ βσ3[9])) *
                    exp.(βσ3[12] * d[:localint])
     nat_disap = βσ3[16]
 
-	α_c   = βσ3[end]   # shopper condition elasticity of demand
-	η_c   = βσ3[end-1] # non-shopper condition elasticity of demand
-
     # Solve for demand + its 1st & 2nd order derivatives
     D0, dD0, d2D0 = demand_shopper(α, β, pdif .- βcond .* d[:cond_dif] ./ α,
-								   d[:cdid], d[:obs_w])
+								   d[:cdid], d[:obs_w]; cond = d[:condition],
+								   α_c = α_c, list_first = list_first)
 
     # Solve for (lower) γ rationalizing price choice
     p1 = p .- ϵ
-    γ1 = solve_γ(p1, D0, dD0, d2D0, δ, η, γ0, r, -ϵ)
+    γ1 = solve_γ(p1, D0, dD0, d2D0, δ, η, γ0, r, -ϵ; η_c = η_c, cond = d[:condition])
 
     # Solve for (upper) γ rationalizing price choice
     p2 = p .+ ϵ
-    γ2, Dm, dDm, d2Dm = solve_γ(p2, D0, dD0, d2D0, δ, η, γ0, r, ϵ; allout=true)
+    γ2, Dm, dDm, d2Dm = solve_γ(p2, D0, dD0, d2D0, δ, η, γ0, r, ϵ;
+								η_c = η_c, cond = d[:condition], allout=true)
 
     SOC = @. r * p2 * (γ2 * d2Dm + γ0 * d2D0) + 2 * (r + (γ2 * Dm) +
           γ0 * (D0 + (ϵ * dD0) + 0.5 * (d2D0 * ϵ ^ 2))) *
@@ -237,7 +237,7 @@ function obscalnewtest2015(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
                         (1 + γscale * 0.166666667 * Dm) ^ -m * nat_disap
 
         lip_o  = @. min.([cdf(γ_dist[i], γ2[i]) -
-					   cdf(γ_dist[i], γ1[i]) for i=1:N], 1) * demandlh ^ 3
+					      cdf(γ_dist[i], γ1[i]) for i=1:N], 1) * demandlh ^ 3
         lip_ol = @. basellh * demandlhol ^ 3 # Price likelihood
     else
         lip_o  = min.([cdf(γ_dist[i], γ2[i]) -

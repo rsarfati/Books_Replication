@@ -62,7 +62,7 @@ function estimate_model(; # Data specification
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q, :R_p] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict([:R_q, :R_p] .=> 1.),
-						  # Specification
+						  # Specification: options are :standard, :condition, :cond_list
 						  spec::Symbol = :standard,
 						  # Options
 						  vint::String    = "latest", write_output::Bool = true,
@@ -79,7 +79,7 @@ function estimate_model(; # Data specification
 	@everywhere bp        = data[:of_09]
 
 	# Load specification
-	if spec == :cond
+	if spec == :condition
 		θ_init[:η_c] = 0.1602	  #=21=#
 		θ_init[:α_c] = 5.0		  #=22=#
 	elseif spec == :cond_list
@@ -93,7 +93,7 @@ function estimate_model(; # Data specification
 	# Simply evaluate likelihood at θ_init & return
 	if eval_only
     	out = obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
-				  WFcal = WFcal, parallel = parallel)
+				  WFcal = WFcal, parallel = parallel, spec = spec)
 		if write_output
 			@save "$OUTPUT/evaluated_results_$(vint).jld2" out
 		end
@@ -128,7 +128,7 @@ function estimate_model(; # Data specification
 		println("Parameters in-bounds, θ: $θ")
 
 		out = obj(θ_full(x), distpara0, data[:on_12], data[:on_09], data[:of_09];
-				  parallel = parallel)
+				  parallel = parallel, spec = spec)
 
 		println("LLH: $(out[1])")
 		return out[1]
@@ -166,10 +166,11 @@ of parameters is infeasible under model (e.g. domain error arising from taking
 log/sqrt of negative number), and returns "infinitely unlikely."
 """
 function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; WFcal = false,
-			 parallel = true) where {V<:Vector{Float64}, W<:Vector{Int64},
-									 D<:Dict{Symbol,Vector{<:Number}}}
+			 parallel = true, spec = :standard) where {V<:Vector{Float64}, W<:Vector{Int64},
+									                   D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
-		full_model(θ, distpara0, data12, data09, bp; WFcal = WFcal, parallel = parallel)
+		full_model(θ, distpara0, data12, data09, bp;
+				   spec = spec, WFcal = WFcal, parallel = parallel)
 	catch err
 		if typeof(err)<:DomainError
 			println("Domain error in optimization!")

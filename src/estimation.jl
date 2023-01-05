@@ -43,15 +43,16 @@ function estimate_model(; # Data specification
 							#=3=#	:γ_ns_shape 	=> 1.0,		#3  γ_ns_shape *** FIXED
 							#=4=#	:γ_ns_on_09 	=> 0.4247,	#4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
 							#=5=#	:γ_ns_on_12 	=> 0.3275,	#5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-							#=6=#	:η          	=> 0.8302,	#6  η - 1 			[1.87 (0.08)] (Infering -1 transformation)
-							#=7=#	:r          	=> 0.5,     #7  r * 10 *** FIXED
+							#=6=#	:η          	=> 0.8302,	#6  η - 1 			[1.87 (0.08)]
+							#=7=#	:r          	=> 0.5,     #7  r * 10     *** FIXED
 							#=8=#	:R_p        	=> 0.2738,	#8  R_p 			[0.26 (0.02)]
 							#=9=#	:c          	=> -9.0273,	#9  c * 10 			[-0.91 (0.07)]*10
 							#=10=#	:γ_s_pop    	=> 78.7921,	#10 γ_s_pop * 100 	[0.80 (0.09)]
 							#=11=#	:γ_ns_pop   	=> -14.592,	#11 γ_ns_pop * 10 	[-1.36 (0.19)]
 							#=12=#	:s_R        	=> 1.7247,	#12 s_R 			[1.73 (0.09)]
 							#=13=#	:μ_R        	=> 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
-							#=14=#	:R_q        	=> 0.9253	#14 1 - R_q    -> 1-[0.07 (0.01)]
+							#=14=#	:R_q        	=> 0.9253	#14 1 - R_q       1-[0.07 (0.01)]
+							# Distributional parameters (pinned down within model -- do not optimize over!)
 							##=15=#	:γ_s_shape  	=> 0.3598,	#15 γ_s_shape 		[0.32 (0.03)]
 							##=16=#	:γ_s_on_09  	=> 5.634,	#16 γ_s_on_09 		[5.65 (1.41)]
 							##=17=#	:γ_s_on_12  	=> 13.2618,	#17 γ_s_on_12 		[14.86 (3.10)]
@@ -72,6 +73,23 @@ function estimate_model(; # Data specification
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
+
+	# Create indicator for having the lowest price / "being listed first"
+	if spec == :cond_list
+		for d in [data[:on_09], data[:on_12], data[:of_09]]
+			d[:has_min_p] = zeros(length(d[:cdid]))
+			# Iterate over 236 titles in each sample
+			for t in unique(d[:cdid])
+				# Find the minimum price among all listings of title t
+				p_min_t = minimum(d[:p][d[:cdid] .== t])
+				# Count how many listings offered title t at said minimum price
+				N_min_p = sum(d[:p][d[:cdid] .== t] .== p_min_t)
+				# For those listings with minimum price, assign indicator
+				d[:has_min_p][(d[:cdid] .== t) .& (d[:p] .== p_min_t)] .= 1 / N_min_p
+			end
+		end
+	end
+
 	@everywhere data      = @eval $data
 	@everywhere distpara0 = @eval $distpara0
 	@everywhere d_on_09   = data[:on_09]
@@ -80,12 +98,12 @@ function estimate_model(; # Data specification
 
 	# Load specification
 	if spec == :condition
-		θ_init[:η_c] = 0.1602	  #=21=#
-		θ_init[:α_c] = 5.0		  #=22=#
+		θ_init[:η_c] = 0.16	#=21=#
+		θ_init[:α_c] = 5.00 #=22=#
 	elseif spec == :cond_list
-		θ_init[:η_c] = 0.1602	  #=21=#
-		θ_init[:α_c] = 5.0	      #=22=#
-		θ_init[:list_first] = 0.2 #=23=#
+		θ_init[:η_c]   = 0.16 #=21=#
+		θ_init[:α_c]   = 5.00 #=22=#
+		θ_init[:min_p] = 0.20 #=23=#
 	else
 		@assert spec == :standard "Only 3 specifications available at the moment."
 	end

@@ -15,7 +15,7 @@ global INPUT  = "$path/../input"
 
 ## TODO: Specify script parameters
 vint    = "2023-01-04_rp"
-spec    = :condition # Options are :standard, :condition, :cond_list
+spec    = :cond_list # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 N_bs    = 50 		 # No. bootstrap iterations
 

@@ -72,10 +72,11 @@ Note utility for outside good -> price that is the lowest (leave condition out).
 """
 function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
                         α_c::T = 0.0, cond::V = V(undef, length(cdid)),
-						min_p::T = 0.0, numlist::V = V(undef, length(cdid)),
+						min_p::T = 0.0, has_min_p::V = V(undef, length(cdid)),
+						numlist::V = V(undef, length(cdid)),
 						allout::Bool = false) where {T<:Float64, V<:Vector{T}}
 	N    = length(cdid)
-    expU = @. exp((p * -α) + (cond * -α_c))
+    expU = @. exp((p * -α) + (cond * -α_c) + (min_p * has_min_p))
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
     sum2 = sum1[cdid]
 
@@ -185,18 +186,20 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 
     # Solve for demand + its 1st & 2nd order derivatives
     D0, dD0, d2D0 = demand_shopper(α, β, pdif .- βcond .* d[:cond_dif] ./ α,
-								   d[:cdid], d[:obs_w]; cond = d[:condition],
-								   α_c = α_c, min_p = min_p)
+								   d[:cdid], d[:obs_w];
+								   α_c = α_c,     cond = d[:condition],
+								   min_p = min_p, has_min_p = d[:has_min_p])
 
     # Solve for (lower) γ rationalizing price choice
     p1 = p .- ϵ
     γ1 = solve_γ(p1, D0, dD0, d2D0, δ, η, γ0, r, -ϵ;
 				 η_c = η_c, cond = d[:condition])
 
+
     # Solve for (upper) γ rationalizing price choice
     p2 = p .+ ϵ
-    γ2, Dm, dDm, d2Dm = solve_γ(p2, D0, dD0, d2D0, δ, η, γ0, r, ϵ;
-								η_c = η_c, cond = d[:condition], allout=true)
+    γ2, Dm, dDm, d2Dm = solve_γ(p2, D0, dD0, d2D0, δ, η, γ0, r, ϵ; allout=true,
+								η_c = η_c, cond = d[:condition])
 
     SOC = @. r * p2 * (γ2 * d2Dm + γ0 * d2D0) + 2 * (r + (γ2 * Dm) +
              γ0 * (D0 + (ϵ * dD0) + 0.5 * (d2D0 * ϵ ^ 2))) *

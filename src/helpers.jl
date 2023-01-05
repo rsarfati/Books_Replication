@@ -72,10 +72,10 @@ Note utility for outside good -> price that is the lowest (leave condition out).
 """
 function demand_shopper(α::T, β::T, p::V, cdid::Vector{Int64}, obs_w::V;
                         α_c::T = 0.0, cond::V = V(undef, length(cdid)),
-						list_first::T = 0.0, numlist::V = V(undef, length(cdid)),
+						min_p::T = 0.0, numlist::V = V(undef, length(cdid)),
 						allout::Bool = false) where {T<:Float64, V<:Vector{T}}
 	N    = length(cdid)
-    expU = @. exp((p * -α) + (cond * α_c))
+    expU = @. exp((p * -α) + (cond * -α_c))
     sum1 = sum(sparse(collect(1:N), cdid, obs_w .* expU); dims=1)' .+ exp(β * α)
     sum2 = sum1[cdid]
 
@@ -159,7 +159,7 @@ hcat:
 """
 function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 				 d_sym::Symbol, N::S, M::S, basellh::V, ϵ::T;
-				 α_c::T = 0.0, η_c::T = 0.0, list_first::T = 0.0,
+				 α_c::T = 0.0, η_c::T = 0.0, min_p::T = 0.0,
   				 demandcal::Bool = false, disap::V = Vector{Float64}(),
                  WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
                                                         U<:Vector{S}, V<:Vector{T}}
@@ -179,14 +179,14 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     βcond  = βσ3[10]
     olp    = βσ3[13]
     δ      = βσ3[14]
-    γscale = @. βσ3[5] / m * (numlist ^ βσ3[9] / mean(numlist ^ βσ3[9])) *
-                exp.(βσ3[12] * d[:localint])
+    γscale = @. βσ3[5] / m * (numlist ^ βσ3[9] / mean(numlist .^ βσ3[9])) *
+                exp(βσ3[12] * d[:localint])
     nat_disap = βσ3[16]
 
     # Solve for demand + its 1st & 2nd order derivatives
     D0, dD0, d2D0 = demand_shopper(α, β, pdif .- βcond .* d[:cond_dif] ./ α,
 								   d[:cdid], d[:obs_w]; cond = d[:condition],
-								   α_c = α_c, list_first = list_first)
+								   α_c = α_c, min_p = min_p)
 
     # Solve for (lower) γ rationalizing price choice
     p1 = p .- ϵ
@@ -326,12 +326,12 @@ function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
 
     boot = CSV.read(boot_out, DataFrame, header = false)
     boot = unique(boot)
-    boot = boot[:, 2:15]
+    boot = boot[:,2:15]
     N_bs = size(boot, 1)
 
     distpara = CSV.read(boot_out, DataFrame, header = false)
     distpara = unique(distpara)
-    distpara = distpara[:, 16:21]
+    distpara = distpara[:,16:21]
 
     b_boot = zeros(N_bs, 25)
 

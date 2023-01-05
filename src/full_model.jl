@@ -21,17 +21,17 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                                            D <: Dict{Symbol,Vector{<:Number}}}
 
     # Unpack parameters, perform scaling transformations
-    βσ4 = [distpara0[1:5];  # 1-5: γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
-           x0[1];           # 6: alpha-1
-           x0[2]/(1+x0[1]); # 7: β
-           x0[3];           # 8: γishape
+    βσ4 = [distpara0[1:5];                          # 1-5: γ0shape γ0mean09 γ0mean12 δ_σ γimeanbp
+           x0[1];                                   # 6: alpha-1
+           x0[2]/(1+x0[1]);                         # 7: β
+           x0[3];                                   # 8: γishape
            x0[4] * 10 * x0[7]/10/9.5^(-x0[6]-1);    # 9: γimean09
            x0[5] * 10 * x0[7]/10/8^(-x0[6]-1);      # 10: γimean12
            x0[6:11] .* [1, 0.1, 1, 0.1, 0.01, 0.1]; # 11-16: eta-1 r olp c λ1 λ2
-           0;            # 17: βcond
-           0;            # 18: βpop
-           distpara0[6]; # 19: βlocal
-           x0[12:13]]    # 20-21: olm ol_θ
+           0;                                       # 17: βcond
+           0;                                       # 18: βpop
+           distpara0[6];                            # 19: βlocal
+           x0[12:13]]                               # 20-21: olm ol_θ
 
     nat_disap = x0[14]
 
@@ -42,11 +42,12 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     olm   = βσ4[20]
     ol_θ  = βσ4[21]
 
-    α_c        = (spec != :standard)  ? x0[15] : 0.0 # Condition elasticity (shoppers)
-    η_c        = (spec != :standard)  ? x0[16] : 0.0 # Condition coefficient (non-shoppers)
-    list_first = (spec == :cond_list) ? x0[17] : 0.0 # Indicator for "lowest-priced listing"
+    # Parameters for :condition and :cond_list models
+    α_c   = (spec != :standard)  ? x0[15] : 0.0 # Condition elasticity (shoppers)
+    η_c   = (spec != :standard)  ? x0[16] : 0.0 # Condition coefficient (non-shoppers)
+    min_p = (spec == :cond_list) ? x0[17] : 0.0 # Indicator for "lowest-priced listing"
 
-    #TODO: ngrid very seldom necessary, needlessly memory intensive
+    #OPTIMIZE: ngrid very seldom necessary, needlessly memory intensive
     temp1, temp2 = ndgrid(γ0vec, δ_vec)
     γ0_δ_vec     = hcat(vec(temp1), vec(temp2))
 
@@ -63,16 +64,18 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     first_12   = d_on_12[:d_first]
     p_12       = d_on_12[:p]
     disap      = d_on_12[:disappear]
+    min_p_09   = d_on_09[:has_min_p]
+    min_p_12   = d_on_12[:has_min_p]
 
     # Calculation for 09 online data
     ltot_09, llhβ_09 = zeros(M_09), zeros(M_09, Y)
     basellh_09 = pdf.(Gamma(olm, ol_θ), p_09) * 2 * rounderr
 
-    ## Calculation for 2012 online data
+    # Calculation for 2012 online data
     ltot_12, llhβ_12 = zeros(M_12), zeros(M_12, Y)
     basellh_12 = pdf.(Gamma(olm, ol_θ), p_12) * 2 * rounderr
 
-    ## Calculation for 09 offline data
+    # Calculation for 09 offline data
     basellhb   = pdf.(Gamma(olm, ol_θ), bp[:p]) * 2 * rounderr
 
     # OPTIMIZE: INIT 2.255119 s (59.73 k alloc: 1.512 GiB, 5.42% gc time) / call
@@ -85,22 +88,23 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
            obs_cal([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
                     βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                     :d_on_09, N_09, M_09, basellh_09, rounderr;
-                    α_c = α_c, η_c = η_c, list_first = list_first,
+                    α_c = α_c, η_c = η_c, min_p = min_p,
                     demandcal = false, WFcal = false)
        end
     else
        hcat([obs_cal([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
                       βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                      :d_on_09, N_09, M_09, basellh_09, rounderr;
-                     α_c = α_c, η_c = η_c, list_first = list_first,
+                     α_c = α_c, η_c = η_c, min_p = min_p,
                      demandcal = false, WFcal = false) for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
-    lip_09 = smooth!(out_09[1:N_09,:]) # Likelihood of each obs at each β
+    # Likelihood of each obs at each β
+    lip_09 = smooth!(out_09[1:N_09,:])
 
+    # Record log likelihood at a fixed β for a title
     for k = 1:M_09
-        # Record log likelihood at a fixed β for a title
         llhβ_09[k,:] = sum(lip_09[first_09[k] : cdindex_09[k],:], dims=1)
     end
     maxtemp_09 = maximum(llhβ_09, dims=2)
@@ -113,14 +117,14 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
            obs_cal([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
                     βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; nat_disap],
                     :d_on_12, N_12, M_12, basellh_12, rounderr;
-                    α_c = α_c, η_c = η_c, list_first = list_first,
+                    α_c = α_c, η_c = η_c, min_p = min_p,
                     demandcal = true, WFcal = false, disap = disap)
        end
     else
         hcat([obs_cal([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
                        βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; nat_disap],
                        :d_on_12, N_12, M_12, basellh_12, rounderr;
-                       α_c = α_c, η_c = η_c, list_first = list_first,
+                       α_c = α_c, η_c = η_c, min_p = min_p,
                        demandcal = true, WFcal = false, disap = disap)
              for i=1:Y]...)
     end
@@ -138,7 +142,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     getbmean(γ_l) = -sum(obs_cal([0.; βσ4[6:8]; abs(γ_l[1]); βσ4[11:12]; λ1; λ2;
                                   βcond; βpop; γ_l[2]; βσ4[13]; 1.; 1.; 1.],
                                  :bp, N_bp, M_bp, basellhb, rounderr;
-                                 α_c = α_c, η_c = η_c, list_first = list_first,
+                                 α_c = α_c, η_c = η_c, min_p = min_p,
                                  demandcal = false, WFcal = false)[1:length(basellhb),:])
 
     function integγ0(γinput::Vector{Float64}; return_all = false)
@@ -173,7 +177,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         if return_all
             return imp_09, imp_12, ltot_09, ltot_12
         end
-
         return -(sum(ltot_09) + sum(ltot_12))
     end
 
@@ -203,7 +206,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
         #                             βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
         #                            bp, N_bp, M_bp, basellhb, rounderr;
-        #                             α_c = α_c, η_c = η_c, list_first = list_first,
+        #                             α_c = α_c, η_c = η_c, min_p = min_p,
         #                            demandcal = false, WFcal = WFcal)
         #
         # lipb  = out_bp[0*N_bp+1:1*N_bp,:]
@@ -326,5 +329,5 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # fother["γ1bp"]     = γ1_bp
         println(VERBOSE, "Finished welfare calculations. (2/2)")
     end
-    return f, distpara, fother, fWF, f1, f2
+    return f, x0, distpara, fother, fWF, f1, f2
 end

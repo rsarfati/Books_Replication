@@ -20,14 +20,14 @@ N_procs = 30	 	 # No. workers to request from cluster
 N_bs    = 50 		 # No. bootstrap iterations
 
 ## TODO: Adjust flags below for what you want to run.
-parallel     = false	# Distribute work across multiple processes?
+parallel     = false	# Distribute work across multiple processors
 run_tests    = false	# Test code matches MATLAB (for developers)
-eval_only    = true		# Are you merely fetching the likelihood of a set of parameters?
+eval_only    = true		# Evaluate likelihood of a set of parameters
 write_output = true		# Saves output to file
 estimation   = false	# Estimate model
 WFcal	     = true		# Grab welfare statistics
-bootstrap    = false	# Run bootstrap for SEs?
-run_mode     = :EVAL	# Running bootstrap? Choose :OPTIM or :EVAL
+bootstrap    = false	# Run bootstrap for SEs
+run_mode     = :EVAL	# Running bootstrap? Choose :OPTIM or :EVAL.
 
 # Add worker processes, load necessary packages on said workers
 if parallel

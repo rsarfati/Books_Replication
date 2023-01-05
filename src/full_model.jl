@@ -97,7 +97,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     end
     println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
-    lip_09 = smooth!(out_09[1:N_09,:]) # likelihood of each obs at each β
+    lip_09 = smooth!(out_09[1:N_09,:]) # Likelihood of each obs at each β
 
     for k = 1:M_09
         # Record log likelihood at a fixed β for a title

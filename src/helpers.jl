@@ -9,20 +9,17 @@ zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
 vecF64(x::Any) = Vector{Float64}(vec(x))
 vecI64(x::Any) = Vector{Int64}(vec(x))
 vecC64(x::Any) = Vector{ComplexF64}(vec(x))
-
 nan_to_zero(v) = map(x -> isnan(x) ? zero(x) : x, v)
 nan_to_inf(v)  = map(x -> isnan(x) ? -Inf : x, v)
 function smooth!(v::Matrix)
-	for i=1:size(v,1)
-		for j=1:size(v,2)
-			if isnan(v[i,j])
-				if j==1
-					v[i,j] = v[i,j+1]
-				elseif j==size(v,2)
-					v[i,j] = v[i,j-1]
-				else
-					v[i,j] = (v[i,j-1] + v[i,j+1])/2.0
-				end
+	for i=1:size(v,1), j=1:size(v,2)
+		if isnan(v[i,j])
+			v[i,j] = if j == 1
+				v[i,j+1]
+			elseif j == size(v,2)
+				v[i,j-1]
+			else
+				(v[i,j-1] + v[i,j+1]) / 2.0
 			end
 		end
 	end
@@ -166,13 +163,13 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
   				 demandcal::Bool = false, disap::V = Vector{Float64}(),
                  WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
                                                         U<:Vector{S}, V<:Vector{T}}
-
+    # Conjure dictionary
 	d::Dict{Symbol,Vector{<:Number}} = (d_sym == :d_on_09) ? d_on_09 :
 	                                   (d_sym == :d_on_12) ? d_on_12 : bp
 	@unpack numlist, d_first, p = d
 	pdif = haskey(d, :pdif) ? d[:pdif] : d[:p]
 
-    # [muγ0 α-1 β γishape γimean η-1 r λ1 λ2 βcond βpop βlocal olp δ c]
+	# Unpack and transform parameters
     γ0     = @. βσ3[1] * (numlist ^ βσ3[8]) / mean(numlist .^ βσ3[8])
     α      = (βσ3[2] + 1) * βσ3[14] ^ βσ3[15]
     β      = βσ3[3] / βσ3[14] ^ βσ3[15]
@@ -183,7 +180,7 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     olp    = βσ3[13]
     δ      = βσ3[14]
     γscale = @. βσ3[5] / m * (numlist ^ βσ3[9] / mean(numlist ^ βσ3[9])) *
-                   exp.(βσ3[12] * d[:localint])
+                exp.(βσ3[12] * d[:localint])
     nat_disap = βσ3[16]
 
     # Solve for demand + its 1st & 2nd order derivatives
@@ -193,7 +190,8 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 
     # Solve for (lower) γ rationalizing price choice
     p1 = p .- ϵ
-    γ1 = solve_γ(p1, D0, dD0, d2D0, δ, η, γ0, r, -ϵ; η_c = η_c, cond = d[:condition])
+    γ1 = solve_γ(p1, D0, dD0, d2D0, δ, η, γ0, r, -ϵ;
+				 η_c = η_c, cond = d[:condition])
 
     # Solve for (upper) γ rationalizing price choice
     p2 = p .+ ϵ
@@ -201,8 +199,8 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 								η_c = η_c, cond = d[:condition], allout=true)
 
     SOC = @. r * p2 * (γ2 * d2Dm + γ0 * d2D0) + 2 * (r + (γ2 * Dm) +
-          γ0 * (D0 + (ϵ * dD0) + 0.5 * (d2D0 * ϵ ^ 2))) *
-          (γ2 * dDm + γ0 * (dD0 + ϵ * d2D0))
+             γ0 * (D0 + (ϵ * dD0) + 0.5 * (d2D0 * ϵ ^ 2))) *
+            (γ2 * dDm + γ0 * (dD0 + ϵ * d2D0))
 
     γ1 = real.(γ1)
     γ2[imag.(γ2) .!= 0] .= 0

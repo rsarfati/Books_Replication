@@ -15,26 +15,26 @@ global INPUT  = "$path/../input"
 
 ## TODO: Specify script parameters
 vint    = "2023-01-05"
-spec    = :cond_list # Options are :standard, :condition, :cond_list
+spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
-parallel     = false # Distribute work across multiple processors
+parallel     = true # Distribute work across multiple processors
 run_tests    = false # Test code matches MATLAB (for developers)
-write_output = true  # Saves output to file
-estimation   = false # Estimate model
+write_output = true # Saves output to file
+estimation   = true # Estimate model
 WFcal	     = false # Grab welfare statistics
-bootstrap    = true	# Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
-make_output  = false
+bootstrap    = false # Run bootstrap for SEs
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 
 # TODO: Bootstrap flags
-bs_inds = 1:2   # No. bootstrap iterations
-seed    = true  # For replicating output / catching bugs
+bs_inds     = 1:2   # No. bootstrap iterations
+seed        = true  # For replicating output / catching bugs
+make_output = false # Prints pretty tables from bootstrap
 
 ## Add worker processes, load necessary packages on said workers
 if parallel
-    println("(1/2) Adding processes...")
+    println("(1/2) Adding processors...")
     addprocs(N_procs)
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
     @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
@@ -44,7 +44,7 @@ if parallel
     @everywhere global OUTPUT = "$path/../output/data"
     @everywhere global INPUT  = "$path/../input"
 
-    println("(2/2) Added $(length(workers())) worker processes!")
+    println("(2/2) Added $(length(workers())) worker processors!")
 end
 
 ## Load functions on all processors

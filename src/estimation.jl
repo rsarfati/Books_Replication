@@ -114,7 +114,7 @@ function estimate_model(; # Data specification
 		if bootstrap; return out[1:3] end
 
 		if write_output
-			@save "$OUTPUT/evaluated_results_$(vint).jld2" out
+			@save "$OUTPUT/evaluated_results_$(string(spec))_$(vint).jld2" out
 		end
 		return out
 	end
@@ -171,9 +171,9 @@ function estimate_model(; # Data specification
 
 	# Save output (writing to CSV for legacy compatibility)
 	if write_output
-		@save     "$OUTPUT/estimation_results_$(vint).jld2"  θ llh distpara
-		CSV.write("$OUTPUT/estimation_theta_$(vint).csv",    Tables.table(θ))
-		CSV.write("$OUTPUT/estimation_distpara_$(vint).csv", Tables.table(distpara))
+		@save     "$OUTPUT/estimation_results_$(string(spec))_$(vint).jld2"  θ llh distpara
+		CSV.write("$OUTPUT/estimation_theta_$(string(spec))_$(vint).csv",    Tables.table(θ))
+		CSV.write("$OUTPUT/estimation_distpara_$(string(spec))_$(vint).csv", Tables.table(distpara))
 	end
 	return llh, θ, distpara
 end

@@ -19,13 +19,13 @@ spec    = :cond_list # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
-parallel     = false # Distribute work across multiple processors
+parallel     = true # Distribute work across multiple processors
 run_tests    = false # Test code matches MATLAB (for developers)
-write_output = true  # Saves output to file
-estimation   = false # Estimate model
+write_output = true # Saves output to file
+estimation   = true # Estimate model
 WFcal	     = false # Grab welfare statistics
-bootstrap    = true	# Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+bootstrap    = false # Run bootstrap for SEs
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 make_output  = false
 
 # TODO: Bootstrap flags

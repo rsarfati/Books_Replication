@@ -260,9 +260,9 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             RPpost_12[k,:] = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
         end
         if write_output
-            @save "$OUTPUT/posterior_random_price_$(vint).jld2" RPpost_09 RPpost_12
-            CSV.write("$OUTPUT/posterior_random_price_09_$(vint).csv", Tables.table(RPpost_09))
-            CSV.write("$OUTPUT/posterior_random_price_12_$(vint).csv", Tables.table(RPpost_12))
+            @save "$OUTPUT/posterior_random_price_$(string(spec))_$(vint).jld2" RPpost_09 RPpost_12
+            CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(RPpost_09))
+            CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(RPpost_12))
         end
         # for k = 1:M_09
         #     RPpost = llhadj_09[k,:]' * vec(imp_09) / exp(ltot_09[k] - maxtemp_09[k])

@@ -78,8 +78,8 @@ function run_bootstrap(; data::Dict = Dict(),
 					    	    	parallel = parallel, write_output = false,
 									bootstrap = true)
 		if write_output
-			CSV.write("$OUTPUT/bs_llh_theta_$(vint)_run=$i.csv", Tables.table([llh_i; θ_i]))
-			CSV.write("$OUTPUT/bs_distpara_$(vint)_run=$i.csv", Tables.table(distpara_i))
+			CSV.write("$OUTPUT/bs_llh_theta_$(string(spec))_$(vint)_run=$i.csv", Tables.table([llh_i; θ_i]))
+			CSV.write("$OUTPUT/bs_distpara_$(string(spec))_$(vint)_run=$i.csv", Tables.table(distpara_i))
 		end
 	end
 

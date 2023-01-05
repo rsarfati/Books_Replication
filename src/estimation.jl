@@ -68,7 +68,7 @@ function estimate_model(; # Data specification
 						  # Options
 						  vint::String    = "latest", write_output::Bool = true,
 						  eval_only::Bool = false, WFcal::Bool = false,
-						  parallel::Bool  = true) where T<:Float64
+						  parallel::Bool  = true, bootstrap::Bool = false) where T<:Float64
 
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
@@ -97,21 +97,22 @@ function estimate_model(; # Data specification
 	@everywhere bp        = data[:of_09]
 
 	# Load specification
-	if spec == :condition
-		θ_init[:η_c] = 0.16	#=21=#
-		θ_init[:α_c] = 5.00 #=22=#
-	elseif spec == :cond_list
-		θ_init[:η_c]   = 0.16 #=21=#
-		θ_init[:α_c]   = 5.00 #=22=#
-		θ_init[:min_p] = 0.20 #=23=#
-	else
-		@assert spec == :standard "Only 3 specifications available at the moment."
+	@assert spec ∈ [:standard, :condition, :cond_list]
+	if spec != :standard
+		!haskey(θ_init, :η_c) && (θ_init[:η_c] = 0.16) #=21=#
+		!haskey(θ_init, :α_c) && (θ_init[:α_c] = 5.00) #=22=#
+	end
+	if spec == :cond_list
+		!haskey(θ_init, :min_p) && (θ_init[:min_p] = 0.20) #=23=#
 	end
 
 	# Simply evaluate likelihood at θ_init & return
 	if eval_only
     	out = obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
 				  WFcal = WFcal, parallel = parallel, spec = spec)
+
+		if bootstrap; return out[1:3] end
+
 		if write_output
 			@save "$OUTPUT/evaluated_results_$(vint).jld2" out
 		end
@@ -165,12 +166,16 @@ function estimate_model(; # Data specification
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum
 
+	_, _, distpara, _, _, _, _ = full_model(θ, distpara0, data12, data09, bp;
+			   		             			spec = spec, WFcal = WFcal, parallel = parallel)
+
 	# Save output (writing to CSV for legacy compatibility)
 	if write_output
-		@save     "$OUTPUT/estimation_results_$(vint).jld2" θ llh
-		CSV.write("$OUTPUT/estimation_results_$(vint).csv", Tables.table(θ))
+		@save     "$OUTPUT/estimation_results_$(vint).jld2"  θ llh distpara
+		CSV.write("$OUTPUT/estimation_theta_$(vint).csv",    Tables.table(θ))
+		CSV.write("$OUTPUT/estimation_distpara_$(vint).csv", Tables.table(distpara))
 	end
-	return θ, llh
+	return llh, θ, distpara
 end
 
 """

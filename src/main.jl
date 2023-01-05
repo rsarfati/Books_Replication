@@ -1,9 +1,9 @@
-using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
+using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
 using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
 using Printf, Random, Roots, SparseArrays, Statistics, UnPack
 println("Packages loaded!")
 
-# Build output folders if don't exist
+## Build output folders if don't exist
 global path   = dirname(@__FILE__)
 global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
@@ -14,22 +14,25 @@ global INPUT  = "$path/../input"
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## TODO: Specify script parameters
-vint    = "2023-01-04_rp"
+vint    = "2023-01-05"
 spec    = :cond_list # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
-N_bs    = 50 		 # No. bootstrap iterations
 
-## TODO: Adjust flags below for what you want to run.
-parallel     = false	# Distribute work across multiple processors
-run_tests    = false	# Test code matches MATLAB (for developers)
-eval_only    = true		# Evaluate likelihood of a set of parameters
-write_output = true		# Saves output to file
-estimation   = false	# Estimate model
-WFcal	     = true		# Grab welfare statistics
-bootstrap    = false	# Run bootstrap for SEs
-run_mode     = :EVAL	# Running bootstrap? Choose :OPTIM or :EVAL.
+# TODO: Adjust flags below for what you want to run.
+parallel     = false # Distribute work across multiple processors
+run_tests    = false # Test code matches MATLAB (for developers)
+write_output = true  # Saves output to file
+estimation   = false # Estimate model
+WFcal	     = false # Grab welfare statistics
+bootstrap    = true	# Run bootstrap for SEs
+eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+make_output  = false
 
-# Add worker processes, load necessary packages on said workers
+# TODO: Bootstrap flags
+bs_inds = 1:2   # No. bootstrap iterations
+seed    = true  # For replicating output / catching bugs
+
+## Add worker processes, load necessary packages on said workers
 if parallel
     println("(1/2) Adding processes...")
     addprocs(N_procs)
@@ -44,29 +47,44 @@ if parallel
     println("(2/2) Added $(length(workers())) worker processes!")
 end
 
-# Loads functions
+## Load functions on all processors
 @everywhere rounderr = 0.025
 @everywhere include("$path/helpers.jl")
 @everywhere include("$path/full_model.jl")
 @everywhere include("$path/estimation.jl")
 @everywhere include("$path/bootstrap.jl")
 
-# Test function output (good idea if you've been modifying code)
+## Test function output (good idea if you've been modifying code)
 if run_tests; include("$path/../test/helpers.jl") end
 
-# Estimate model, starting from known parameters
-if estimation || eval_only
+## Estimate model, starting from known parameters
+if estimation
     println("(1/2) Estimating model; eval_only = $(eval_only)")
     out = estimate_model(eval_only = eval_only, spec = spec, parallel = parallel,
 						 write_output = write_output, vint = vint, WFcal = WFcal)
 	println("(2/2) Finished running estimation.")
 end
 
-# Run bootstrap script
+## Run bootstrap script
 if bootstrap
-	run_bootstrap(N_bs = N_bs, spec = spec, parallel = parallel,
-				  eval_only = eval_only, vint = vint)
+	println("Starting Bootstrap! Indices: $(bs_inds)")
+	run_bootstrap(bs_inds = bs_inds, seed = seed, spec = spec, vint = vint,
+				  parallel = parallel, eval_only = eval_only)
+	println("Bootstrap complete! Output saved with vint = ``$vint``")
 end
 
-# Release workers
+if make_output
+	θ_bs = vcat([Vector(CSV.read("$OUTPUT/bs_llh_theta_$(vint)_run=$i.csv",
+								 header=true, DataFrame)[2:end,1])' for i=bs_inds]...)
+	distpara_bs = vcat([Vector(CSV.read("$OUTPUT/bs_distpara_$(vint)_run=$i.csv",
+								 header=true, DataFrame)[:,1])' for i=bs_inds]...)
+	# Compute and format results from estimation
+	b_boot = output_statistics(boot = θ_bs, distpara = distpara_bs,
+	 						   #boot_out = "$OUTPUT/bootstrap_welfare_$(vint).csv",
+	                           vint = vint, write_out = true)[1]
+	make_table_results(b_boot;
+		table_title = "$OUTPUT/../tables/estimates_$(vint)_eval_only=$(eval_only).tex")
+end
+
+## Release workers
 if parallel; rmprocs(workers()); println("Workers released!") end

@@ -324,18 +324,21 @@ output_statistics(boot_out = "$OUTPUT/bootstrap_welfare.csv")
 ```
 Outputs variables in same order of paper table.
 """
-function output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare.csv",
+function output_statistics(; boot = Matrix{F64}(), distpara = Matrix{F64}(),
+							 boot_out = "$OUTPUT/bootstrap_welfare.csv",
 							 vint = "", write_out = false)
 
-    boot = CSV.read(boot_out, DataFrame, header = false)
-    boot = unique(boot)
-    boot = boot[:,2:15]
-    N_bs = size(boot, 1)
+    if isempty(boot)
+		boot = CSV.read(boot_out, DataFrame, header = false)
+    	boot = unique(boot)
+    	boot = boot[:,2:15]
 
-    distpara = CSV.read(boot_out, DataFrame, header = false)
-    distpara = unique(distpara)
-    distpara = distpara[:,16:21]
+		distpara = CSV.read(boot_out, DataFrame, header = false)
+	    distpara = unique(distpara)
+	    distpara = distpara[:,16:21]
+	end
 
+    N_bs   = size(boot, 1)
     b_boot = zeros(N_bs, 25)
 
     for i = 1:N_bs

@@ -17,35 +17,39 @@ Based on file <bootstrap_distpara_obtain_documented_Jan2018.m0>
 function run_bootstrap(; data::Dict = Dict(),
 						 distpara0::Vector{Float64} = Vector{Float64}(),
 						 # Parameter specification
-						 θ_init::OrderedDict{Symbol,Float64} = OrderedDict(
-						   #=1=#	:α          	=> 14.771,  # TRANSFORMATION
-						   #=2=#	:Δ_p_out    	=> -2.4895,
-						   #=3=#	:γ_ns_shape 	=> 1.0,
-						   #=4=#	:γ_ns_on_09 	=> 0.44004, # γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
-						   #=5=#	:γ_ns_on_12 	=> 0.32415, # γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-						   #=6=#	:η          	=> 0.87235, # η - 1  (I am infering the -1)
-						   #=7=#	:r          	=> 0.5,     # r * 10
-						   #=8=#	:R_p        	=> 0.25921,
-						   #=9=#	:c          	=> -9.1217, # c * 10
-						   #=10=#	:γ_s_pop    	=> 80.267,  # γ_s_pop * 100
-						   #=11=#	:γ_ns_pop   	=> -13.647, # γ_ns_pop * 10
-						   #=12=#	:s_R        	=> 1.7296,
-						   #=13=#	:μ_R        	=> 8.8188,  # μ_R / s_R
-						   #=14=#	:R_q        	=> 0.92622, # 1 - R_q
-						   #=15=#	:γ_s_shape  	=> 4.283,
-						   #=16=#	:γ_s_on_09  	=> 4.9097,
-						   #=17=#	:γ_s_on_12  	=> 0.0,
-						   #=18=#	:σ_δ        	=> 7.8609,
-						   #=19=#	:γ_ns_of_09_std => 7.739,
-						   #=20=#	:βlocal         => 0.011111), # βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
-						 θ_fix = Dict(:r => 0.5, :γ_ns_shape => 1.0),
-						 θ_lb  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q] .=> 0.),
-						 θ_ub  = Dict(:R_q => 1.),
-						 N_bs::Int64 = 200, eval_only = false, WFcal = true,
-						 seed = true, parallel=false, VERBOSE = true)
+						 θ_init::OrderedDict{Symbol,T} = OrderedDict(
+						   #=1=#	:α          	=> 14.7544,	#1  α 				[15.77 (1.28)]
+						   #=2=#	:Δ_p_out    	=> -2.5128,	#2  Δ_p_out 		[0.16 (0.02)]
+						   #=3=#	:γ_ns_shape 	=> 1.0,		#3  γ_ns_shape *** FIXED
+						   #=4=#	:γ_ns_on_09 	=> 0.4247,	#4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
+						   #=5=#	:γ_ns_on_12 	=> 0.3275,	#5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
+						   #=6=#	:η          	=> 0.8302,	#6  η - 1 			[1.87 (0.08)]
+						   #=7=#	:r          	=> 0.5,     #7  r * 10     *** FIXED
+						   #=8=#	:R_p        	=> 0.2738,	#8  R_p 			[0.26 (0.02)]
+						   #=9=#	:c          	=> -9.0273,	#9  c * 10 			[-0.91 (0.07)]*10
+						   #=10=#	:γ_s_pop    	=> 78.7921,	#10 γ_s_pop * 100 	[0.80 (0.09)]
+						   #=11=#	:γ_ns_pop   	=> -14.592,	#11 γ_ns_pop * 10 	[-1.36 (0.19)]
+						   #=12=#	:s_R        	=> 1.7247,	#12 s_R 			[1.73 (0.09)]
+						   #=13=#	:μ_R        	=> 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
+						   #=14=#	:R_q        	=> 0.9253), #14 βlocal ( = γ_ns_of_09_loc / γ_ns_of_09_std)
+						 θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
+  						 θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q, :R_p] .=> 0.),
+  						 θ_ub::Dict{Symbol,T}  = Dict([:R_q, :R_p] .=> 1.),
+						  # Specification: options are :standard, :condition, :cond_list
+						 spec::Symbol = :standard,
+						 # Bootstrap options
+						 N_bs::Int64 = 100, seed::Bool = true,
+						 bs_inds::UnitRange{Int64} = 1:N_bs,
+						 vint::String  = "latest", write_output::Bool = true,
+						 eval_only::Bool = false, WFcal::Bool = false,
+						 parallel::Bool  = true) where T<:Float64
 
     # Seed for consistent output
     if seed; MersenneTwister(1234) end
+
+	# Overwrite if specific range is provided
+	# (for parallelizing over main launch scripts)
+	N_bs = length(bs_inds)
 
 	# Load bootstrap indices
     @load "$INPUT/bootstrap_indices.jld2" bootindex
@@ -63,34 +67,29 @@ function run_bootstrap(; data::Dict = Dict(),
 		repeat(vals(θ_init)', N_bs)
 	end
 
-	# Run bootstrap! (TODO: parallelization option)
-    for i=1:N_bs
+	# Run bootstrap!
+    for i=bs_inds
 		println(VERBOSE, "Bootstrap iteration: $i")
-		θ_i, _ = estimate_model(data = index_data(data, bootindex[i,:]),
-					   		    distpara0 = distpara0,
-							    θ_init = OrderedDict(keys(θ_init) .=> θ_start[i,:]),
-					    	    θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
-					   	 	    eval_only = eval_only, parallel = parallel,
-					    	    write_output = false)
-		if !eval_only
-			CSV.write("$OUTPUT/bs_estimates_$(vint)_run=$i.csv", table([i; θ_i]))
+		llh_i, θ_i, distpara_i = estimate_model(data = index_data(data, bootindex[i,:]),
+					   		    	distpara0 = distpara0,
+							    	θ_init = OrderedDict(keys(θ_init) .=> θ_start[i,:]),
+					    	    	θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
+									spec = spec, eval_only = eval_only, WFcal = false,
+					    	    	parallel = parallel, write_output = false,
+									bootstrap = true)
+		if write_output
+			CSV.write("$OUTPUT/bs_llh_theta_$(vint)_run=$i.csv", Tables.table([llh_i; θ_i]))
+			CSV.write("$OUTPUT/bs_distpara_$(vint)_run=$i.csv", Tables.table(distpara_i))
 		end
 	end
 
-	# Compute and format results from estimation
-	b_boot = output_statistics(; boot_out = "$OUTPUT/bootstrap_welfare_$(vint).csv",
-	                             vint = "2022-06-26", write_out = true)[1]
-	make_table_results(b_boot;
-		table_title = "$OUTPUT/../tables/estimates_$(vint)_eval_only=$(eval_only).tex")
-
-	if WFcal
-		wel09    = mean(fWF["AveWF09"])
-		wel12    = mean(fWF["AveWF12"])
-		weloff   = mean(fWF["WFbp"])
-		result_w = [i; xinitial; newdistpara; wel09; wel12; weloff]
-		CSV.write("$OUTPUT/bs_welfare_$(vint).csv", result_w)
-	end
-	return b_boot
+	# if WFcal
+	# 	wel09    = mean(fWF["AveWF09"])
+	# 	wel12    = mean(fWF["AveWF12"])
+	# 	weloff   = mean(fWF["WFbp"])
+	# 	result_w = [i; xinitial; newdistpara; wel09; wel12; weloff]
+	# 	CSV.write("$OUTPUT/bs_welfare_$(vint).csv", result_w)
+	# end
 end
 
 """

@@ -22,7 +22,7 @@ read_draws  = ""
 #θ_init = OrderedDict()
 θ_init = OrderedDict(:α          	 =>	14.9942	,
 :Δ_p_out    	 =>	-2.4965	,
-:γ_ns_shape 	 =>	1	,
+:γ_ns_shape 	 =>	1.0	,
 :γ_ns_on_09 	 =>	0.08205	,
 :γ_ns_on_12 	 =>	0.03003	,
 :η          	 =>	0.57303	,

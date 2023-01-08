@@ -47,10 +47,11 @@ function run_bootstrap(; data::Dict = Dict(),
 	θ_init = if read_draws != ""
 	    # Optimization can be run on several servers simultaneously to save time;
 	    # we use `unique` to remove bootstrap runs duplicated on multiple servers.
+		# NOT CURRENTLY WORKING.
 		unique(readdlm(read_draws, ','), dims=1)[:,2:end]
 		# To read in old draws:
 	    #unique(readdlm("$INPUT/bootstrap_estimates.csv", ','), dims=1)[:,2:end]
-		#OrderedDict(keys(θ_init) .=> θ_start[i,:])
+		OrderedDict(keys(θ_init) .=> θ_start[i,:])
 	end
 
 	# Run bootstrap!

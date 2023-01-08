@@ -164,8 +164,9 @@ function estimate_model(; # Data specification
 		     	   show_trace = true, store_trace = true))
 	θ, llh = θ_full(res.minimizer), res.minimum
 
-	_, _, distpara, _, _, _, _ = full_model(θ, distpara0, data12, data09, bp;
-			   		             			spec = spec, WFcal = WFcal, parallel = parallel)
+	out = full_model(θ, distpara0, data[:on_12], data[:on_09], data[:of_09];
+			   		 spec = spec, WFcal = WFcal, parallel = parallel)
+	distpara = out[3]
 
 	# Save output (writing to CSV for legacy compatibility)
 	if write_output

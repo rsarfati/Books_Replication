@@ -1,6 +1,6 @@
 ## TODO: Specify script parameters
 vint    = "2023-01-08"
-spec    = :cond_list # Options are :standard, :condition, :cond_list
+spec    = :standard # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
@@ -10,7 +10,7 @@ write_output = true # Saves output to file
 estimation   = true # Estimate model
 WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations

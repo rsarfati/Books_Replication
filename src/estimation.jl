@@ -108,6 +108,7 @@ function estimate_model(; # Data specification
 
 	# Simply evaluate likelihood at θ_init & return
 	if eval_only
+		println("Evaluating model at θ = ", vals(θ_init))
     	out = obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
 				  WFcal = WFcal, parallel = parallel, spec = spec)
 

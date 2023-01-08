@@ -32,8 +32,9 @@ eval_only    = false # Does NOT optimize; evaluates likelihood for given paramet
 make_output  = false
 
 # TODO: Bootstrap flags
-bs_inds = 1:2   # No. bootstrap iterations
-seed    = true  # For replicating output / catching bugs
+bs_inds    = 1:2   # No. bootstrap iterations
+seed       = true  # For replicating output / catching bugs
+read_draws = ""
 
 global path = dirname(@__FILE__)
 include("$path/launch_script.jl")

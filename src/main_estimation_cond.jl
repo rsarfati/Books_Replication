@@ -34,6 +34,7 @@ eval_only    = true # Does NOT optimize; evaluates likelihood for given paramete
 bs_inds     = 1:2   # No. bootstrap iterations
 seed        = true  # For replicating output / catching bugs
 make_output = false # Prints pretty tables from bootstrap
+read_draws  = ""
 
 global path = dirname(@__FILE__)
 include("$path/launch_script.jl")

@@ -3,6 +3,21 @@ vint    = "2023-01-08"
 spec    = :cond_list # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
+# TODO: Adjust flags below for what you want to run.
+parallel     = true # Distribute work across multiple processors
+run_tests    = false # Test code matches MATLAB (for developers)
+write_output = false # Saves output to file
+estimation   = true # Estimate model
+WFcal	     = false # Grab welfare statistics
+bootstrap    = false # Run bootstrap for SEs
+eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+
+# TODO: Bootstrap flags
+bs_inds     = 1:2 # No. bootstrap iterations
+seed        = true # For replicating output / catching bugs
+make_output = false # Prints pretty tables from bootstrap
+read_draws  = ""
+
 ## TODO: Option to specify starting parameters
 #θ_init = OrderedDict()
 θ_init = OrderedDict(
@@ -21,20 +36,6 @@ N_procs = 30	 	 # No. workers to request from cluster
     #=13=#	:μ_R        => 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
     #=14=#	:R_q        => 0.9253)
 
-# TODO: Adjust flags below for what you want to run.
-parallel     = true # Distribute work across multiple processors
-run_tests    = false # Test code matches MATLAB (for developers)
-write_output = true # Saves output to file
-estimation   = true # Estimate model
-WFcal	     = false # Grab welfare statistics
-bootstrap    = false # Run bootstrap for SEs
-eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
-make_output  = false
-
-# TODO: Bootstrap flags
-bs_inds    = 1:2   # No. bootstrap iterations
-seed       = true  # For replicating output / catching bugs
-read_draws = ""
 
 global path = dirname(@__FILE__)
 include("$path/launch_script.jl")

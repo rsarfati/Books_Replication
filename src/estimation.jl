@@ -37,29 +37,7 @@ function estimate_model(; # Data specification
 						  data::Dict = Dict(),
 						  distpara0::Vector{T} = Vector{Float64}(),
 						  # Parameter specification
- 					  	  θ_init::OrderedDict{Symbol,T} = OrderedDict(
-							#=1=#	:α          	=> 14.7544,	#1  α 				[15.77 (1.28)]
-							#=2=#	:Δ_p_out    	=> -2.5128,	#2  Δ_p_out 		[0.16 (0.02)]
-							#=3=#	:γ_ns_shape 	=> 1.0,		#3  γ_ns_shape *** FIXED
-							#=4=#	:γ_ns_on_09 	=> 0.4247,	#4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
-							#=5=#	:γ_ns_on_12 	=> 0.3275,	#5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-							#=6=#	:η          	=> 0.8302,	#6  η - 1 			[1.87 (0.08)]
-							#=7=#	:r          	=> 0.5,     #7  r * 10     *** FIXED
-							#=8=#	:R_p        	=> 0.2738,	#8  R_p 			[0.26 (0.02)]
-							#=9=#	:c          	=> -9.0273,	#9  c * 10 			[-0.91 (0.07)]*10
-							#=10=#	:γ_s_pop    	=> 78.7921,	#10 γ_s_pop * 100 	[0.80 (0.09)]
-							#=11=#	:γ_ns_pop   	=> -14.592,	#11 γ_ns_pop * 10 	[-1.36 (0.19)]
-							#=12=#	:s_R        	=> 1.7247,	#12 s_R 			[1.73 (0.09)]
-							#=13=#	:μ_R        	=> 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
-							#=14=#	:R_q        	=> 0.9253	#14 1 - R_q       1-[0.07 (0.01)]
-							# Distributional parameters (pinned down within model -- do not optimize over!)
-							##=15=#	:γ_s_shape  	=> 0.3598,	#15 γ_s_shape 		[0.32 (0.03)]
-							##=16=#	:γ_s_on_09  	=> 5.634,	#16 γ_s_on_09 		[5.65 (1.41)]
-							##=17=#	:γ_s_on_12  	=> 13.2618,	#17 γ_s_on_12 		[14.86 (3.10)]
-							##=18=#	:σ_δ        	=> 1.16,	#18 σ_δ 			[1.16 (0.05)]
-							##=19=#	:γ_ns_of_09_std => 0.65,	#19 γ_ns_of_09_std 	[0.65 (0.17)]
-							##=20=#	:βlocal			=> 1.923	#20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std) [1.25 (0.37) / 0.65 (0.17)]
-							),
+ 					  	  θ_init::OrderedDict{Symbol,T} = OrderedDict(),
 						  θ_fix::Dict{Symbol,T} = Dict(:r => 0.5, :γ_ns_shape => 1.0),
 						  θ_lb::Dict{Symbol,T}  = Dict([:γ_ns_on_09, :γ_ns_on_12, :R_q, :R_p] .=> 0.),
 						  θ_ub::Dict{Symbol,T}  = Dict([:R_q, :R_p] .=> 1.),
@@ -73,7 +51,31 @@ function estimate_model(; # Data specification
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
-
+	if isempty(θ_init)
+		θ_init = OrderedDict(
+		#=1=#	:α          	=> 14.7544,	#1  α 				[15.77 (1.28)]
+		#=2=#	:Δ_p_out    	=> -2.5128,	#2  Δ_p_out 		[0.16 (0.02)]
+		#=3=#	:γ_ns_shape 	=> 1.0,		#3  γ_ns_shape *** FIXED
+		#=4=#	:γ_ns_on_09 	=> 0.4247,	#4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
+		#=5=#	:γ_ns_on_12 	=> 0.3275,	#5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
+		#=6=#	:η          	=> 0.8302,	#6  η - 1 			[1.87 (0.08)]
+		#=7=#	:r          	=> 0.5,     #7  r * 10     *** FIXED
+		#=8=#	:R_p        	=> 0.2738,	#8  R_p 			[0.26 (0.02)]
+		#=9=#	:c          	=> -9.0273,	#9  c * 10 			[-0.91 (0.07)]*10
+		#=10=#	:γ_s_pop    	=> 78.7921,	#10 γ_s_pop * 100 	[0.80 (0.09)]
+		#=11=#	:γ_ns_pop   	=> -14.592,	#11 γ_ns_pop * 10 	[-1.36 (0.19)]
+		#=12=#	:s_R        	=> 1.7247,	#12 s_R 			[1.73 (0.09)]
+		#=13=#	:μ_R        	=> 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
+		#=14=#	:R_q        	=> 0.9253	#14 1 - R_q       1-[0.07 (0.01)]
+		# Distributional parameters (pinned down within model -- do not optimize over!)
+		##=15=#	:γ_s_shape  	=> 0.3598,	#15 γ_s_shape 		[0.32 (0.03)]
+		##=16=#	:γ_s_on_09  	=> 5.634,	#16 γ_s_on_09 		[5.65 (1.41)]
+		##=17=#	:γ_s_on_12  	=> 13.2618,	#17 γ_s_on_12 		[14.86 (3.10)]
+		##=18=#	:σ_δ        	=> 1.16,	#18 σ_δ 			[1.16 (0.05)]
+		##=19=#	:γ_ns_of_09_std => 0.65,	#19 γ_ns_of_09_std 	[0.65 (0.17)]
+		##=20=#	:βlocal			=> 1.923	#20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std) [1.25 (0.37) / 0.65 (0.17)]
+		)
+	end
 	# Create indicator for having the lowest price / "being listed first"
 	for d in [data[:on_09], data[:on_12], data[:of_09]]
 		d[:has_min_p] = zeros(length(d[:cdid]))

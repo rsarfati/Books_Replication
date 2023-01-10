@@ -1,5 +1,5 @@
 ## TODO: Specify script parameters
-vint    = "2023-01-08"
+vint    = "2023-01-10"
 spec    = :cond_list # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 

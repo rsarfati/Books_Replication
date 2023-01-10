@@ -223,6 +223,16 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         CSs_12  = out_12[8*N_12+1:9*N_12,:]
         r_p_12 = out_12[9*N_12+1:10*N_12,:]
 
+        if write_output
+            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12
+            df_09 = DataFrame(:CSns_09 => vec(CSns_09), :CSs_09 => vec(CSs_09), :r_p_09 => vec(r_p_09))
+            df_12 = DataFrame(:CSns_12 => vec(CSns_12), :CSs_12 => vec(CSs_12), :r_p_12 => vec(r_p_12))
+            CSV.write("$OUTPUT/welfare_estimates_09_$(string(spec))_$(vint).csv", df_09)
+            CSV.write("$OUTPUT/welfare_estimates_12_$(string(spec))_$(vint).csv", df_12)
+            #CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(r_p_09))
+            #CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(r_p_12))
+        end
+
         # imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
         #
         # WF_09       = zeros(N_09, 3)
@@ -244,16 +254,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         #     RPpost_12[k,:] = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
         # end
 
-        if write_output
-            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12
-            df_09 = DataFrame(:CSns_09 => vec(CSns_09), :CSs_09 => vec(CSs_09), :r_p_09 => vec(r_p_09))
-            df_12 = DataFrame(:CSns_12 => vec(CSns_12), :CSs_12 => vec(CSs_12), :r_p_12 => vec(r_p_12))
-            CSV.write("$OUTPUT/welfare_estimates_09_$(string(spec))_$(vint).csv", df_09)
-            CSV.write("$OUTPUT/welfare_estimates_12_$(string(spec))_$(vint).csv", df_12)
-            #CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(r_p_09))
-            #CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(r_p_12))
-        end
-
         # out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
         #                             βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
         #                            bp, N_bp, M_bp, basellhb, rounderr;
@@ -271,7 +271,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
         # WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
         # WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
-
 
         # for k = 1:M_09
         #     RPpost = llhadj_09[k,:]' * vec(imp_09) / exp(ltot_09[k] - maxtemp_09[k])

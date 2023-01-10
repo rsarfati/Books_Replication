@@ -203,25 +203,35 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     if WFcal
         println(VERBOSE, "Beginning welfare calculations... (1/2)")
 
+        # Old output order:
         # γ2_09   = out_09[1*N_09+1:2*N_09,:]
         # γ1_09   = out_09[2*N_09+1:3*N_09,:]
         # γ0_09   = out_09[3*N_09+1:4*N_09,:]
         # D0_09   = out_09[4*N_09+1:5*N_09,:]
         # Dm_09   = out_09[5*N_09+1:6*N_09,:]
         # pi_09   = out_09[6*N_09+1:7*N_09,:]
-        CSns_09 = out_09[7*N_09+1:8*N_09,:]
-        CSs_09  = out_09[8*N_09+1:9*N_09,:]
-        r_p_09 = out_09[9*N_09+1:10*N_09,:]
+        # CSns_09 = out_09[7*N_09+1:8*N_09,:]
+        # CSs_09  = out_09[8*N_09+1:9*N_09,:]
+        # r_p_09 = out_09[9*N_09+1:10*N_09,:]
 
+        CSns_09 = out_09[1*N_09+1:2*N_09,:]
+        CSs_09  = out_09[2*N_09+1:3*N_09,:]
+        r_p_09  = out_09[3*N_09+1:4*N_09,:]
+
+        # Old output order:
         # γ2_12   = out_12[1*N_12+1:2*N_12,:]
         # γ1_12   = out_12[2*N_12+1:3*N_12,:]
         # γ0_12   = out_12[3*N_12+1:4*N_12,:]
         # D0_12   = out_12[4*N_12+1:5*N_12,:]
         # Dm_12   = out_12[5*N_12+1:6*N_12,:]
         # pi_12   = out_12[6*N_12+1:7*N_12,:]
-        CSns_12 = out_12[7*N_12+1:8*N_12,:]
-        CSs_12  = out_12[8*N_12+1:9*N_12,:]
-        r_p_12 = out_12[9*N_12+1:10*N_12,:]
+        # CSns_12 = out_12[7*N_12+1:8*N_12,:]
+        # CSs_12  = out_12[8*N_12+1:9*N_12,:]
+        # r_p_12 = out_12[9*N_12+1:10*N_12,:]
+
+        CSns_12 = out_12[1*N_12+1:2*N_12,:]
+        CSs_12  = out_12[2*N_12+1:3*N_12,:]
+        r_p_12  = out_12[3*N_12+1:4*N_12,:]
 
         if write_output
             @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12

@@ -9,8 +9,10 @@ zeros(x::Float64,y::Float64) = zeros(Int(round(x)), Int(round(y)))
 vecF64(x::Any) = Vector{Float64}(vec(x))
 vecI64(x::Any) = Vector{Int64}(vec(x))
 vecC64(x::Any) = Vector{ComplexF64}(vec(x))
+
 nan_to_zero(v) = map(x -> isnan(x) ? zero(x) : x, v)
 nan_to_inf(v)  = map(x -> isnan(x) ? -Inf : x, v)
+
 function smooth!(v::Matrix)
 	for i=1:size(v,1), j=1:size(v,2)
 		if isnan(v[i,j])

@@ -214,9 +214,21 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # CSs_09  = out_09[8*N_09+1:9*N_09,:]
         # r_p_09 = out_09[9*N_09+1:10*N_09,:]
 
-        CSns_09 = out_09[1*N_09+1:2*N_09,:]
-        CSs_09  = out_09[2*N_09+1:3*N_09,:]
-        r_p_09  = out_09[3*N_09+1:4*N_09,:]
+        CSns_09_full = out_09[1*N_09+1:2*N_09,:]
+        CSs_09_full  = out_09[2*N_09+1:3*N_09,:]
+        r_p_09_full  = out_09[3*N_09+1:4*N_09,:]
+
+        CSns_09 = Vector{Float64}(undef, N_09)
+        CSs_09  = Vector{Float64}(undef, N_09)
+        r_p_09  = Vector{Float64}(undef, N_09)
+
+        for k = 1:M_09
+            ind_k = first_09[k]:cdindex_09[k]
+            y_max = argmax(llhadj_09[k,:])
+            CSns_09[ind_k] = CSns_09_full[ind_k, y_max]
+            CSs_09[ ind_k] = CSs_09_full[ ind_k, y_max]
+            r_p_09[ ind_k] = r_p_09_full[ ind_k, y_max]
+        end
 
         # Old output order:
         # γ2_12   = out_12[1*N_12+1:2*N_12,:]
@@ -229,9 +241,21 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # CSs_12  = out_12[8*N_12+1:9*N_12,:]
         # r_p_12 = out_12[9*N_12+1:10*N_12,:]
 
-        CSns_12 = out_12[1*N_12+1:2*N_12,:]
-        CSs_12  = out_12[2*N_12+1:3*N_12,:]
-        r_p_12  = out_12[3*N_12+1:4*N_12,:]
+        CSns_12_full = out_12[1*N_12+1:2*N_12,:]
+        CSs_12_full  = out_12[2*N_12+1:3*N_12,:]
+        r_p_12_full  = out_12[3*N_12+1:4*N_12,:]
+
+        CSns_12 = Vector{Float64}(undef, N_12)
+        CSs_12  = Vector{Float64}(undef, N_12)
+        r_p_12  = Vector{Float64}(undef, N_12)
+
+        for k = 1:M_12
+            ind_k = first_12[k]:cdindex_12[k]
+            y_max = argmax(llhadj_12[k,:])
+            CSns_12[ind_k] = CSns_12_full[ind_k, y_max]
+            CSs_12[ ind_k] = CSs_12_full[ ind_k, y_max]
+            r_p_12[ ind_k] = r_p_12_full[ ind_k, y_max]
+        end
 
         if write_output
             @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12

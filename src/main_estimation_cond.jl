@@ -1,16 +1,16 @@
 ## TODO: Specify script parameters
-vint    = "2023-01-08"
+vint    = "2023-01-10"
 spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
 parallel     = true # Distribute work across multiple processors
 run_tests    = false # Test code matches MATLAB (for developers)
-write_output = true # Saves output to file
+write_output = false # Saves output to file
 estimation   = true # Estimate model
 WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations
@@ -37,7 +37,7 @@ read_draws  = ""
 #     #=14=#	:R_q        => 0.9253)
 θ_init = OrderedDict(:α          	 =>	14.748	,
 :Δ_p_out    	 =>	-2.5108	,
-:γ_ns_shape 	 =>	1.0	,
+:γ_ns_shape 	 =>	1	,
 :γ_ns_on_09 	 =>	0.17102	,
 :γ_ns_on_12 	 =>	0.01594	,
 :η          	 =>	0.55773	,

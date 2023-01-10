@@ -89,14 +89,14 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                     :d_on_09, N_09, M_09, basellh_09, rounderr;
                     α_c = α_c, η_c = η_c, min_p = min_p,
-                    demandcal = false, WFcal = false)
+                    demandcal = false, WFcal = WFcal)
        end
     else
        hcat([obs_cal([γ0_δ_vec[i,1]; βσ4[[6:9;11:12]]; λ1; λ2; βcond;
                       βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; 1],
                      :d_on_09, N_09, M_09, basellh_09, rounderr;
                      α_c = α_c, η_c = η_c, min_p = min_p,
-                     demandcal = false, WFcal = false) for i=1:Y]...)
+                     demandcal = false, WFcal = WFcal) for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for γ0. (2/2)")
 
@@ -118,14 +118,14 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
                     βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; nat_disap],
                     :d_on_12, N_12, M_12, basellh_12, rounderr;
                     α_c = α_c, η_c = η_c, min_p = min_p,
-                    demandcal = true, WFcal = false, disap = disap)
+                    demandcal = true, WFcal = WFcal, disap = disap)
        end
     else
         hcat([obs_cal([γ0_δ_vec[i,1]; βσ4[[6:8;10:12]]; λ1; λ2; βcond;
                        βpop; 0; βσ4[13]; γ0_δ_vec[i,2]; βσ4[14]; nat_disap],
                        :d_on_12, N_12, M_12, basellh_12, rounderr;
                        α_c = α_c, η_c = η_c, min_p = min_p,
-                       demandcal = true, WFcal = false, disap = disap)
+                       demandcal = true, WFcal = WFcal, disap = disap)
              for i=1:Y]...)
     end
     println(VERBOSE, "Completed Iteration for βs. (2/2)")
@@ -203,52 +203,34 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     if WFcal
         println(VERBOSE, "Beginning welfare calculations... (1/2)")
 
-        # out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
-        #                             βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
-        #                            bp, N_bp, M_bp, basellhb, rounderr;
-        #                             α_c = α_c, η_c = η_c, min_p = min_p,
-        #                            demandcal = false, WFcal = WFcal)
-        #
-        # lipb  = out_bp[0*N_bp+1:1*N_bp,:]
-        # γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
-        # γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
-        # γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
-        # D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
-        # Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
-        #
         # γ2_09   = out_09[1*N_09+1:2*N_09,:]
         # γ1_09   = out_09[2*N_09+1:3*N_09,:]
         # γ0_09   = out_09[3*N_09+1:4*N_09,:]
         # D0_09   = out_09[4*N_09+1:5*N_09,:]
         # Dm_09   = out_09[5*N_09+1:6*N_09,:]
         # pi_09   = out_09[6*N_09+1:7*N_09,:]
-        # CSns_09 = out_09[7*N_09+1:8*N_09,:]
-        # CSs_09  = out_09[8*N_09+1:9*N_09,:]
-        #
+        CSns_09 = out_09[7*N_09+1:8*N_09,:]
+        CSs_09  = out_09[8*N_09+1:9*N_09,:]
+
         # γ2_12   = out_12[1*N_12+1:2*N_12,:]
         # γ1_12   = out_12[2*N_12+1:3*N_12,:]
         # γ0_12   = out_12[3*N_12+1:4*N_12,:]
         # D0_12   = out_12[4*N_12+1:5*N_12,:]
         # Dm_12   = out_12[5*N_12+1:6*N_12,:]
         # pi_12   = out_12[6*N_12+1:7*N_12,:]
-        # CSns_12 = out_12[7*N_12+1:8*N_12,:]
-        # CSs_12  = out_12[8*N_12+1:9*N_12,:]
-        #
-        # WF_bp       = zeros(N_bp, 3)
-        # WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
-        # WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
-        # WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
-        #
-        # imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
-        #
-        # WF_09       = zeros(N_09, 3)
-        # WF_12       = zeros(N_12, 3)
-        #
-        # AveWF_09    = zeros(M_09, 3)
-        # AveWF_12    = zeros(M_12, 3)
-        #
-        # BestVals_09 = zeros(N_09,13)
-        # BestVals_12 = zeros(N_12,13)
+        CSns_12 = out_12[7*N_12+1:8*N_12,:]
+        CSs_12  = out_12[8*N_12+1:9*N_12,:]
+
+        imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
+
+        WF_09       = zeros(N_09, 3)
+        WF_12       = zeros(N_12, 3)
+
+        AveWF_09    = zeros(M_09, 3)
+        AveWF_12    = zeros(M_12, 3)
+
+        BestVals_09 = zeros(N_09,13)
+        BestVals_12 = zeros(N_12,13)
 
         RPpost_09 = zeros(M_09, Y)
         RPpost_12 = zeros(M_12, Y)
@@ -259,11 +241,32 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         for k=1:M_12
             RPpost_12[k,:] = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
         end
+
         if write_output
             @save "$OUTPUT/posterior_random_price_$(string(spec))_$(vint).jld2" RPpost_09 RPpost_12
             CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(RPpost_09))
             CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(RPpost_12))
         end
+
+        # out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
+        #                             βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
+        #                            bp, N_bp, M_bp, basellhb, rounderr;
+        #                             α_c = α_c, η_c = η_c, min_p = min_p,
+        #                            demandcal = false, WFcal = WFcal)
+
+        # lipb  = out_bp[0*N_bp+1:1*N_bp,:]
+        # γ2_bp = out_bp[1*N_bp+1:2*N_bp,:]
+        # γ1_bp = out_bp[2*N_bp+1:3*N_bp,:]
+        # γ0_bp = out_bp[3*N_bp+1:4*N_bp,:]
+        # D0_bp = out_bp[4*N_bp+1:5*N_bp,:]
+        # Dm_bp = out_bp[5*N_bp+1:6*N_bp,:]
+
+        # WF_bp       = zeros(N_bp, 3)
+        # WF_bp[:,1] .= vec(out_bp[6*N_bp+1:7*N_bp,:])
+        # WF_bp[:,2] .= vec(out_bp[7*N_bp+1:8*N_bp,:])
+        # WF_bp[:,3] .= vec(out_bp[8*N_bp+1:9*N_bp,:])
+
+
         # for k = 1:M_09
         #     RPpost = llhadj_09[k,:]' * vec(imp_09) / exp(ltot_09[k] - maxtemp_09[k])
         #

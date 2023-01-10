@@ -257,7 +257,7 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 		pi_v, CSns, CSs = welfaresimple(γ1, γ2, γscale .* m, γ0, olppost, Dm, D0,
                                  		pdif, p, N, M, d[:cdindex], d_first,
 								 		[α; β; η; r])
-    	return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs]
+    	return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs; olppost]
 	else
 		return lip
 	end

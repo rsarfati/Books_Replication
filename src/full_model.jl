@@ -211,6 +211,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # pi_09   = out_09[6*N_09+1:7*N_09,:]
         CSns_09 = out_09[7*N_09+1:8*N_09,:]
         CSs_09  = out_09[8*N_09+1:9*N_09,:]
+        r_p_09 = out_09[9*N_09+1:10*N_09,:]
 
         # γ2_12   = out_12[1*N_12+1:2*N_12,:]
         # γ1_12   = out_12[2*N_12+1:3*N_12,:]
@@ -220,32 +221,36 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         # pi_12   = out_12[6*N_12+1:7*N_12,:]
         CSns_12 = out_12[7*N_12+1:8*N_12,:]
         CSs_12  = out_12[8*N_12+1:9*N_12,:]
+        r_p_12 = out_12[9*N_12+1:10*N_12,:]
 
-        imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
+        # imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)
+        #
+        # WF_09       = zeros(N_09, 3)
+        # WF_12       = zeros(N_12, 3)
+        #
+        # AveWF_09    = zeros(M_09, 3)
+        # AveWF_12    = zeros(M_12, 3)
+        #
+        # BestVals_09 = zeros(N_09,13)
+        # BestVals_12 = zeros(N_12,13)
 
-        WF_09       = zeros(N_09, 3)
-        WF_12       = zeros(N_12, 3)
-
-        AveWF_09    = zeros(M_09, 3)
-        AveWF_12    = zeros(M_12, 3)
-
-        BestVals_09 = zeros(N_09,13)
-        BestVals_12 = zeros(N_12,13)
-
-        RPpost_09 = zeros(M_09, Y)
-        RPpost_12 = zeros(M_12, Y)
-
-        for k=1:M_09
-            RPpost_09[k,:] = llhadj_09[k,:] .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
-        end
-        for k=1:M_12
-            RPpost_12[k,:] = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
-        end
+        # RPpost_09 = zeros(M_09, Y)
+        # RPpost_12 = zeros(M_12, Y)
+        #
+        # for k=1:M_09
+        #     RPpost_09[k,:] = llhadj_09[k,:] .* vec(imp_09) ./ exp(ltot_09[k] - maxtemp_09[k])
+        # end
+        # for k=1:M_12
+        #     RPpost_12[k,:] = llhadj_12[k,:] .* vec(imp_12) ./ exp(ltot_12[k] - maxtemp_12[k])
+        # end
 
         if write_output
-            @save "$OUTPUT/posterior_random_price_$(string(spec))_$(vint).jld2" RPpost_09 RPpost_12
-            CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(RPpost_09))
-            CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(RPpost_12))
+            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12
+            out_df = DataFrame(:CSns_09 => CSns_09, :CSs_09 => CSs_09, :r_p_09 => r_p_09,
+                               :CSns_12 => CSns_12, :CSs_12 => CSs_12, :r_p_12 => r_p_12)
+            CSV.write("$OUTPUT/welfare_estimates_$(string(spec))_$(vint).csv", out_df)
+            #CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(r_p_09))
+            #CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(r_p_12))
         end
 
         # out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;

@@ -8,7 +8,7 @@ parallel     = true # Distribute work across multiple processors
 run_tests    = false # Test code matches MATLAB (for developers)
 write_output = true # Saves output to file
 estimation   = true # Estimate model
-WFcal	     = false # Grab welfare statistics
+WFcal	     = true # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
 eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 

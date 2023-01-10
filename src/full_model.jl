@@ -246,8 +246,8 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
         if write_output
             @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12
-            out_df = DataFrame(:CSns_09 => CSns_09, :CSs_09 => CSs_09, :r_p_09 => r_p_09,
-                               :CSns_12 => CSns_12, :CSs_12 => CSs_12, :r_p_12 => r_p_12)
+            out_df = DataFrame(:CSns_09 => vec(CSns_09), :CSs_09 => vec(CSs_09), :r_p_09 => vec(r_p_09),
+                               :CSns_12 => vec(CSns_12), :CSs_12 => vec(CSs_12), :r_p_12 => vec(r_p_12))
             CSV.write("$OUTPUT/welfare_estimates_$(string(spec))_$(vint).csv", out_df)
             #CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(r_p_09))
             #CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(r_p_12))

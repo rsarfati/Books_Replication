@@ -260,7 +260,7 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
                                  		pdif, p, N, M, d[:cdindex], d_first,
 								 		[α; β; η; r])
     	#return [lip; γ2; γ1; γ0; D0; Dm; pi_v; CSns; CSs; olppost]
-		return [lip; CSns; CSs; olppost]
+		return [lip; CSns; CSs; olppost; pi_v]
 	else
 		return lip
 	end

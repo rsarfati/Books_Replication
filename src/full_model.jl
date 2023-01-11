@@ -217,10 +217,12 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         CSns_09_full = out_09[1*N_09+1:2*N_09,:]
         CSs_09_full  = out_09[2*N_09+1:3*N_09,:]
         r_p_09_full  = out_09[3*N_09+1:4*N_09,:]
+        pi_09_full   = out_09[4*N_09+1:5*N_09,:]
 
         CSns_09 = Vector{Float64}(undef, N_09)
         CSs_09  = Vector{Float64}(undef, N_09)
         r_p_09  = Vector{Float64}(undef, N_09)
+        pi_09   = Vector{Float64}(undef, N_09)
 
         for k = 1:M_09
             ind_k = first_09[k]:cdindex_09[k]
@@ -228,6 +230,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             CSns_09[ind_k] = CSns_09_full[ind_k, y_max]
             CSs_09[ ind_k] = CSs_09_full[ ind_k, y_max]
             r_p_09[ ind_k] = r_p_09_full[ ind_k, y_max]
+            pi_09[  ind_k] = pi_09_full[  ind_k, y_max]
         end
 
         # Old output order:
@@ -244,10 +247,12 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         CSns_12_full = out_12[1*N_12+1:2*N_12,:]
         CSs_12_full  = out_12[2*N_12+1:3*N_12,:]
         r_p_12_full  = out_12[3*N_12+1:4*N_12,:]
+        pi_12_full   = out_12[4*N_12+1:5*N_12,:]
 
         CSns_12 = Vector{Float64}(undef, N_12)
         CSs_12  = Vector{Float64}(undef, N_12)
         r_p_12  = Vector{Float64}(undef, N_12)
+        pi_12   = Vector{Float64}(undef, N_12)
 
         for k = 1:M_12
             ind_k = first_12[k]:cdindex_12[k]
@@ -255,12 +260,15 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             CSns_12[ind_k] = CSns_12_full[ind_k, y_max]
             CSs_12[ ind_k] = CSs_12_full[ ind_k, y_max]
             r_p_12[ ind_k] = r_p_12_full[ ind_k, y_max]
+            pi_12[  ind_k] = pi_12_full[  ind_k, y_max]
         end
 
         if write_output
-            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 CSns_12 CSs_12 r_p_12
-            df_09 = DataFrame(:CSns_09 => vec(CSns_09), :CSs_09 => vec(CSs_09), :r_p_09 => vec(r_p_09))
-            df_12 = DataFrame(:CSns_12 => vec(CSns_12), :CSs_12 => vec(CSs_12), :r_p_12 => vec(r_p_12))
+            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 pi_09 CSns_12 CSs_12 r_p_12 pi_12
+            df_09 = DataFrame(:listing => cdindex_09, :CSns => vec(CSns_09),
+                              :CSs => vec(CSs_09), :r_p => vec(r_p_09), :pi => vec(pi_09))
+            df_12 = DataFrame(:listing => cdindex_12, :CSns => vec(CSns_12),
+                              :CSs => vec(CSs_12), :r_p => vec(r_p_12), :pi => vec(pi_12))
             CSV.write("$OUTPUT/welfare_estimates_09_$(string(spec))_$(vint).csv", df_09)
             CSV.write("$OUTPUT/welfare_estimates_12_$(string(spec))_$(vint).csv", df_12)
             #CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(r_p_09))

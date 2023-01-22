@@ -295,6 +295,7 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
     mktsize = @. cdindex - d_first + 1
 
     for k = 1:M
+
         ind_k    = d_first[k]:cdindex[k]
 
         best_p   = Vector{Float64}(undef, N_draw)
@@ -307,11 +308,11 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
 
         best, bestindex = vec.(findmax(rand_price, dims = 1))
 
-        temp = sparse([(x->x[2]).(bestindex); mktsize[k]+1], 1:N_draw+1,
+        temp = sparse([(x->x[1]).(bestindex); mktsize[k]+1], 1:N_draw+1,
                       [best .- rand_price[end,:]; 1])
 
-        CSgain[ind_k,1] = sum(temp[1:mktsize[k],1:N_draw],      dims=2) ./
-                         (sum(temp[1:mktsize[k],1:N_draw] .> 0, dims=2) .+ 1e-5)
+        CSgain[ind_k,1] = sum(temp[1:mktsize[k], 1:N_draw],      dims=2) ./
+                         (sum(temp[1:mktsize[k], 1:N_draw] .> 0, dims=2) .+ 1e-5)
     end
 
     CSs_o  = @. γ0 * D0 / (r + γ1ave  * Dm + γ0 * D0) * CSgain

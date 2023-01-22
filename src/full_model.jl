@@ -265,9 +265,9 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
 
         if write_output
             @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 pi_09 CSns_12 CSs_12 r_p_12 pi_12
-            df_09 = DataFrame(:listing => cdindex_09, :CSns => vec(CSns_09),
+            df_09 = DataFrame(:listing => d_on_09[:cdid], :CSns => vec(CSns_09),
                               :CSs => vec(CSs_09), :r_p => vec(r_p_09), :pi => vec(pi_09))
-            df_12 = DataFrame(:listing => cdindex_12, :CSns => vec(CSns_12),
+            df_12 = DataFrame(:listing => d_on_12[:cdid], :CSns => vec(CSns_12),
                               :CSs => vec(CSs_12), :r_p => vec(r_p_12), :pi => vec(pi_12))
             CSV.write("$OUTPUT/welfare_estimates_09_$(string(spec))_$(vint).csv", df_09)
             CSV.write("$OUTPUT/welfare_estimates_12_$(string(spec))_$(vint).csv", df_12)

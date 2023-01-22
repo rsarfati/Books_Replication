@@ -1,5 +1,5 @@
 ## TODO: Specify script parameters
-vint    = "2023-01-11"
+vint    = "2023-01-22"
 spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
@@ -18,7 +18,7 @@ make_output = false # Prints pretty tables from bootstrap
 read_draws  = ""
 
 # Test code matches MATLAB (for developers)
-#run_tests = false 
+#run_tests = false
 
 ## TODO: Option to specify starting parameters
 #θ_init = OrderedDict()

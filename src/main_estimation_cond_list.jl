@@ -1,5 +1,5 @@
 ## TODO: Specify script parameters
-vint    = "2023-01-11"
+vint    = "2023-01-22"
 spec    = :cond_list # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
@@ -7,9 +7,9 @@ N_procs = 30	 	 # No. workers to request from cluster
 parallel     = true # Distribute work across multiple processors
 write_output = true # Saves output to file
 estimation   = true # Estimate model
-WFcal	     = false # Grab welfare statistics
+WFcal	       = true # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations
@@ -22,23 +22,29 @@ read_draws  = ""
 
 ## TODO: Option to specify starting parameters
 #θ_init = OrderedDict()
-θ_init = OrderedDict(:α          	 =>	14.9942	,
-:Δ_p_out    	 =>	-2.4965	,
-:γ_ns_shape 	 =>	1.0	,
-:γ_ns_on_09 	 =>	0.08205	,
-:γ_ns_on_12 	 =>	0.03003	,
-:η          	 =>	0.57303	,
-:r          	 =>	0.5	,
-:R_p        	 =>	0.87539	,
-:c          	 =>	-9.00915	,
-:γ_s_pop    	 =>	78.7921	,
-:γ_ns_pop   	 =>	-14.592	,
-:s_R        	 =>	2.1005	,
-:μ_R        	 =>	6.83318	,
-:R_q        	 =>	0.9374	,
-:α_c  	 =>	0.08364	,
-:η_c         	 =>	3.9682	,
-:has_min_p	 =>	0.18424)
+θ = Vector(CSV.read("../output/data/estimation_theta_cond_list_2023-01-10.jld2",
+                    DataFrame)[:,1])
+θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
+                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c,
+                      :has_min_p] .=> θ)
+
+# θ_init = OrderedDict(:α          	 =>	14.9942	,
+# :Δ_p_out    	 =>	-2.4965	,
+# :γ_ns_shape 	 =>	1.0	,
+# :γ_ns_on_09 	 =>	0.08205	,
+# :γ_ns_on_12 	 =>	0.03003	,
+# :η          	 =>	0.57303	,
+# :r          	 =>	0.5	,
+# :R_p        	 =>	0.87539	,
+# :c          	 =>	-9.00915	,
+# :γ_s_pop    	 =>	78.7921	,
+# :γ_ns_pop   	 =>	-14.592	,
+# :s_R        	 =>	2.1005	,
+# :μ_R        	 =>	6.83318	,
+# :R_q        	 =>	0.9374	,
+# :α_c  	 =>	0.08364	,
+# :η_c         	 =>	3.9682	,
+# :has_min_p	 =>	0.18424)
 
 
 global path = dirname(@__FILE__)

@@ -7,7 +7,7 @@ N_procs = 30	 	 # No. workers to request from cluster
 parallel     = true # Distribute work across multiple processors
 write_output = true # Saves output to file
 estimation   = true # Estimate model
-WFcal	       = true # Grab welfare statistics
+WFcal	     = true # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
 eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 
@@ -29,10 +29,10 @@ read_draws  = ""
      0.06694644933721287, 0.5771387813800685, 0.5, 0.829647280017562,
      -21.813036021385, 80.17094160788938, -17.579435604415647, 2.168397240948148,
      7.034165435127134, 0.9264674894656546, -0.0020925524094474544, 1.126346953052436,
-     0.2104441130563217, 0.21681289559569902]
+     0.21681289559569902]
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c,
-                      :has_min_p] .=> θ)
+                      :min_p] .=> θ)
 
 # θ_init = OrderedDict(:α          	 =>	14.9942	,
 # :Δ_p_out    	 =>	-2.4965	,

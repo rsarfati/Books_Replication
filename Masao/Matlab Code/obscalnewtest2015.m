@@ -162,9 +162,9 @@ lip = log(liptemp);
 pi = zeros(data.N,1);
 CSns = zeros(data.N,1);
 CSs = zeros(data.N,1);
-if WFcal==1
-    [pi,CSns,CSs] = welfaresimple(gamma1,gamma2,gammascale.*m,gamma0,olppost,Dm,D0,p0,data,[alpha(1) beta eta r]);
-end
+% if WFcal==1
+%     [pi,CSns,CSs] = welfaresimple(gamma1,gamma2,gammascale.*m,gamma0,olppost,Dm,D0,p0,data,[alpha(1) beta eta r]);
+% end
 
 % if isreal(lip)==0
 %     save diagwrong.mat

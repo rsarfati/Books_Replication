@@ -29,15 +29,15 @@ for k = 1:data.M
     
     [best,bestindex] = max(randomprice);
     
-    temp = sparse([bestindex mktsize+1],1:N+1,[best - randomprice(end,:) 1]);
+    temp = sparse([bestindex mktsize+1], 1:N+1, [best - randomprice(end,:) 1]);
     
-    CSgain(data.first(k):data.cdindex(k),1) = sum(temp(1:mktsize,1:N),2)./(sum(temp(1:mktsize,1:N)>0,2)+1e-5);
+    CSgain(data.first(k):data.cdindex(k),1) = sum(temp(1:mktsize,1:N),2) ./ (sum(temp(1:mktsize,1:N)>0,2)+1e-5);
 
 end
 
-CSs_o  = gamma0.*D0./(r + gamma1ave. *Dm + gamma0.*D0).*CSgain;
-CSs_ol = gamma0.*D0./(r + gammascale.*Dm + gamma0.*D0).*CSgain;
-CSs = olppost.*CSs_ol + (1-olppost).*CSs_o;
+CSs_o  = gamma0 .* D0 ./ (r + gamma1ave  .* Dm + gamma0 .* D0) .* CSgain;
+CSs_ol = gamma0 .* D0 ./ (r + gammascale .* Dm + gamma0 .* D0) .* CSgain;
+CSs = olppost.*CSs_ol + (1-olppost).*CSs_o; 
 
 end
 

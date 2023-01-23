@@ -104,7 +104,7 @@ CSs09 = zeros(data09.N,Y);
 %     fdssdf
 % iterate for gamma0
 
-parfor i = 1:Y
+for i = 1:Y
     betasigmatemp = betasigma4;
     vectemp = gamma0deltavec(i,:);
     [lip09(:,i), gamma209(:,i),gamma109(:,i),gamma009(:,i),D009(:,i),Dm09(:,i),pi09(:,i),CSns09(:,i),CSs09(:,i)] = obscalnewtest2015([vectemp(1) betasigmatemp([6 7 8 9 11 12]) lamda1 lamda2 betacond betapop 0 betasigmatemp(13) vectemp(2) betasigmatemp(14) 1],data09,basellh09,0,data09.pdif,rounderr,WFcal);
@@ -143,7 +143,7 @@ CSns12 = zeros(data12.N,Y);
 CSs12 = zeros(data12.N,Y);
 
 % iterate for betas
-parfor i = 1:Y
+for i = 1:Y
     betasigmatemp = betasigma4;
     vectemp = gamma0deltavec(i,:);
     [lip12(:,i),gamma212(:,i),gamma112(:,i),gamma012(:,i),D012(:,i),Dm12(:,i),pi12(:,i),CSns12(:,i),CSs12(:,i)] = obscalnewtest2015([vectemp(1) betasigmatemp([6 7 8 10 11 12]) lamda1 lamda2 betacond betapop 0 betasigmatemp(13) vectemp(2) betasigmatemp(14) naturaldisappear],data12,basellh12,1,data12.pdif,rounderr,WFcal);
@@ -225,7 +225,7 @@ distpara = [distpara1 distpara2];
 %     bestgamma112(data12.first(i):data12.cdindex(i),1) = gamma112(data12.first(i):data12.cdindex(i),bestrandomvec12(i));
 % end
 %
-if WFcal
+if true
     WF09 = zeros(data09.N,3);
     WF12 = zeros(data12.N,3);
     AveWF09 = zeros(data09.M,3);

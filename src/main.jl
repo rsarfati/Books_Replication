@@ -1,5 +1,5 @@
 ## TODO: Specify script parameters
-vint    = "2023-01-11"
+vint    = "2023-01-22"
 spec    = :standard # Options are :standard, :condition, :cond_list
 N_procs = 30	 	# No. workers to request from cluster
 
@@ -21,7 +21,7 @@ read_draws  = ""
 #run_tests = false
 
 ## TODO: Option to specify starting parameters
-θ = Vector(CSV.read("../output/data/estimation_theta_standard_2023-01-10.jld2",
+θ = Vector(CSV.read("../output/data/estimation_theta_standard_2023-01-10.csv",
                     DataFrame)[:,1])
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q] .=> θ)

@@ -311,7 +311,7 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
         temp = sparse([(x->x[1]).(bestindex); mktsize[k]+1], 1:N_draw+1,
                       [best .- rand_price[end,:]; 1])
 
-        CSgain[ind_k,1] = sum(temp[1:mktsize[k], 1:N_draw],      dims=2) ./
+        CSgain[ind_k] = sum(temp[1:mktsize[k], 1:N_draw],      dims=2) ./
                          (sum(temp[1:mktsize[k], 1:N_draw] .> 0, dims=2) .+ 1e-5)
     end
 

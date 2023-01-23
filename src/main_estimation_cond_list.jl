@@ -22,8 +22,14 @@ read_draws  = ""
 
 ## TODO: Option to specify starting parameters
 #θ_init = OrderedDict()
-θ = Vector(CSV.read("../output/data/estimation_theta_cond_list_2023-01-10.jld2",
-                    DataFrame)[:,1])
+#θ = Vector(CSV.read("../output/data/estimation_theta_cond_list_2023-01-10.jld2",
+#                    DataFrame)[:,1])
+# TODO: it is really weird that alpha is so precisely -1.
+θ = [-0.999974033038977, -2.2943580777422588, 1.0, 0.12236310694992512,
+     0.06694644933721287, 0.5771387813800685, 0.5, 0.829647280017562,
+     -21.813036021385, 80.17094160788938, -17.579435604415647, 2.168397240948148,
+     7.034165435127134, 0.9264674894656546, -0.0020925524094474544, 1.126346953052436,
+     0.2104441130563217, 0.21681289559569902]
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c,
                       :has_min_p] .=> θ)

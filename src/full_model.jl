@@ -258,21 +258,22 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             df_09_on = DataFrame(:title => d_on_09[:cdid], :CSns => vec(CSns_09),
                               :CSs => vec(CSs_09), :r_p => vec(r_p_09),
                               :pi => vec(pi_09), :price => p_09,
-                              :quantity => d_on_09[:numlist],
+                              #:quantity => d_on_09[:numlist],
                               :condition => d_on_09[:condition],
                               :localint => d_on_09[:localint])
             # 2021 Online
             df_12_on = DataFrame(:title => d_on_12[:cdid], :CSns => vec(CSns_12),
                               :CSs => vec(CSs_12), :r_p => vec(r_p_12),
                               :pi => vec(pi_12), :price => p_12,
-                              :quantity => d_on_12[:numlist],
+                              #:quantity => d_on_12[:numlist],
                               :condition => d_on_12[:condition],
-                              :localint => d_on_12[:localint])
+                              :localint => d_on_12[:localint],
+                              :sold => d_on_12[:disappear])
             # 2009 Offline
             df_09_off = DataFrame(:title => bp[:cdid], :CSns => vec(CSns_09_off),
                                 :CSs => vec(CSs_09_off), :r_p => vec(r_p_09_off),
                                 :pi => vec(pi_09_off), :price => bp[:p],
-                                :quantity => bp[:numlist],
+                                #:quantity => bp[:numlist],
                                 :condition => bp[:condition],
                                 :localint => bp[:localint])
             # Write to files

@@ -248,7 +248,6 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
         lip_ol = basellh # Price likelihood
     end
 
-    # Disappear likelihood
     liptemp = @. (1 - olp) * lip_o + olp * lip_ol + 1e-10
     olppost = vec(olp .* lip_ol ./ liptemp)
 
@@ -294,28 +293,28 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
 
     mktsize = @. cdindex - d_first + 1
 
-    for k = 1:M
-        ind_k    = d_first[k]:cdindex[k]
+    # for k = 1:M
+    #     ind_k    = d_first[k]:cdindex[k]
+	#
+    #     best_p   = Vector{Float64}(undef, N_draw)
+    #     best_ind = Vector{Float64}(undef, N_draw)
+    #     β_p      = Vector{Float64}(undef, N_draw)
+	#
+    #     gumb_draw  = rand(Gumbel(0,1), mktsize[k] + 1, N_draw)
+	#
+    #     rand_price = repeat(-[pdif[ind_k]; -β], 1, N_draw) .- gumb_draw ./ α
+	#
+    #     best, bestindex = vec.(findmax(rand_price, dims = 1))
+	#
+    #     temp = sparse([(x->x[1]).(bestindex); mktsize[k]+1], 1:N_draw+1,
+    #                   [best .- rand_price[end,:]; 1])
+	#
+    #     CSgain[ind_k] = sum(temp[1:mktsize[k], 1:N_draw],      dims=2) ./
+    #                    (sum(temp[1:mktsize[k], 1:N_draw] .> 0, dims=2) .+ 1e-5)
+    # end
 
-        best_p   = Vector{Float64}(undef, N_draw)
-        best_ind = Vector{Float64}(undef, N_draw)
-        β_p      = Vector{Float64}(undef, N_draw)
-
-        gumb_draw  = rand(Gumbel(0,1), mktsize[k] + 1, N_draw)
-
-        rand_price = repeat(-[pdif[ind_k]; -β], 1, N_draw) .- gumb_draw ./ α
-
-        best, bestindex = vec.(findmax(rand_price, dims = 1))
-
-        temp = sparse([(x->x[1]).(bestindex); mktsize[k]+1], 1:N_draw+1,
-                      [best .- rand_price[end,:]; 1])
-
-        CSgain[ind_k] = sum(temp[1:mktsize[k], 1:N_draw],      dims=2) ./
-                       (sum(temp[1:mktsize[k], 1:N_draw] .> 0, dims=2) .+ 1e-5)
-    end
-
-    CSs_o  = @. γ0 * D0 / (r + γ1ave  * Dm + γ0 * D0) * CSgain
-    CSs_ol = @. γ0 * D0 / (r + γscale * Dm + γ0 * D0) * CSgain
+    CSs_o  = @. (p/(η-1)) * γ0 * D0 / (r + γ1ave  * Dm + γ0 * D0)
+    CSs_ol = @. (p/(η-1)) * γ0 * D0 / (r + γscale * Dm + γ0 * D0)
     CSs    = @. olppost * CSs_ol + (1 - olppost) * CSs_o
 
     return pi_v, CSns, CSs

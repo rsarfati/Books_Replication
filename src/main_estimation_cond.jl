@@ -7,9 +7,9 @@ N_procs = 30	 	 # No. workers to request from cluster
 parallel     = true # Distribute work across multiple processors
 write_output = true # Saves output to file
 estimation   = true # Estimate model
-WFcal	     = true # Grab welfare statistics
+WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations
@@ -21,6 +21,11 @@ read_draws  = ""
 #run_tests = false
 
 ## TODO: Option to specify starting parameters
+θ = Vector(CSV.read("../output/data/estimation_theta_standard_2023-01-10.csv",
+                    DataFrame)[:,1])
+θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
+                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> [θ; 0.0; 0.0])
+
 #θ_init = OrderedDict()
 # θ_init = OrderedDict(
 #     #=1=#	:α          => 14.7544,	#1  α 				[15.77 (1.28)]
@@ -37,22 +42,23 @@ read_draws  = ""
 #     #=12=#	:s_R        => 1.7247,	#12 s_R 			[1.73 (0.09)]
 #     #=13=#	:μ_R        => 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
 #     #=14=#	:R_q        => 0.9253)
-θ_init = OrderedDict{Symbol,Float64}(:α          	 =>	14.69433884	,
-:Δ_p_out    	 =>	-2.466339203	,
-:γ_ns_shape 	 =>	1.0	,
-:γ_ns_on_09 	 =>	0.023399967	,
-:γ_ns_on_12 	 =>	0.005582159	,
-:η          	 =>	0.64788832	,
-:r          	 =>	0.5	,
-:R_p        	 =>	0.867298655	,
-:c          	 =>	-9.203152599	,
-:γ_s_pop    	 =>	73.30833091	,
-:γ_ns_pop   	 =>	-14.59211909	,
-:s_R        	 =>	2.439671533	,
-:μ_R        	 =>	5.83948042	,
-:R_q        	 =>	0.927080228	,
-:α_c  	 =>	-0.008696885	,
-:η_c         	 =>	3.264478232	)
+
+# θ_init = OrderedDict{Symbol,Float64}(:α          	 =>	14.69433884	,
+# :Δ_p_out    	 =>	-2.466339203	,
+# :γ_ns_shape 	 =>	1.0	,
+# :γ_ns_on_09 	 =>	0.023399967	,
+# :γ_ns_on_12 	 =>	0.005582159	,
+# :η          	 =>	0.64788832	,
+# :r          	 =>	0.5	,
+# :R_p        	 =>	0.867298655	,
+# :c          	 =>	-9.203152599	,
+# :γ_s_pop    	 =>	73.30833091	,
+# :γ_ns_pop   	 =>	-14.59211909	,
+# :s_R        	 =>	2.439671533	,
+# :μ_R        	 =>	5.83948042	,
+# :R_q        	 =>	0.927080228	,
+# :α_c  	 =>	-0.008696885	,
+# :η_c         	 =>	3.264478232	)
 
 global path = dirname(@__FILE__)
 include("$path/launch_script.jl")

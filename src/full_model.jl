@@ -203,17 +203,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
     if WFcal
         println(VERBOSE, "Beginning welfare calculations... (1/2)")
 
-        # Old output order:
-        # γ2_09   = out_09[1*N_09+1:2*N_09,:]
-        # γ1_09   = out_09[2*N_09+1:3*N_09,:]
-        # γ0_09   = out_09[3*N_09+1:4*N_09,:]
-        # D0_09   = out_09[4*N_09+1:5*N_09,:]
-        # Dm_09   = out_09[5*N_09+1:6*N_09,:]
-        # pi_09   = out_09[6*N_09+1:7*N_09,:]
-        # CSns_09 = out_09[7*N_09+1:8*N_09,:]
-        # CSs_09  = out_09[8*N_09+1:9*N_09,:]
-        # r_p_09 = out_09[9*N_09+1:10*N_09,:]
-
+        # 2009 Online
         CSns_09_full = out_09[1*N_09+1:2*N_09,:]
         CSs_09_full  = out_09[2*N_09+1:3*N_09,:]
         r_p_09_full  = out_09[3*N_09+1:4*N_09,:]
@@ -223,7 +213,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         CSs_09  = Vector{Float64}(undef, N_09)
         r_p_09  = Vector{Float64}(undef, N_09)
         pi_09   = Vector{Float64}(undef, N_09)
-
         for k = 1:M_09
             ind_k = first_09[k]:cdindex_09[k]
             y_max = argmax(llhadj_09[k,:])
@@ -233,17 +222,7 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             pi_09[  ind_k] = pi_09_full[  ind_k, y_max]
         end
 
-        # Old output order:
-        # γ2_12   = out_12[1*N_12+1:2*N_12,:]
-        # γ1_12   = out_12[2*N_12+1:3*N_12,:]
-        # γ0_12   = out_12[3*N_12+1:4*N_12,:]
-        # D0_12   = out_12[4*N_12+1:5*N_12,:]
-        # Dm_12   = out_12[5*N_12+1:6*N_12,:]
-        # pi_12   = out_12[6*N_12+1:7*N_12,:]
-        # CSns_12 = out_12[7*N_12+1:8*N_12,:]
-        # CSs_12  = out_12[8*N_12+1:9*N_12,:]
-        # r_p_12 = out_12[9*N_12+1:10*N_12,:]
-
+        # 2012 Online
         CSns_12_full = out_12[1*N_12+1:2*N_12,:]
         CSs_12_full  = out_12[2*N_12+1:3*N_12,:]
         r_p_12_full  = out_12[3*N_12+1:4*N_12,:]
@@ -253,7 +232,6 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
         CSs_12  = Vector{Float64}(undef, N_12)
         r_p_12  = Vector{Float64}(undef, N_12)
         pi_12   = Vector{Float64}(undef, N_12)
-
         for k = 1:M_12
             ind_k = first_12[k]:cdindex_12[k]
             y_max = argmax(llhadj_12[k,:])
@@ -263,16 +241,44 @@ function full_model(x0::V, distpara0::V, d_on_12::D, d_on_09::D, bp::D;
             pi_12[  ind_k] = pi_12_full[  ind_k, y_max]
         end
 
+        # 2009 Offline
+        out_bp = obs_cal([0; βσ4[6:8]; abs(distpara2[1]); βσ4[11:12]; λ1; λ2;
+                         βcond; βpop; distpara2[2]; βσ4[13]; 1; 1; 1],
+                         :bp, N_bp, M_bp, basellhb, rounderr;
+                         α_c = α_c, η_c = η_c, min_p = min_p,
+                         demandcal = false, WFcal = WFcal)
+         CSns_09_off = out_bp[1*N_bp+1:2*N_bp,:]
+         CSs_09_off  = out_bp[2*N_bp+1:3*N_bp,:]
+         r_p_09_off  = out_bp[3*N_bp+1:4*N_bp,:]
+         pi_09_off   = out_bp[4*N_bp+1:5*N_bp,:]
+
         if write_output
-            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 pi_09 CSns_12 CSs_12 r_p_12 pi_12
-            df_09 = DataFrame(:title => d_on_09[:cdid], :CSns => vec(CSns_09),
-                              :CSs => vec(CSs_09), :r_p => vec(r_p_09), :pi => vec(pi_09))
-            df_12 = DataFrame(:title => d_on_12[:cdid], :CSns => vec(CSns_12),
-                              :CSs => vec(CSs_12), :r_p => vec(r_p_12), :pi => vec(pi_12))
-            CSV.write("$OUTPUT/welfare_estimates_09_$(string(spec))_$(vint).csv", df_09)
-            CSV.write("$OUTPUT/welfare_estimates_12_$(string(spec))_$(vint).csv", df_12)
-            #CSV.write("$OUTPUT/posterior_random_price_09_$(string(spec))_$(vint).csv", Tables.table(r_p_09))
-            #CSV.write("$OUTPUT/posterior_random_price_12_$(string(spec))_$(vint).csv", Tables.table(r_p_12))
+            @save "$OUTPUT/welfare_estimates_$(string(spec))_$(vint).jld2" CSns_09 CSs_09 r_p_09 pi_09 p_09 CSns_12 CSs_12 r_p_12 pi_12 p_12 CSns_09_off CSs_09_off r_p_09_off pi_09_off
+            # 2009 Online
+            df_09_on = DataFrame(:title => d_on_09[:cdid], :CSns => vec(CSns_09),
+                              :CSs => vec(CSs_09), :r_p => vec(r_p_09),
+                              :pi => vec(pi_09), :price => p_09,
+                              :quantity => d_on_09[:numlist],
+                              :condition => d_on_09[:condition],
+                              :localint => d_on_09[:localint])
+            # 2021 Online
+            df_12_on = DataFrame(:title => d_on_12[:cdid], :CSns => vec(CSns_12),
+                              :CSs => vec(CSs_12), :r_p => vec(r_p_12),
+                              :pi => vec(pi_12), :price => p_12,
+                              :quantity => d_on_12[:numlist],
+                              :condition => d_on_12[:condition],
+                              :localint => d_on_12[:localint])
+            # 2009 Offline
+            df_09_off = DataFrame(:title => bp[:cdid], :CSns => vec(CSns_09_off),
+                                :CSs => vec(CSs_09_off), :r_p => vec(r_p_09_off),
+                                :pi => vec(pi_09_off), :price => bp[:p],
+                                :quantity => bp[:numlist],
+                                :condition => bp[:condition],
+                                :localint => bp[:localint])
+            # Write to files
+            CSV.write("$OUTPUT/welfare_estimates_09_online_$(string(spec))_$(vint).csv",  df_09_on)
+            CSV.write("$OUTPUT/welfare_estimates_12_online_$(string(spec))_$(vint).csv",  df_12_on)
+            CSV.write("$OUTPUT/welfare_estimates_09_offline_$(string(spec))_$(vint).csv", df_09_off)
         end
 
         # imp_09, imp_12, ltot_09, ltot_12 = integγ0(distpara1; return_all = true)

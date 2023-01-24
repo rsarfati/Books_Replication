@@ -99,8 +99,8 @@ function estimate_model(; # Data specification
 	# Load specification
 	@assert spec ∈ [:standard, :condition, :cond_list]
 	if spec != :standard
-		!haskey(θ_init, :η_c) && (θ_init[:η_c] = 0.16) #=21=#
-		!haskey(θ_init, :α_c) && (θ_init[:α_c] = 5.00) #=22=#
+		!haskey(θ_init, :α_c) && (θ_init[:α_c] = 0.0) #=22=#
+		!haskey(θ_init, :η_c) && (θ_init[:η_c] = 0.0) #=21=#
 	end
 	if spec == :cond_list
 		!haskey(θ_init, :min_p) && (θ_init[:min_p] = 0.20) #=23=#

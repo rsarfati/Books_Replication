@@ -56,14 +56,14 @@ if grid_search
 		:α_c  	 		 =>	-1.0:0.5:5.0,#-0.008696885	,
 		:η_c         	 =>	-1.0:0.5:3.5)
 
-	grid = Iterators.product(values(points)...)
+	global grid = Iterators.product(values(points)...)
 	@show length(grid)
 
-	top_ten_params = Vector{Vector{Float64}}(undef, 10)
-	top_ten_llh    = repeat([Inf], 10)
-	ind_max = 1
-	ind_max_val = Inf
-	c = 0
+	global top_ten_params = Vector{Vector{Float64}}(undef, 10)
+	global top_ten_llh    = repeat([Inf], 10)
+	global ind_max = 1
+	global ind_max_val = Inf
+	global c = 0
 
 	for g in grid
 

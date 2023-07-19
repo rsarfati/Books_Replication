@@ -165,7 +165,7 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
 				 α_c::T = 0.0, η_c::T = 0.0, min_p::T = 0.0,
   				 demandcal::Bool = false, disap::V = Vector{Float64}(),
                  WFcal::Bool = false)::Vector{T} where {S<:Int64, T<:Float64,
-                                                        U<:Vector{S}, V<:Vector{T}}
+                                                        V<:Vector{T}}
     # Conjure dictionary
 	d::Dict{Symbol,Vector{<:Number}} = (d_sym == :d_on_09) ? d_on_09 :
 	                                   (d_sym == :d_on_12) ? d_on_12 : bp

@@ -70,4 +70,4 @@ if make_output
 end
 
 ## Release workers
-if parallel; rmprocs(workers()); println("Workers released!") end
+#if parallel; rmprocs(workers()); println("Workers released!") end

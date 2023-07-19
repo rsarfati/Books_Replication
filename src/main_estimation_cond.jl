@@ -67,7 +67,8 @@ global c = 0
 for g in grid
 
 	global c += 1
-	θ_g = [g...]
+	θ_g = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
+                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> [g...])
 
 	out = estimate_model(θ_init = θ_g, eval_only = eval_only, spec = spec, parallel = parallel,
 						 write_output = write_output, vint = vint, WFcal = WFcal)

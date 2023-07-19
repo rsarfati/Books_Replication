@@ -69,7 +69,7 @@ for g in grid
 	global c += 1
 	θ_g = [g...]
 
-	out = estimate_model(θ_init = g, eval_only = eval_only, spec = spec, parallel = parallel,
+	out = estimate_model(θ_init = θ_g, eval_only = eval_only, spec = spec, parallel = parallel,
 						 write_output = write_output, vint = vint, WFcal = WFcal)
 	llh_g = out[1]
 

@@ -66,7 +66,7 @@ global c = 0
 
 for g in grid
 
-	c += 1
+	global c += 1
 
 	out = estimate_model(θ_init = g, eval_only = eval_only, spec = spec, parallel = parallel,
 						 write_output = write_output, vint = vint, WFcal = WFcal)
@@ -80,10 +80,10 @@ for g in grid
 	# end
 
 	if llh_g <= ind_max_val
-		top_ten_llh[ind_max] = llh_g
-		top_ten_params[ind_max] = out[2]
-		ind_max = argmax(top_ten_llh)
-		ind_max_val = top_ten_llh[ind_max]
+		global top_ten_llh[ind_max] = llh_g
+		global top_ten_params[ind_max] = out[2]
+		global ind_max = argmax(top_ten_llh)
+		global ind_max_val = top_ten_llh[ind_max]
 	end
 
 	if mod(c, 200) == 0

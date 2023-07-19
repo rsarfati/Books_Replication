@@ -37,65 +37,64 @@ read_draws  = ""
 include("$path/launch_script.jl")
 eval_only = true
 
-if grid_search
-	points = OrderedDict{Symbol,Any}(
-		:α          	 =>	3.0:1.5:17.0,
-		:Δ_p_out    	 =>	-3.0:0.5:0.4,
-		:γ_ns_shape 	 =>	1.0	,
-		:γ_ns_on_09 	 =>	0.01:0.1:0.51,#0.023399967	,
-		:γ_ns_on_12 	 =>	0.01:0.04:0.21,#0.005582159	,
-		:η          	 =>	0.4:0.2:2.0	,
-		:r          	 =>	0.5	,
-		:R_p        	 =>	0.2:0.1:1.0,#0.867298655	,
-		:c          	 =>	-20.0:4.0:-4.0,#-9.203152599	,
-		:γ_s_pop    	 =>	60.0:10.0:110.0,#73.30833091	,
-		:γ_ns_pop   	 =>	-20.0:1.0:-10.0,#-14.59211909	,
-		:s_R        	 =>	1.5:0.1:3.0,#2.439671533	,
-		:μ_R        	 =>	5.0:0.5:9.0,#5.83948042	,
-		:R_q        	 =>	0.8:0.02:0.96,#0.927080228	,
-		:α_c  	 		 =>	-1.0:0.5:5.0,#-0.008696885	,
-		:η_c         	 =>	-1.0:0.5:3.5)
+points = OrderedDict{Symbol,Any}(
+	:α          	 =>	3.0:1.5:17.0,
+	:Δ_p_out    	 =>	-3.0:0.5:0.4,
+	:γ_ns_shape 	 =>	1.0	,
+	:γ_ns_on_09 	 =>	0.01:0.1:0.51,#0.023399967	,
+	:γ_ns_on_12 	 =>	0.01:0.04:0.21,#0.005582159	,
+	:η          	 =>	0.4:0.2:2.0	,
+	:r          	 =>	0.5	,
+	:R_p        	 =>	0.2:0.1:1.0,#0.867298655	,
+	:c          	 =>	-20.0:4.0:-4.0,#-9.203152599	,
+	:γ_s_pop    	 =>	60.0:10.0:110.0,#73.30833091	,
+	:γ_ns_pop   	 =>	-20.0:1.0:-10.0,#-14.59211909	,
+	:s_R        	 =>	1.5:0.1:3.0,#2.439671533	,
+	:μ_R        	 =>	5.0:0.5:9.0,#5.83948042	,
+	:R_q        	 =>	0.8:0.02:0.96,#0.927080228	,
+	:α_c  	 		 =>	-1.0:0.5:5.0,#-0.008696885	,
+	:η_c         	 =>	-1.0:0.5:3.5)
 
-	global grid = Iterators.product(values(points)...)
-	@show length(grid)
+global grid = Iterators.product(values(points)...)
+@show length(grid)
 
-	global top_ten_params = Vector{Vector{Float64}}(undef, 10)
-	global top_ten_llh    = repeat([Inf], 10)
-	global ind_max = 1
-	global ind_max_val = Inf
-	global c = 0
+global top_ten_params = Vector{Vector{Float64}}(undef, 10)
+global top_ten_llh    = repeat([Inf], 10)
+global ind_max = 1
+global ind_max_val = Inf
+global c = 0
 
-	for g in grid
+for g in grid
 
-		c += 1
+	c += 1
 
-		out = estimate_model(θ_init = g, eval_only = eval_only, spec = spec, parallel = parallel,
-							 write_output = write_output, vint = vint, WFcal = WFcal)
-		llh_g = out[1]
+	out = estimate_model(θ_init = g, eval_only = eval_only, spec = spec, parallel = parallel,
+						 write_output = write_output, vint = vint, WFcal = WFcal)
+	llh_g = out[1]
 
-		# if c <= 10
-		# 	top_ten_params[c] = out[2]
-		# 	top_ten_llh[c]    = out[1]
-		# 	ind_max = argmax(top_ten_llh)
-		# 	ind_max_val = top_ten_llh[ind_max]
-		# end
+	# if c <= 10
+	# 	top_ten_params[c] = out[2]
+	# 	top_ten_llh[c]    = out[1]
+	# 	ind_max = argmax(top_ten_llh)
+	# 	ind_max_val = top_ten_llh[ind_max]
+	# end
 
-		if llh_g <= ind_max_val
-			top_ten_llh[ind_max] = llh_g
-			top_ten_params[ind_max] = out[2]
-			ind_max = argmax(top_ten_llh)
-			ind_max_val = top_ten_llh[ind_max]
-		end
+	if llh_g <= ind_max_val
+		top_ten_llh[ind_max] = llh_g
+		top_ten_params[ind_max] = out[2]
+		ind_max = argmax(top_ten_llh)
+		ind_max_val = top_ten_llh[ind_max]
+	end
 
-		if mod(c, 200) == 0
-			@save "top_ten.jld2" top_ten_llh top_ten_params
-			println("Parameters:")
-			println(top_ten_params)
-			println("LLHs:")
-			println(top_ten_llh)
-		end
+	if mod(c, 200) == 0
+		@save "top_ten.jld2" top_ten_llh top_ten_params
+		println("Parameters:")
+		println(top_ten_params)
+		println("LLHs:")
+		println(top_ten_llh)
 	end
 end
+
 
 # θ_init = OrderedDict()
 # θ_init = OrderedDict(

@@ -6,12 +6,12 @@ spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
-parallel     = false # Distribute work across multiple processors
+parallel     = true # Distribute work across multiple processors
 write_output = false # Saves output to file
 estimation   = false # Estimate model
 WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 grid_search  = true # meh
 run_tests    = false
 
@@ -33,6 +33,7 @@ read_draws  = ""
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> [θ; 0.0; 0.0])
 
 include("$path/launch_script.jl")
+eval_only = true
 
 if grid_search
 	points = OrderedDict{Symbol,Any}(

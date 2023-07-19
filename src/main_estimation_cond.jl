@@ -1,4 +1,5 @@
 global path = dirname(@__FILE__)
+include("load_packages.jl")
 
 ## TODO: Specify script parameters
 vint    = "2023-07-18"
@@ -27,6 +28,7 @@ read_draws  = ""
 ## TODO: Option to specify starting parameters
 #θ = Vector(CSV.read("$path/../output/data/estimation_theta_standard_2023-01-10.csv",
 #                    DataFrame)[:,1])
+
 @load "../output/data/estimation_results_2023_01_03.jld2"
 
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,

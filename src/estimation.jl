@@ -192,7 +192,7 @@ of parameters is infeasible under model (e.g. domain error arising from taking
 log/sqrt of negative number), and returns "infinitely unlikely."
 """
 function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; WFcal = false,
-			 parallel = true, spec = :standard) where {V<:Vector{Float64}, W<:Vector{Int64},
+			 parallel = true, spec = :standard) where {V<:Vector{Float64},
 									                   D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
 		full_model(θ, distpara0, data12, data09, bp;

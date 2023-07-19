@@ -6,13 +6,14 @@ spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
-parallel     = false # Distribute work across multiple processors
+parallel     = true # Distribute work across multiple processors
 write_output = false # Saves output to file
 estimation   = false # Estimate model
 WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 grid_search  = true # meh
+run_tests    = false
 
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations
@@ -26,12 +27,13 @@ read_draws  = ""
 ## TODO: Option to specify starting parameters
 #θ = Vector(CSV.read("$path/../output/data/estimation_theta_standard_2023-01-10.csv",
 #                    DataFrame)[:,1])
-@load "output/data/estimation_results_2023_01_03.jld2"
+@load "../output/data/estimation_results_2023_01_03.jld2"
 
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> [θ; 0.0; 0.0])
 
 include("$path/launch_script.jl")
+eval_only = true
 
 if grid_search
 	points = OrderedDict{Symbol,Any}(
@@ -43,7 +45,7 @@ if grid_search
 		:η          	 =>	0.4:0.2:2.0	,
 		:r          	 =>	0.5	,
 		:R_p        	 =>	0.2:0.1:1.0,#0.867298655	,
-		:c          	 =>	-20.0:2.0:-4.0,#-9.203152599	,
+		:c          	 =>	-20.0:4.0:-4.0,#-9.203152599	,
 		:γ_s_pop    	 =>	60.0:10.0:110.0,#73.30833091	,
 		:γ_ns_pop   	 =>	-20.0:1.0:-10.0,#-14.59211909	,
 		:s_R        	 =>	1.5:0.1:3.0,#2.439671533	,
@@ -55,13 +57,41 @@ if grid_search
 	grid = Iterators.product(values(points)...)
 	@show length(grid)
 
-	top_ten_params = OrderedDict{NTuple{16,Float64}, Float64}()
-
-	top_ten_llh    = zeros(Float64, 10)
+	top_ten_params = Vector{Vector{Float64}}(undef, 10)
+	top_ten_llh    = repeat([Inf], 10)
+	ind_max = 1
+	ind_max_val = Inf
+	c = 0
 
 	for g in grid
+
+		c += 1
+
 		out = estimate_model(θ_init = g, eval_only = eval_only, spec = spec, parallel = parallel,
 							 write_output = write_output, vint = vint, WFcal = WFcal)
+		llh_g = out[1]
+
+		# if c <= 10
+		# 	top_ten_params[c] = out[2]
+		# 	top_ten_llh[c]    = out[1]
+		# 	ind_max = argmax(top_ten_llh)
+		# 	ind_max_val = top_ten_llh[ind_max]
+		# end
+
+		if llh_g <= ind_max_val
+			top_ten_llh[ind_max] = llh_g
+			top_ten_params[ind_max] = out[2]
+			ind_max = argmax(top_ten_llh)
+			ind_max_val = top_ten_llh[ind_max]
+		end
+
+		if mod(c, 200) == 0
+			@save "top_ten.jld2" top_ten_llh top_ten_params
+			println("Parameters:")
+			println(top_ten_params)
+			println("LLHs:")
+			println(top_ten_llh)
+		end
 	end
 end
 

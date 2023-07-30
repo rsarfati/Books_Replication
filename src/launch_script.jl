@@ -1,17 +1,3 @@
-# using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
-# using JLD2, MAT, Optim, OrderedCollections
-# using Printf, Random, Roots, SparseArrays, Statistics, UnPack
-# println("Packages loaded!")
-#
-# ## Build output folders if don't exist
-# global OUTPUT = "$path/../output/data"
-# global INPUT  = "$path/../input"
-#
-# !isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
-# !isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
-# !isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
-# !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
-
 ## Add worker processes, load necessary packages on said workers
 if parallel
     println("(1/2) Adding processes...")
@@ -40,9 +26,10 @@ if run_tests; include("$path/../test/helpers.jl") end
 
 ## Estimate model, starting from known parameters
 if estimation
+
     println("(1/2) Estimating $(string(spec)) model; eval_only = $(eval_only)")
     out = estimate_model(θ_init = θ_init, eval_only = eval_only, spec = spec, parallel = parallel,
-						 write_output = write_output, vint = vint, WFcal = WFcal)
+						 write_output = write_output, vint = vint, WFcal = WFcal, VERBOSE = VERBOSE)
 	println("(2/2) Finished running $(string(spec)) estimation.")
 end
 

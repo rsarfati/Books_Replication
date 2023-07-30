@@ -1,16 +1,16 @@
-using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
-using JLD2, MAT, Optim, OrderedCollections
-using Printf, Random, Roots, SparseArrays, Statistics, UnPack
-println("Packages loaded!")
-
-## Build output folders if don't exist
-global OUTPUT = "$path/../output/data"
-global INPUT  = "$path/../input"
-
-!isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
-!isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
-!isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
-!isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
+# using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
+# using JLD2, MAT, Optim, OrderedCollections
+# using Printf, Random, Roots, SparseArrays, Statistics, UnPack
+# println("Packages loaded!")
+#
+# ## Build output folders if don't exist
+# global OUTPUT = "$path/../output/data"
+# global INPUT  = "$path/../input"
+#
+# !isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
+# !isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
+# !isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
+# !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)
 
 ## Add worker processes, load necessary packages on said workers
 if parallel
@@ -69,4 +69,4 @@ if make_output
 end
 
 ## Release workers
-#if parallel; rmprocs(workers()); println("Workers released!") end
+if parallel; rmprocs(workers()); println("Workers released!") end

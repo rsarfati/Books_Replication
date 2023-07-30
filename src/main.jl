@@ -1,5 +1,11 @@
+iter = length(ARGS) == 0 ? "" : "_$(ARGS[1])"
+serv = length(ARGS) == 0 ? "" : "_$(ARGS[2])"
+
+global path = dirname(@__FILE__)
+include("$path/load_packages.jl")
+
 ## TODO: Specify script parameters
-vint    = "2023-01-24"
+vint    = "2023-07-30" * serv * iter
 spec    = :standard # Options are :standard, :condition, :cond_list
 N_procs = 30	 	# No. workers to request from cluster
 
@@ -7,13 +13,15 @@ N_procs = 30	 	# No. workers to request from cluster
 parallel     = true # Distribute work across multiple processors
 write_output = true # Saves output to file
 estimation   = true # Estimate model
-WFcal	     = true # Grab welfare statistics
+WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
+VERBOSE      = false # whether or not to print statements
+out_to_log   = true
 
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations
-seed        = true # For replicating output / catching bugs
+seed        = false # For replicating output / catching bugs
 make_output = false # Prints pretty tables from bootstrap
 read_draws  = ""
 
@@ -43,5 +51,4 @@ read_draws  = ""
 #     #=13=#	:μ_R        => 8.7488,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
 #     #=14=#	:R_q        => 0.92372)
 
-global path = dirname(@__FILE__)
 include("$path/launch_script.jl")

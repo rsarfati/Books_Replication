@@ -46,7 +46,8 @@ function estimate_model(; # Data specification
 						  # Options
 						  vint::String    = "latest", write_output::Bool = true,
 						  eval_only::Bool = false, WFcal::Bool = false,
-						  parallel::Bool  = true, bootstrap::Bool = false) where T<:Float64
+						  parallel::Bool  = true, bootstrap::Bool = false,
+						  VERBOSE::Bool = true) where T<:Float64
 
 	# Load data if not provided at function call
 	isempty(data)      && @load "$INPUT/data_to_run.jld2" data
@@ -111,7 +112,7 @@ function estimate_model(; # Data specification
     	out = obj(vals(θ_init), distpara0, data[:on_12], data[:on_09], data[:of_09];
 				  WFcal = WFcal, parallel = parallel, spec = spec)
 
-		println("Evaluated model at θ = ", vals(θ_init), "\nLLH:  $(out[1])")
+		println(VERBOSE, "Evaluated model at θ = ", vals(θ_init), "\nLLH:  $(out[1])")
 
 		if bootstrap; return out[1:3] end
 
@@ -146,12 +147,12 @@ function estimate_model(; # Data specification
 		# Parameter is "infinitely unlikely" if out of bounds
 		for l in θ_lb; if θ[θ_ind[l[1]]] < l[2]; return Inf end end
 		for u in θ_ub; if θ[θ_ind[u[1]]] > u[2]; return Inf end end
-		println("Parameters in-bounds, θ: $θ")
+		println(VERBOSE, "Parameters in-bounds, θ: $θ")
 
 		out = obj(θ_full(x), distpara0, data[:on_12], data[:on_09], data[:of_09];
 				  parallel = parallel, spec = spec)
 
-		println("LLH: $(out[1])")
+		println(VERBOSE, "LLH: $(out[1])")
 		return out[1]
 	end
 
@@ -169,7 +170,8 @@ function estimate_model(; # Data specification
 	θ, llh = θ_full(res.minimizer), res.minimum
 
 	out = full_model(θ, distpara0, data[:on_12], data[:on_09], data[:of_09];
-			   		 spec = spec, WFcal = WFcal, parallel = parallel)
+			   		 spec = spec, WFcal = WFcal, parallel = parallel,
+					 VERBOSE = VERBOSE)
 	distpara = out[3]
 
 	# Save output (writing to CSV for legacy compatibility)
@@ -196,7 +198,7 @@ function obj(θ::V, distpara0::V, data12::D, data09::D, bp::D; WFcal = false,
 									                   D<:Dict{Symbol,Vector{<:Number}}}
 	out = try
 		full_model(θ, distpara0, data12, data09, bp;
-				   spec = spec, WFcal = WFcal, parallel = parallel)
+				   spec = spec, WFcal = WFcal, parallel = parallel, VERBOSE = VERBOSE)
 	catch err
 		if typeof(err)<:DomainError
 			println("Domain error in optimization!")

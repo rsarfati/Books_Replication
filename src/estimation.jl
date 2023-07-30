@@ -166,7 +166,7 @@ function estimate_model(; # Data specification
 	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
 				   θ_val[free_ind], NelderMead(),
 				   Optim.Options(f_tol = 1e-2, f_calls_limit = Int(1e4),
-		     	   show_trace = true, store_trace = true))
+		     	   show_trace = VERBOSE, store_trace = VERBOSE))
 	θ, llh = θ_full(res.minimizer), res.minimum
 
 	out = full_model(θ, distpara0, data[:on_12], data[:on_09], data[:of_09];

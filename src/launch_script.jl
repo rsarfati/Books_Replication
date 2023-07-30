@@ -17,7 +17,7 @@ if parallel
     println("(1/2) Adding processes...")
     addprocs(N_procs)
     @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
-    @everywhere using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
+    @everywhere using JLD2, MAT, Optim, OrderedCollections
     @everywhere using Printf, Random, Roots, SparseArrays, Statistics, UnPack
 
     @everywhere global path   = dirname(@__FILE__)

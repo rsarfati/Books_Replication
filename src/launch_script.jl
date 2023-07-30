@@ -1,8 +1,3 @@
-global path   = dirname(@__FILE__)
-import Pkg
-Pkg.activate("$path")
-Pkg.instantiate()
-
 using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
 using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
 using Printf, Random, Roots, SparseArrays, Statistics, UnPack

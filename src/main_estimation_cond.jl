@@ -1,5 +1,5 @@
 global path = dirname(@__FILE__)
-include("load_packages.jl")
+include("$path/load_packages.jl")
 
 ## TODO: Specify script parameters
 vint    = "2023-07-30"
@@ -35,7 +35,7 @@ read_draws  = ""
 #θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
 #                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> [θ; 0.0; 0.0])
 
-@load "condition_start.jld2"
+@load "$INPUT/condition_start.jld2"
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> cond_start)
 

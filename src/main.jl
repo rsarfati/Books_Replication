@@ -19,6 +19,10 @@ eval_only    = false # Does NOT optimize; evaluates likelihood for given paramet
 VERBOSE      = false # whether or not to print statements
 out_to_log   = true
 
+# if out_to_log
+# 	run(`touch $LOGS/$(vint)_log.csv`)
+# end
+
 # TODO: Bootstrap flags
 bs_inds     = 1:2 # No. bootstrap iterations
 seed        = false # For replicating output / catching bugs
@@ -26,12 +30,12 @@ make_output = false # Prints pretty tables from bootstrap
 read_draws  = ""
 
 # Test code matches MATLAB (for developers)
-#run_tests = false
+# run_tests = false
 
 ## TODO: Option to specify starting parameters
 #θ = Vector(CSV.read("../output/data/estimation_results_2023_01_03.jld2",#estimation_theta_standard_2023-01-10.csv",
 #                    DataFrame)[:,1])
-@load "../output/data/estimation_results_2023_01_03.jld2"
+@load "$OUTPUT/estimation_results_2023_01_03.jld2"
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q] .=> θ)
 #θ_init = OrderedDict()

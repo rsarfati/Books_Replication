@@ -15,7 +15,7 @@ global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
 
 !isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
-!isdir("$LOG/")				&& run(`mkdir $LOG/`)
+!isdir("$LOGS/")				&& run(`mkdir $LOGS/`)
 !isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
 !isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)

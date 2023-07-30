@@ -1,5 +1,5 @@
 using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
-using FixedEffectModels, JLD2, MAT, Optim, OrderedCollections
+using JLD2, MAT, Optim, OrderedCollections
 using Printf, Random, Roots, SparseArrays, Statistics, UnPack
 println("Packages loaded!")
 

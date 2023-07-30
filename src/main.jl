@@ -17,6 +17,7 @@ WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
 eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 VERBOSE      = false # whether or not to print statements
+run_tests	= false
 out_to_log   = true
 
 # if out_to_log

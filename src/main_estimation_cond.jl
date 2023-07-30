@@ -15,6 +15,7 @@ bootstrap    = false # Run bootstrap for SEs
 eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 grid_search  = false # meh
 grid_search ? eval_only = true : nothing
+VERBOSE = true
 run_tests    = false
 
 # TODO: Bootstrap flags

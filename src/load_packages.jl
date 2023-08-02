@@ -1,8 +1,8 @@
 # Load project environment
 global path = dirname(@__FILE__)
-import Pkg
-Pkg.activate("$path")
-Pkg.instantiate()
+# import Pkg
+# Pkg.activate("$path")
+# Pkg.instantiate()
 
 using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
 using JLD2, MAT, Optim, OrderedCollections
@@ -15,7 +15,7 @@ global OUTPUT = "$path/../output/data"
 global INPUT  = "$path/../input"
 
 !isdir("$path/../output/")	&& run(`mkdir $path/../output/`)
-!isdir("$LOGS/")				&& run(`mkdir $LOGS/`)
+!isdir("$LOGS/")			&& run(`mkdir $LOGS/`)
 !isdir("$OUTPUT/")			&& run(`mkdir $OUTPUT/`)
 !isdir("$OUTPUT/../plots")	&& run(`mkdir $OUTPUT/../plots/`)
 !isdir("$OUTPUT/../tables")	&& run(`mkdir $OUTPUT/../tables/`)

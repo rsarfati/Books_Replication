@@ -8,9 +8,9 @@ N_procs = 30	 	 # No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
 parallel     = true # Distribute work across multiple processors
-write_output = false # Saves output to file
-estimation   = true # Estimate model
-WFcal	     = false # Grab welfare statistics
+write_output = true # Saves output to file
+estimation   = false # Estimate model
+WFcal	     = true # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
 eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 grid_search  = false # meh

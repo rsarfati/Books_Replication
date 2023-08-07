@@ -26,7 +26,6 @@ if run_tests; include("$path/../test/helpers.jl") end
 
 ## Estimate model, starting from known parameters
 if estimation
-
     println("(1/2) Estimating $(string(spec)) model; eval_only = $(eval_only)")
     out = estimate_model(θ_init = θ_init, eval_only = eval_only, spec = spec, parallel = parallel,
 						 write_output = write_output, vint = vint, WFcal = WFcal, VERBOSE = VERBOSE)

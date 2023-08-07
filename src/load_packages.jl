@@ -1,8 +1,8 @@
 # Load project environment
 global path = dirname(@__FILE__)
-# import Pkg
-# Pkg.activate("$path")
-# Pkg.instantiate()
+import Pkg
+Pkg.activate("$path")
+Pkg.instantiate()
 
 using CSV, DataFrames, Dates, DelimitedFiles, Distributed, Distributions, FileIO
 using JLD2, MAT, Optim, OrderedCollections

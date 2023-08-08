@@ -293,8 +293,6 @@ function welfaresimple(γ1::V, γ2::V, γscale::V, γ0::V, olppost::V, Dm::V, D0
 
     mktsize = @. cdindex - d_first + 1
 
-	@show D0[1], Dm[1], η
-
     # for k = 1:M
     #     ind_k    = d_first[k]:cdindex[k]
 	#

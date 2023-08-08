@@ -225,7 +225,7 @@ function obs_cal(βσ3::V, #d::Dict{Symbol,Vector{<:Number}},
     γ1 = real.(γ1)
     γ2 = real.(γ2)
 
-    Dm = @. δ * (p ^ (-η))
+    #Dm = @. δ * (p ^ (-η))
 
     γ_dist = Gamma.(m, γscale)
 

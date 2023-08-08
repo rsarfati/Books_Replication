@@ -2,7 +2,7 @@ global path = dirname(@__FILE__)
 include("$path/load_packages.jl")
 
 ## TODO: Specify script parameters
-vint    = "2023-07-30"
+vint    = "2023-08-08"
 spec    = :condition # Options are :standard, :condition, :cond_list
 N_procs = 30	 	 # No. workers to request from cluster
 
@@ -10,9 +10,9 @@ N_procs = 30	 	 # No. workers to request from cluster
 parallel     = true # Distribute work across multiple processors
 write_output = true # Saves output to file
 estimation   = true # Estimate model
-WFcal	     = true # Grab welfare statistics
+WFcal	     = false # Grab welfare statistics
 bootstrap    = false # Run bootstrap for SEs
-eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
+eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
 grid_search  = false # meh
 grid_search ? eval_only = true : nothing
 VERBOSE      = true
@@ -39,7 +39,7 @@ read_draws  = ""
 #@load "../input/condition_start.jld2"
 @load "../output/data/estimation_results_condition_2023-07-30.jld2"
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
-                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> cond_start)
+                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> θ)
 
 include("$path/launch_script.jl")
 
@@ -105,38 +105,3 @@ include("$path/launch_script.jl")
 # 	end
 # end
 ## Grid search code ends
-
-
-# θ_init = OrderedDict()
-# θ_init = OrderedDict(
-#     #=1=#	:α          => 14.7544,	#1  α 				[15.77 (1.28)]
-#     #=2=#	:Δ_p_out    => -2.5128,	#2  Δ_p_out 		[0.16 (0.02)]
-#     #=3=#	:γ_ns_shape => 1.0,		#3  γ_ns_shape *** FIXED
-#     #=4=#	:γ_ns_on_09 => 0.4247,	#4  γ_ns_on_09 * 9.5 ^ (-η) / (10 * r * γ_ns_shape)
-#     #=5=#	:γ_ns_on_12 => 0.3275,	#5  γ_ns_on_12 * 8.0 ^ (-η) / (10 * r * γ_ns_shape)
-#     #=6=#	:η          => 0.8302,	#6  η - 1 			[1.87 (0.08)]
-#     #=7=#	:r          => 0.5,     #7  r * 10     *** FIXED
-#     #=8=#	:R_p        => 0.2738,	#8  R_p 			[0.26 (0.02)]
-#     #=9=#	:c          => -9.0273,	#9  c * 10 			[-0.91 (0.07)]*10
-#     #=10=#	:γ_s_pop    => 78.7921,	#10 γ_s_pop * 100 	[0.80 (0.09)]
-#     #=11=#	:γ_ns_pop   => -14.592,	#11 γ_ns_pop * 10 	[-1.36 (0.19)]
-#     #=12=#	:s_R        => 1.7247,	#12 s_R 			[1.73 (0.09)]
-#     #=13=#	:μ_R        => 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
-#     #=14=#	:R_q        => 0.9253)
-
-# θ_init = OrderedDict{Symbol,Float64}(:α          	 =>	14.69433884	,
-# :Δ_p_out    	 =>	-2.466339203	,
-# :γ_ns_shape 	 =>	1.0	,
-# :γ_ns_on_09 	 =>	0.023399967	,
-# :γ_ns_on_12 	 =>	0.005582159	,
-# :η          	 =>	0.64788832	,
-# :r          	 =>	0.5	,
-# :R_p        	 =>	0.867298655	,
-# :c          	 =>	-9.203152599	,
-# :γ_s_pop    	 =>	73.30833091	,
-# :γ_ns_pop   	 =>	-14.59211909	,
-# :s_R        	 =>	2.439671533	,
-# :μ_R        	 =>	5.83948042	,
-# :R_q        	 =>	0.927080228	,
-# :α_c  	 =>	-0.008696885	,
-# :η_c         	 =>	3.264478232	)

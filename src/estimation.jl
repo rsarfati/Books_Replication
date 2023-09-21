@@ -165,7 +165,8 @@ function estimate_model(; # Data specification
 	# vector to again include fixed/calibrated parameters.
 	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
 				   θ_val[free_ind], NelderMead(),
-				   Optim.Options(f_tol = 1e-2, f_calls_limit = Int(1e4),
+				   Optim.Options(#f_tol = 1e-2, f_calls_limit = Int(1e4),
+				   iterations = 100,
 		     	   show_trace = VERBOSE, store_trace = VERBOSE))
 	θ, llh = θ_full(res.minimizer), res.minimum
 

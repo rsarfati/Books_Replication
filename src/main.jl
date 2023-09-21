@@ -5,9 +5,9 @@ global path = dirname(@__FILE__)
 include("$path/load_packages.jl")
 
 ## TODO: Specify script parameters
-vint    = "2023-07-31" * serv * iter
+vint    = "2023-09-21" * serv * iter
 spec    = :standard # Options are :standard, :condition, :cond_list
-N_procs = 20	 	# No. workers to request from cluster
+N_procs = 10	 	# No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
 parallel     = true # Distribute work across multiple processors
@@ -19,6 +19,9 @@ eval_only    = false # Does NOT optimize; evaluates likelihood for given paramet
 VERBOSE      = false # whether or not to print statements
 run_tests	 = false
 out_to_log   = true
+
+# Settings for optimization
+max_iter = 200
 
 # if out_to_log
 # 	run(`touch $LOGS/$(vint)_log.csv`)

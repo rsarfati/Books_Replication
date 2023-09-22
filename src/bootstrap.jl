@@ -69,7 +69,7 @@ function run_bootstrap(; data::Dict = Dict(),
 			CSV.write("$OUTPUT/bs_distpara_$(string(spec))_$(vint)_run=$i.csv",  Tables.table(distpara_i))
 		#end
 		println("=======================================")
-		println("Completed Bootstrap iteration = $(i)!")
+		println("Completed bootstrap iteration = $(i)!")
 		println("=======================================")
 	end
 

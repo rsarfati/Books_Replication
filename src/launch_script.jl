@@ -35,6 +35,7 @@ end
 ## Run bootstrap script
 if bootstrap
 	println("Starting Bootstrap for $(string(spec))! Indices: $(bs_inds)")
+	println("Settings: write_output=$write_output, eval_only=$eval_only.")
 	run_bootstrap(θ_init = θ_init, bs_inds = bs_inds, seed = seed, spec = spec, vint = vint,
 				  parallel = parallel, eval_only = eval_only, read_draws = read_draws)
 	println("Bootstrap for $(string(spec)) complete! Output saved with vint = ``$vint``")

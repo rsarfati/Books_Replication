@@ -1,5 +1,5 @@
 include("load_packages.jl")
-parallal = true
+parallel = true
 N_procs  = 15
 
 if parallel

@@ -44,26 +44,27 @@ function run_bootstrap(; data::Dict = Dict(),
     isempty(data)      && @load "$INPUT/data_to_run.jld2" data
 	isempty(distpara0) && @load "$INPUT/distpara0.jld2"   distpara0
 
-	θ_init = if read_draws != ""
+	if read_draws != ""
 	    # Optimization can be run on several servers simultaneously to save time;
 	    # we use `unique` to remove bootstrap runs duplicated on multiple servers.
 		# NOT CURRENTLY WORKING.
 		unique(readdlm(read_draws, ','), dims=1)[:,2:end]
 		# To read in old draws:
 	    #unique(readdlm("$INPUT/bootstrap_estimates.csv", ','), dims=1)[:,2:end]
-		OrderedDict(keys(θ_init) .=> θ_start[i,:])
+		θ_init = OrderedDict(keys(θ_init) .=> θ_start[i,:])
 	end
 
 	# Run bootstrap!
     for i=bs_inds
 		println(VERBOSE, "Bootstrap iteration: $i")
+		@show θ_init
 		llh_i, θ_i, distpara_i = estimate_model(data = index_data(data, bootindex[i,:]),
 					   		    	distpara0 = distpara0,
 									θ_init = θ_init,
-					    	    	θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
-									spec = spec, eval_only = eval_only, WFcal = false,
+					    	    	#θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
+									spec = spec, vint=vint, eval_only = eval_only, WFcal = false,
 					    	    	parallel = parallel, write_output = false,
-									bootstrap = true)
+									bootstrap = true, VERBOSE = VERBOSE)
 		#if write_output
 			@save     "$OUTPUT/estimation_results_$(string(spec))_$(vint)_run=$i.jld2"  θ llh distpara
 			CSV.write("$OUTPUT/bs_llh_theta_$(string(spec))_$(vint)_run=$i.csv", Tables.table([llh_i; θ_i]))

@@ -62,28 +62,19 @@ function run_bootstrap(; data::Dict = Dict(),
 		llh_i, θ_i, distpara_i = estimate_model(data = index_data(data, bootindex[i,:]),
 					   		    	distpara0 = distpara0,
 									θ_init = θ_init,
-					    	    	#θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
 									max_iter = max_iter,
 									spec = spec, vint=vint, eval_only = eval_only, WFcal = false,
 					    	    	parallel = parallel, write_output = false,
 									bootstrap = true, VERBOSE = VERBOSE)
-		#if write_output
+		if write_output
 			CSV.write("$OUTPUT/bs_llh_theta_$(string(spec))_$(vint)_run=$i.csv", Tables.table([llh_i; θ_i]))
 			CSV.write("$OUTPUT/bs_distpara_$(string(spec))_$(vint)_run=$i.csv",  Tables.table(distpara_i))
 			@save     "$OUTPUT/estimation_results_$(string(spec))_$(vint)_run=$i.jld2"  θ_i llh_i distpara_i
-		#end
+		end
 		println("=======================================")
 		println("Completed bootstrap iteration = $(i)!")
 		println("=======================================")
 	end
-
-	# if WFcal
-	# 	wel09    = mean(fWF["AveWF09"])
-	# 	wel12    = mean(fWF["AveWF12"])
-	# 	weloff   = mean(fWF["WFbp"])
-	# 	result_w = [i; xinitial; newdistpara; wel09; wel12; weloff]
-	# 	CSV.write("$OUTPUT/bs_welfare_$(vint).csv", result_w)
-	# end
 end
 
 """
@@ -130,7 +121,7 @@ function index_data(d_in::Dict{Symbol,Dict{Symbol,Vector{<:Number}}}, ind::Vecto
 				end
 			end
 		else
-			d[y][:cdid] = collect(1:236) # TODO: was commented bp.cdid[bs_ind]
+			d[y][:cdid] = collect(1:236)
 			for k in obs_list[y]
 				d[y][k] = d_in[y][k][ind]
 			end

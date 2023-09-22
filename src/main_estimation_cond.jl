@@ -28,15 +28,6 @@ read_draws  = ""
 #run_tests = false
 
 ## TODO: Option to specify starting parameters
-#θ = Vector(CSV.read("$path/../output/data/estimation_theta_standard_2023-01-10.csv",
-#                    DataFrame)[:,1])
-
-#@load "../output/data/estimation_results_2023_01_03.jld2"
-
-#θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
-#                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> [θ; 0.0; 0.0])
-
-#@load "../input/condition_start.jld2"
 @load "../output/data/estimation_results_condition_2023-07-30.jld2"
 θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
                       :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q, :α_c, :η_c] .=> θ)

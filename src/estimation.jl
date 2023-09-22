@@ -69,15 +69,9 @@ function estimate_model(; # Data specification
 		#=12=#	:s_R        	=> 1.7247,	#12 s_R 			[1.73 (0.09)]
 		#=13=#	:μ_R        	=> 8.8787,  #13 μ_R / s_R		[15.25 (0.80) / 1.73 (0.09)]
 		#=14=#	:R_q        	=> 0.9253	#14 1 - R_q       1-[0.07 (0.01)]
-		# Distributional parameters (pinned down within model -- do not optimize over!)
-		##=15=#	:γ_s_shape  	=> 0.3598,	#15 γ_s_shape 		[0.32 (0.03)]
-		##=16=#	:γ_s_on_09  	=> 5.634,	#16 γ_s_on_09 		[5.65 (1.41)]
-		##=17=#	:γ_s_on_12  	=> 13.2618,	#17 γ_s_on_12 		[14.86 (3.10)]
-		##=18=#	:σ_δ        	=> 1.16,	#18 σ_δ 			[1.16 (0.05)]
-		##=19=#	:γ_ns_of_09_std => 0.65,	#19 γ_ns_of_09_std 	[0.65 (0.17)]
-		##=20=#	:βlocal			=> 1.923	#20 βlocal (= γ_ns_of_09_loc / γ_ns_of_09_std) [1.25 (0.37) / 0.65 (0.17)]
 		)
 	end
+	
 	# Create indicator for having the lowest price / "being listed first"
 	for d in [data[:on_09], data[:on_12], data[:of_09]]
 		d[:has_min_p] = zeros(length(d[:cdid]))
@@ -164,10 +158,8 @@ function estimate_model(; # Data specification
 
 	# Optimize objective function, then reconstitute optimal parameter
 	# vector to again include fixed/calibrated parameters.
-	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
-				   θ_val[free_ind], NelderMead(),
-				   Optim.Options(#f_tol = 1e-2, f_calls_limit = Int(1e4),
-				   iterations = max_iter,
+	res = optimize(obj_fun, θ_val[free_ind], NelderMead(),
+				   Optim.Options(iterations = max_iter,
 		     	   show_trace = VERBOSE, store_trace = VERBOSE))
 	θ, llh = θ_full(res.minimizer), res.minimum
 

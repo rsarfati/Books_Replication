@@ -22,13 +22,14 @@ end
 @everywhere include("$path/full_model.jl")
 @everywhere include("$path/estimation.jl")
 @everywhere include("$path/bootstrap.jl")
+
 N_bs = 100
 N_θ  = 14
 N_dp = 6
 
-θ_bs       = Matrix{F64}(N_bs, N_θ)
-dispara_bs = Matrix{F64}(N_bs, N_dp)
-llh_bs     = Matrix{F64}(N_bs)
+θ_bs       = Matrix{Float64}(N_bs, N_θ)
+dispara_bs = Matrix{Float64}(N_bs, N_dp)
+llh_bs     = Matrix{Float64}(N_bs)
 
 @load "$INPUT/data_to_run.jld2" data
 

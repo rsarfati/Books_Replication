@@ -58,7 +58,8 @@ function run_bootstrap(; data::Dict = Dict(),
     for i=bs_inds
 		println(VERBOSE, "Bootstrap iteration: $i")
 		llh_i, θ_i, distpara_i = estimate_model(data = index_data(data, bootindex[i,:]),
-					   		    	θ_init = θ_init, distpara0 = distpara0,
+					   		    	distpara0 = distpara0,
+									θ_init = θ_init,
 					    	    	θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
 									spec = spec, eval_only = eval_only, WFcal = false,
 					    	    	parallel = parallel, write_output = false,

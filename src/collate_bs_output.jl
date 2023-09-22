@@ -36,6 +36,8 @@ llh_bs     = zeros(Float64, N_bs)
 
 for i=1#:N_bs
 	@load "$OUTPUT/estimation_results_standard_2023-09-21_run=$i.jld2" θ_i llh_i distpara_i
+	θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
+	                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q] .=> θ_i)
 
 	θ_i_t 		 = deepcopy(θ_i)
 	distpara_i_t = deepcopy(distpara_i)
@@ -61,7 +63,7 @@ for i=1#:N_bs
 
 	# Welfare computation
 
-	out = estimate_model(θ_init = θ_i,
+	out = estimate_model(θ_init = θ_init,
 						 data = index_data(data, bootindex[i,:]),
 					     distpara0 = distpara_i,
 						 eval_only = true, spec = :standard, parallel = true,

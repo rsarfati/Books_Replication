@@ -27,9 +27,9 @@ N_bs = 100
 N_θ  = 14
 N_dp = 6
 
-θ_bs       = Array{Float64,2}(N_bs, N_θ)
-dispara_bs = Array{Float64,2}(N_bs, N_dp)
-llh_bs     = Vector{Float64}(N_bs)
+θ_bs       = zeros(Float64, N_bs, N_θ)
+dispara_bs = zeros(Float64, N_bs, N_dp)
+llh_bs     = zeros(Float64, N_bs)
 
 @load "$INPUT/data_to_run.jld2" data
 

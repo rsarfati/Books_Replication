@@ -6,6 +6,10 @@ write_output = true
 WFcal	     = true # Grab welfare statistics
 eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 
+vint    = "2023-09-21"
+spec    = :standard # Options are :standard, :condition, :cond_list
+N_procs = 15	 	# No. workers to request from cluster
+
 if parallel
     println("(1/2) Adding processes...")
     addprocs(N_procs)

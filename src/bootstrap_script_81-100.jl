@@ -21,14 +21,14 @@ run_tests	 = false
 out_to_log   = true
 
 # Settings
-max_iter = 50
+max_iter = 30
 
 # if out_to_log
 # 	run(`touch $LOGS/$(vint)_log.csv`)
 # end
 
 # TODO: Bootstrap flags
-bs_inds     = 81:100 # Indices of bootstrap iterations
+bs_inds     = 95:100#81:100 # Indices of bootstrap iterations
 seed        = true # For replicating output / catching bugs
 make_output = false # Prints pretty tables from bootstrap
 read_draws  = ""

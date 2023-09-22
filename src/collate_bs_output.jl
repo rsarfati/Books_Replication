@@ -32,6 +32,7 @@ distpara_bs = zeros(Float64, N_bs, N_dp)
 llh_bs     = zeros(Float64, N_bs)
 
 @load "$INPUT/data_to_run.jld2" data
+@load "$INPUT/bootstrap_indices.jld2" bootindex
 
 for i=1#:N_bs
 	@load "$OUTPUT/estimation_results_standard_2023-09-21_run=$i.jld2" θ_i llh_i distpara_i

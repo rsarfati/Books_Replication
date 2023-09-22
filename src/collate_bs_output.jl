@@ -2,6 +2,8 @@ include("load_packages.jl")
 parallel = true
 N_procs  = 15
 VERBOSE = true
+write_output = true
+
 if parallel
     println("(1/2) Adding processes...")
     addprocs(N_procs)

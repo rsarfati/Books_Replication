@@ -1,5 +1,27 @@
 include("load_packages.jl")
+parallal = true
+N_procs  = 15
 
+if parallel
+    println("(1/2) Adding processes...")
+    addprocs(N_procs)
+    @everywhere using CSV, DataFrames, Dates, Distributed, Distributions, FileIO
+    @everywhere using JLD2, MAT, Optim, OrderedCollections
+    @everywhere using Printf, Random, Roots, SparseArrays, Statistics, UnPack
+
+    @everywhere global path   = dirname(@__FILE__)
+    @everywhere global OUTPUT = "$path/../output/data"
+    @everywhere global INPUT  = "$path/../input"
+
+    println("(2/2) Added $(length(workers())) worker processes!")
+end
+
+## Load functions on all processors
+@everywhere rounderr = 0.025
+@everywhere include("$path/helpers.jl")
+@everywhere include("$path/full_model.jl")
+@everywhere include("$path/estimation.jl")
+@everywhere include("$path/bootstrap.jl")
 N_bs = 100
 N_θ  = 14
 N_dp = 6

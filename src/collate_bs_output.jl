@@ -42,7 +42,7 @@ llh_bs     = zeros(Float64, N_bs)
 @load "$INPUT/data_to_run.jld2" data
 @load "$INPUT/bootstrap_indices.jld2" bootindex
 
-for i=1#:N_bs
+for i=1:N_bs
 	@load "$OUTPUT/estimation_results_standard_2023-09-21_run=$i.jld2" θ_i llh_i distpara_i
 	θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
 	                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q] .=> θ_i)
@@ -68,6 +68,7 @@ for i=1#:N_bs
 
 	θ_bs[i,:]		 = θ_i_t
 	distpara_bs[i,:] = distpara_i_t
+	llh_bs[i] = llh_i
 
 	# Welfare computation
 
@@ -75,9 +76,12 @@ for i=1#:N_bs
 						 data = index_data(data, bootindex[i,:]),
 					     distpara0 = distpara_i,
 						 eval_only = true, spec = :standard, parallel = true,
-						 write_output = true, vint = "2023-09-21", WFcal = true,
+						 write_output = true, vint = "2023-09-21_run=$i", WFcal = true,
 						 VERBOSE = true)
+
 	println("Transformed and saved welfare computation for i=$i.")
 end
-@show θ_bs[1,:]
-@show distpara_bs[1,:]
+
+CSV.write("$OUTPUT/bootstrap_theta_$(string(spec))_$(vint).csv", Tables.table(θ_bs)
+CSV.write("$OUTPUT/bootstrap_distpara_$(string(spec))_$(vint).csv",  Tables.table(distpara_bs)
+@save     "$OUTPUT/bootstrap_full_estimation_results_$(string(spec))_$(vint).jld2"  θ_bs llh_bs distpara_bs

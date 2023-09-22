@@ -7,7 +7,7 @@ include("$path/load_packages.jl")
 ## TODO: Specify script parameters
 vint    = "2023-09-21" * serv * iter
 spec    = :standard # Options are :standard, :condition, :cond_list
-N_procs = 10	 	# No. workers to request from cluster
+N_procs = 15	 	# No. workers to request from cluster
 
 # TODO: Adjust flags below for what you want to run.
 parallel     = true # Distribute work across multiple processors
@@ -16,7 +16,7 @@ estimation   = true # Estimate model
 WFcal	     = false # Grab welfare statistics
 bootstrap    = true # Run bootstrap for SEs
 eval_only    = false # Does NOT optimize; evaluates likelihood for given parameters
-VERBOSE      = false # whether or not to print statements
+VERBOSE      = true # whether or not to print statements
 run_tests	 = false
 out_to_log   = true
 

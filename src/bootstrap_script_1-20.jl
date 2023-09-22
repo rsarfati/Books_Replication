@@ -28,7 +28,7 @@ max_iter = 30
 # end
 
 # TODO: Bootstrap flags
-bs_inds     = 12:20 # No. bootstrap iterations
+bs_inds     = 14:20 # No. bootstrap iterations
 seed        = true # For replicating output / catching bugs
 make_output = false # Prints pretty tables from bootstrap
 read_draws  = ""

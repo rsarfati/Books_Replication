@@ -28,7 +28,7 @@ N_θ  = 14
 N_dp = 6
 
 θ_bs       = zeros(Float64, N_bs, N_θ)
-dispara_bs = zeros(Float64, N_bs, N_dp)
+distpara_bs = zeros(Float64, N_bs, N_dp)
 llh_bs     = zeros(Float64, N_bs)
 
 @load "$INPUT/data_to_run.jld2" data

@@ -1,7 +1,7 @@
 include("load_packages.jl")
 parallel = true
 N_procs  = 15
-
+VERBOSE = true
 if parallel
     println("(1/2) Adding processes...")
     addprocs(N_procs)
@@ -67,7 +67,8 @@ for i=1#:N_bs
 						 data = index_data(data, bootindex[i,:]),
 					     distpara0 = distpara_i,
 						 eval_only = true, spec = :standard, parallel = true,
-						 write_output = true, vint = "2023-09-21", WFcal = true, VERBOSE = true)
+						 write_output = true, vint = "2023-09-21", WFcal = true,
+						 VERBOSE = true)
 	println("Transformed and saved welfare computation for i=$i.")
 end
 @show θ_bs[1,:]

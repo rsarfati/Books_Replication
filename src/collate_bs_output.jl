@@ -6,7 +6,7 @@ write_output = true
 WFcal	     = true # Grab welfare statistics
 eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 
-vint    = "2023-09-21"
+global vint    = "2023-09-21"
 spec    = :standard # Options are :standard, :condition, :cond_list
 N_procs = 15	 	# No. workers to request from cluster
 
@@ -46,6 +46,7 @@ for i=1:N_bs
 	@load "$OUTPUT/estimation_results_standard_2023-09-21_run=$i.jld2" θ_i llh_i distpara_i
 	θ_init = OrderedDict([:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
 	                      :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q] .=> θ_i)
+	global vint = "2023-09-21_run=$i"
 
 	θ_i_t 		 = deepcopy(θ_i)
 	distpara_i_t = deepcopy(distpara_i)

@@ -27,9 +27,9 @@ N_bs = 100
 N_θ  = 14
 N_dp = 6
 
-θ_bs       = Matrix{Float64}(N_bs, N_θ)
-dispara_bs = Matrix{Float64}(N_bs, N_dp)
-llh_bs     = Matrix{Float64}(N_bs)
+θ_bs       = Array{Float64,2}(N_bs, N_θ)
+dispara_bs = Array{Float64,2}(N_bs, N_dp)
+llh_bs     = Vector{Float64}(N_bs)
 
 @load "$INPUT/data_to_run.jld2" data
 
@@ -43,7 +43,7 @@ for i=1#:N_bs
 	θ_i_t[2] = -θ_i[1]/(1.0 + θ_i[2])
 	θ_i_t[4] = θ_i[4] * 10.0 * θ_i[7] / 10.0 / 9.5 ^ (-θ_i[6] - 1.0)
 	θ_i_t[5] = θ_i[5] * 10.0 * θ_i[7] / 10.0 / 8.0 ^ (-θ_i[6] - 1.0)
-	θ_i_t[6] = θ_i[6] + 1.0 #QUESTION
+	θ_i_t[6] = θ_i[6] + 1.0
 	θ_i_t[7] = θ_i[7] * 0.1
 	θ_i_t[9] = θ_i[9] * 0.1
 	θ_i_t[10] = θ_i[10] * 0.01

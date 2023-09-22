@@ -57,7 +57,6 @@ function run_bootstrap(; data::Dict = Dict(),
 	# Run bootstrap!
     for i=bs_inds
 		println(VERBOSE, "Bootstrap iteration: $i")
-		@show θ_init
 		llh_i, θ_i, distpara_i = estimate_model(data = index_data(data, bootindex[i,:]),
 					   		    	distpara0 = distpara0,
 									θ_init = θ_init,

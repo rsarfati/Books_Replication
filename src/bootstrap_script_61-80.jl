@@ -21,7 +21,7 @@ run_tests	 = false
 out_to_log   = true
 
 # Settings
-max_iter = 200
+max_iter = 50
 
 # if out_to_log
 # 	run(`touch $LOGS/$(vint)_log.csv`)

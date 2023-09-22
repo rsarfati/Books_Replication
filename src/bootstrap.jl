@@ -26,6 +26,8 @@ function run_bootstrap(; data::Dict = Dict(),
 						 # Bootstrap options
 						 N_bs::Int64 = 100, seed::Bool = true,
 						 bs_inds::UnitRange{Int64} = 1:N_bs,
+						 # Standard options
+						 max_iter::Int64 = 100,
 						 vint::String  = "latest", write_output::Bool = true,
 						 eval_only::Bool = false, WFcal::Bool = false,
 						 parallel::Bool  = true, read_draws::String = "") where T<:Float64
@@ -61,13 +63,14 @@ function run_bootstrap(; data::Dict = Dict(),
 					   		    	distpara0 = distpara0,
 									θ_init = θ_init,
 					    	    	#θ_fix = θ_fix, θ_lb = θ_lb, θ_ub = θ_ub,
+									max_iter = max_iter,
 									spec = spec, vint=vint, eval_only = eval_only, WFcal = false,
 					    	    	parallel = parallel, write_output = false,
 									bootstrap = true, VERBOSE = VERBOSE)
 		#if write_output
-			@save     "$OUTPUT/estimation_results_$(string(spec))_$(vint)_run=$i.jld2"  θ llh distpara
 			CSV.write("$OUTPUT/bs_llh_theta_$(string(spec))_$(vint)_run=$i.csv", Tables.table([llh_i; θ_i]))
 			CSV.write("$OUTPUT/bs_distpara_$(string(spec))_$(vint)_run=$i.csv",  Tables.table(distpara_i))
+			@save     "$OUTPUT/estimation_results_$(string(spec))_$(vint)_run=$i.jld2"  θ_i llh_i distpara_i
 		#end
 		println("=======================================")
 		println("Completed bootstrap iteration = $(i)!")

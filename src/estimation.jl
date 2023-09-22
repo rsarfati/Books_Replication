@@ -44,6 +44,7 @@ function estimate_model(; # Data specification
 						  # Specification: options are :standard, :condition, :cond_list
 						  spec::Symbol = :standard,
 						  # Options
+						  max_iter::Int64 = 100,
 						  vint::String    = "latest", write_output::Bool = true,
 						  eval_only::Bool = false, WFcal::Bool = false,
 						  parallel::Bool  = true, bootstrap::Bool = false,
@@ -166,7 +167,7 @@ function estimate_model(; # Data specification
 	res = optimize(obj_fun, #lb[free_ind], ub[free_ind],
 				   θ_val[free_ind], NelderMead(),
 				   Optim.Options(#f_tol = 1e-2, f_calls_limit = Int(1e4),
-				   iterations = 100,
+				   iterations = max_iter,
 		     	   show_trace = VERBOSE, store_trace = VERBOSE))
 	θ, llh = θ_full(res.minimizer), res.minimum
 

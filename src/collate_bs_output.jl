@@ -3,6 +3,8 @@ parallel = true
 N_procs  = 15
 VERBOSE = true
 write_output = true
+WFcal	     = true # Grab welfare statistics
+eval_only    = true # Does NOT optimize; evaluates likelihood for given parameters
 
 if parallel
     println("(1/2) Adding processes...")

@@ -51,7 +51,7 @@ for i=1#:N_bs
 	θ_i_t[14] = 1.0 - θ_i[14]
 
 	# Transformations on distpara
-	distpara_i_t[1:3] .= abs(distpara_i[1:3])
+	distpara_i_t[1:3] .= abs.(distpara_i[1:3])
 	distpara_i_t[5]    = abs(distpara_i[5])
 	distpara_i_t[6]    = distpara_i_t[5] * distpara_i[6]
 

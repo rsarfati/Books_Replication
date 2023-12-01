@@ -78,7 +78,7 @@ for i=1:N_bs
 	distpara_bs[i,:] = distpara_i_t
 	llh_bs[i] = llh_i
 
-	Welfare computation
+	#Welfare computation
 	out = estimate_model(θ_init = θ_init,
 						 data = index_data(data_i, bootindex_i[i,:]),
 					     distpara0 = distpara_i,

@@ -53,6 +53,8 @@ for i=1:N_bs
 	θ_init = OrderedDict(θ_names .=> θ_i)
 	global vint = day *"_run=$i"
 
+	data_i		 = deepcopy(data)
+	bootindex_i  = deepcopy(bootindex)
 	θ_i_t 		 = deepcopy(θ_i)
 	distpara_i_t = deepcopy(distpara_i)
 
@@ -78,7 +80,7 @@ for i=1:N_bs
 
 	Welfare computation
 	out = estimate_model(θ_init = θ_init,
-						 data = index_data(data, bootindex[i,:]),
+						 data = index_data(data_i, bootindex_i[i,:]),
 					     distpara0 = distpara_i,
 						 eval_only = true, spec = :standard, parallel = true,
 						 write_output = true, vint = day * "_run=$i", WFcal = true,

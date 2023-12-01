@@ -41,8 +41,8 @@ N_dp = 6
 distpara_bs = zeros(Float64, N_bs, N_dp)
 llh_bs     = zeros(Float64, N_bs)
 
-@load "$INPUT/data_to_run.jld2" data
-@load "$INPUT/bootstrap_indices.jld2" bootindex
+# @load "$INPUT/data_to_run.jld2" data
+# @load "$INPUT/bootstrap_indices.jld2" bootindex
 
 θ_names = [:α, :Δ_p_out, :γ_ns_shape, :γ_ns_on_09, :γ_ns_on_12, :η, :r,
 					  :R_p, :c , :γ_s_pop, :γ_ns_pop, :s_R, :μ_R, :R_q]
@@ -52,6 +52,9 @@ for i=1:N_bs
 	@load "$OUTPUT/estimation_results_standard_2023-09-21_run=$i.jld2" θ_i llh_i distpara_i
 	θ_init = OrderedDict(θ_names .=> θ_i)
 	global vint = day *"_run=$i"
+
+	@load "$INPUT/data_to_run.jld2" data
+	@load "$INPUT/bootstrap_indices.jld2" bootindex
 
 	data_i		 = deepcopy(data)
 	bootindex_i  = deepcopy(bootindex)
@@ -78,7 +81,7 @@ for i=1:N_bs
 	distpara_bs[i,:] = distpara_i_t
 	llh_bs[i] = llh_i
 
-	#Welfare computation
+	# Welfare computation
 	out = estimate_model(θ_init = θ_init,
 						 data = index_data(data_i, bootindex_i[i,:]),
 					     distpara0 = distpara_i,
